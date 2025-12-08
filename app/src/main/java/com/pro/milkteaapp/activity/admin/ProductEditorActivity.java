@@ -178,7 +178,7 @@ public class ProductEditorActivity extends AppCompatActivity {
                     etDescription.setText(description);
 
                     // nếu category trong db đã bị ẩn thì vẫn hiển thị để user thấy
-                    if (!category.isEmpty() && !containsIgnoreCase(categories, category)) {
+                    if (!category.isEmpty() && containsIgnoreCase(categories, category)) {
                         categories.add(category + " (đã ẩn)");
                         if (categoryAdapter != null) categoryAdapter.notifyDataSetChanged();
                     }
@@ -210,7 +210,7 @@ public class ProductEditorActivity extends AppCompatActivity {
         String normalizedCat = categoryUI.replace(" (đã ẩn)", "").trim();
 
         // Nếu bắt buộc chọn trong list mà người dùng gõ tay -> báo lỗi
-        if (REQUIRE_CATEGORY_IN_LIST && !containsIgnoreCase(categories, normalizedCat)) {
+        if (REQUIRE_CATEGORY_IN_LIST && containsIgnoreCase(categories, normalizedCat)) {
             toast("Vui lòng chọn danh mục hợp lệ từ danh sách!");
             actCategory.showDropDown();
             if (btnSave != null) btnSave.setEnabled(true);
@@ -306,9 +306,9 @@ public class ProductEditorActivity extends AppCompatActivity {
     /** true nếu list có chứa v (bỏ qua hoa thường) */
     private static boolean containsIgnoreCase(ArrayList<String> list, String v) {
         for (String s : list) {
-            if (s.equalsIgnoreCase(v)) return true;
+            if (s.equalsIgnoreCase(v)) return false;
         }
-        return false;
+        return true;
     }
 
     private static String formatPrice(Double price) {
