@@ -1,45 +1,42 @@
-package com.pro.milkteaapp.data.autoID;
+package com.pro.milkteaapp.data;
 
 import com.google.android.gms.tasks.Task;
-import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.*;
 
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Sinh mã user tự động: USR00001, USR00002...
- * Dùng transaction Firestore để tránh trùng.
- */
-public class UserIDGenerator {
+public class OrdersIDGenerator {
 
     private static final String META_COLLECTION = "meta";
-    private static final String SEQ_DOC = "userCounters";
-    private static final String FIELD_USER_SEQ = "userSeq";
+    private static final String SEQ_DOC = "counters";
+    private static final String FIELD_ORDER_SEQ = "orderSeq";
 
     private final FirebaseFirestore db;
 
-    public UserIDGenerator() {
+    public OrdersIDGenerator() {
         this.db = FirebaseFirestore.getInstance();
     }
 
-    public Task<String> nextUserId(int width, String prefix) {
+    /**
+     * Tạo ID đơn dạng ORD00001, ORD00002... bằng transaction để đảm bảo không trùng.
+     * width = 5 => 00001; đổi width nếu muốn (6 -> 000001).
+     */
+    public Task<String> nextOrderId(int width, String prefix) {
         final DocumentReference ref = db.collection(META_COLLECTION).document(SEQ_DOC);
         return db.runTransaction(transaction -> {
             DocumentSnapshot snap = transaction.get(ref);
 
             long current = 0L;
-            if (snap.exists() && snap.contains(FIELD_USER_SEQ)) {
-                Number n = snap.getDouble(FIELD_USER_SEQ);
+            if (snap.exists() && snap.contains(FIELD_ORDER_SEQ)) {
+                Number n = snap.getDouble(FIELD_ORDER_SEQ);
                 if (n != null) current = n.longValue();
             }
 
             long next = current + 1;
 
             Map<String, Object> updates = new HashMap<>();
-            // Firestore số sẽ lưu dạng double
-            updates.put(FIELD_USER_SEQ, (double) next);
+            updates.put(FIELD_ORDER_SEQ, (double) next); // Firestore lưu số dạng double
 
             if (snap.exists()) {
                 transaction.update(ref, updates);
@@ -47,13 +44,14 @@ public class UserIDGenerator {
                 transaction.set(ref, updates);
             }
 
-            // ví dụ: width = 5 -> 00001
+            // Format: ORD + pad-left width
             String number = String.format("%0" + width + "d", next);
             return prefix + number;
         });
     }
 
-    public Task<String> nextUserId() {
-        return nextUserId(5, "USR");
+    /** Mặc định: prefix ORD, width 5 -> ORD00001 */
+    public Task<String> nextOrderId() {
+        return nextOrderId(5, "ORD");
     }
 }

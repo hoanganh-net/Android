@@ -13,8 +13,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.pro.milkteaapp.activity.admin.AdminMainActivity;
-import com.pro.milkteaapp.data.AuthRepository;
-import com.pro.milkteaapp.data.UserLocalStore;
+import com.pro.milkteaapp.repository.AuthRepository;
+import com.pro.milkteaapp.repository.UserLocalStore;
 import com.pro.milkteaapp.databinding.ActivityLoginBinding;
 
 public class LoginActivity extends AppCompatActivity {

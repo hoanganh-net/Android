@@ -1,4 +1,4 @@
-package com.pro.milkteaapp.data.autoID;
+package com.pro.milkteaapp.data;
 
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.DocumentReference;

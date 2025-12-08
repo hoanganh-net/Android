@@ -23,7 +23,7 @@ import com.google.firebase.firestore.QuerySnapshot;
 import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.SessionManager;
 import com.pro.milkteaapp.activity.MainActivity;
-import com.pro.milkteaapp.data.autoID.ProductsIDGenerator;
+import com.pro.milkteaapp.data.ProductsIDGenerator;
 
 import java.util.ArrayList;
 import java.util.HashMap;

@@ -1,4 +1,4 @@
-package com.pro.milkteaapp.data;
+package com.pro.milkteaapp.repository;
 
 import android.content.Context;
 import android.content.SharedPreferences;

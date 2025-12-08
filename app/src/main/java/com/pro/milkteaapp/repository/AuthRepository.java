@@ -1,4 +1,4 @@
-package com.pro.milkteaapp.data;
+package com.pro.milkteaapp.repository;
 
 import android.text.TextUtils;
 import android.util.Log;
@@ -9,7 +9,6 @@ import androidx.annotation.Nullable;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.*;
-import com.pro.milkteaapp.SessionManager;
 
 import java.util.function.Consumer;
 

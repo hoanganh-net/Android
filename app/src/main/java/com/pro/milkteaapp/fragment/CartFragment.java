@@ -28,7 +28,7 @@ import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.SessionManager;
 import com.pro.milkteaapp.activity.MainActivity;
 import com.pro.milkteaapp.adapter.CartAdapter;
-import com.pro.milkteaapp.data.autoID.OrdersIDGenerator;
+import com.pro.milkteaapp.data.OrdersIDGenerator;
 import com.pro.milkteaapp.databinding.FragmentCartBinding;
 import com.pro.milkteaapp.fragment.bottomsheet.CheckoutBottomSheet;
 import com.pro.milkteaapp.models.Address;
