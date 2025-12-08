@@ -23,7 +23,7 @@ import com.google.firebase.firestore.QuerySnapshot;
 import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.SessionManager;
 import com.pro.milkteaapp.activity.MainActivity;
-import com.pro.milkteaapp.data.ProductsIdGenerator;
+import com.pro.milkteaapp.data.autoID.ProductsIDGenerator;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -257,7 +257,7 @@ public class ProductEditorActivity extends AppCompatActivity {
             data.put("createdByUid", uid);
             data.put("createdAt", FieldValue.serverTimestamp());
 
-            new ProductsIdGenerator().nextProductId()
+            new ProductsIDGenerator().nextProductId()
                     .addOnSuccessListener(newId -> {
                         // newId ví dụ: PRD00001
                         data.put("id", newId); // lưu vào trong document để client khác đọc được

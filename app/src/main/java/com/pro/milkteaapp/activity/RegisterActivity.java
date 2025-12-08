@@ -24,7 +24,7 @@ import com.google.firebase.auth.FirebaseAuthWeakPasswordException;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.SessionManager;
-import com.pro.milkteaapp.data.UserIDGenerator;
+import com.pro.milkteaapp.data.autoID.UserIDGenerator;
 import com.pro.milkteaapp.models.User;
 
 public class RegisterActivity extends AppCompatActivity {

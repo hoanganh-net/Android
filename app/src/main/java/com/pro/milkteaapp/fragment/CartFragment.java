@@ -28,6 +28,7 @@ import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.SessionManager;
 import com.pro.milkteaapp.activity.MainActivity;
 import com.pro.milkteaapp.adapter.CartAdapter;
+import com.pro.milkteaapp.data.autoID.OrdersIDGenerator;
 import com.pro.milkteaapp.databinding.FragmentCartBinding;
 import com.pro.milkteaapp.fragment.bottomsheet.CheckoutBottomSheet;
 import com.pro.milkteaapp.models.Address;
@@ -238,7 +239,7 @@ public class CartFragment extends Fragment
         Map<String, Object> payload = buildOrderPayload(effectiveUserId, cartItems, info);
 
         // === DÙNG ID TÙY BIẾN CHO ORDERS ===
-        com.pro.milkteaapp.data.OrdersIdGenerator gen = new com.pro.milkteaapp.data.OrdersIdGenerator();
+        OrdersIDGenerator gen = new OrdersIDGenerator();
         gen.nextOrderId()
                 .addOnSuccessListener(orderId ->
                         FirebaseFirestore.getInstance().collection("orders").document(orderId).set(payload)

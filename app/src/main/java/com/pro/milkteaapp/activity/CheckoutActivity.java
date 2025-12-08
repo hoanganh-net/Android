@@ -146,7 +146,7 @@ public class CheckoutActivity extends AppCompatActivity
             return;
         }
 
-        // Có thể dùng OrdersIdGenerator nếu dự án của bạn đang áp dụng; ở đây giữ nguyên doc id tự sinh
+        // Có thể dùng OrdersIDGenerator nếu dự án của bạn đang áp dụng; ở đây giữ nguyên doc id tự sinh
         String orderId = db.collection("orders").document().getId();
 
         Map<String, Object> order = new HashMap<>();

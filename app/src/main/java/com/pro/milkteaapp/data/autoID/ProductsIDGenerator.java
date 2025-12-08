@@ -1,4 +1,4 @@
-package com.pro.milkteaapp.data;
+package com.pro.milkteaapp.data.autoID;
 
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.DocumentReference;
@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /** Sinh ID sản phẩm dạng PRD00001, PRD00002... qua Firestore Transaction. */
-public class ProductsIdGenerator {
+public class ProductsIDGenerator {
     private static final String META_COLLECTION   = "meta";
     private static final String SEQ_DOC           = "counters";
     private static final String FIELD_PRODUCT_SEQ = "productSeq";

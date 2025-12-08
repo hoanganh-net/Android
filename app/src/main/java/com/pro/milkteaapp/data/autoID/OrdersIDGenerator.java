@@ -1,6 +1,4 @@
-package com.pro.milkteaapp.data;
-
-import androidx.annotation.NonNull;
+package com.pro.milkteaapp.data.autoID;
 
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.*;
@@ -8,7 +6,7 @@ import com.google.firebase.firestore.*;
 import java.util.HashMap;
 import java.util.Map;
 
-public class OrdersIdGenerator {
+public class OrdersIDGenerator {
 
     private static final String META_COLLECTION = "meta";
     private static final String SEQ_DOC = "counters";
@@ -16,7 +14,7 @@ public class OrdersIdGenerator {
 
     private final FirebaseFirestore db;
 
-    public OrdersIdGenerator() {
+    public OrdersIDGenerator() {
         this.db = FirebaseFirestore.getInstance();
     }
 
