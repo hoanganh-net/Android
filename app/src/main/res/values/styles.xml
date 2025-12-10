@@ -1,6 +1,6 @@
 <resources>
-    <style name="AppTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
-    <style name="AppTheme.popUpOverlay" parent="ThemeOverlay.AppCompat.Light" />
+    <style name="AppTheme.AppBarOverlay" parent="ThemeOverlay.Material3.Dark" />
+    <style name="AppTheme.popUpOverlay" parent="ThemeOverlay.Material3.Light" />
 
     <style name="TextViewStyle" parent="android:Widget.TextView">
         <item name="android:textSize">14sp</item>
@@ -63,4 +63,23 @@
             <enum name="vertical" value="1" />
         </attr>
     </declare-styleable>
+    
+    <!-- Navigation Drawer Text Style - Material 3 -->
+    <style name="NavigationDrawerTextStyle" parent="TextAppearance.Material3.BodyLarge">
+        <item name="android:textSize">18sp</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+    
+    <!-- Statistics Drawer Text Style -->
+    <style name="StatisticsDrawerTextStyle" parent="TextAppearance.Material3.BodyLarge">
+        <item name="android:textSize">16sp</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+
+    <!-- Toolbar Title Style - Bold -->
+    <style name="ToolbarTitleStyle" parent="TextAppearance.Material3.TitleLarge">
+        <item name="android:textStyle">bold</item>
+        <item name="android:textSize">20sp</item>
+        <item name="android:textColor">@color/white</item>
+    </style>
 </resources>

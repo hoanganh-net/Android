@@ -17,4 +17,8 @@
     <color name="tier_silver_dark">#4DA6C8</color>   <!-- Màu viền hoặc chữ đậm hơn -->
     <color name="tier_silver_text">#006B8F</color>   <!-- Màu chữ xanh pha lê -->
 
+    <!-- Diamond / Kim Cương -->
+    <color name="tier_diamond_bg">#B9F2FF</color>     <!-- Màu nền kim cương (xanh lơ sáng) -->
+    <color name="tier_diamond_dark">#0097A7</color>  <!-- Màu viền hoặc chữ đậm hơn -->
+
 </resources>

@@ -15,28 +15,33 @@ public final class LoyaltyPolicy {
     public static final long SILVER_MIN = 400;
     public static final long SILVER_MAX = 999;
     public static final long GOLD_MIN   = 1000;
+    public static final long GOLD_MAX   = 2499;
+    public static final long DIAMOND_MIN = 2500;
 
     /* ===== Chuẩn hoá tên hạng để xử lý không phân biệt hoa/thường ===== */
     private static String normalizeTier(String tier) {
         if (tier == null) return "Chưa xếp hạng";
         tier = tier.trim();
-        if (tier.equalsIgnoreCase("Vàng")) return "Vàng";
-        if (tier.equalsIgnoreCase("Bạc"))  return "Bạc";
-        if (tier.equalsIgnoreCase("Đồng")) return "Đồng";
+        if (tier.equalsIgnoreCase("Kim Cương") || tier.equalsIgnoreCase("Diamond")) return "Kim Cương";
+        if (tier.equalsIgnoreCase("Vàng") || tier.equalsIgnoreCase("Gold")) return "Vàng";
+        if (tier.equalsIgnoreCase("Bạc") || tier.equalsIgnoreCase("Silver")) return "Bạc";
+        if (tier.equalsIgnoreCase("Đồng") || tier.equalsIgnoreCase("Bronze")) return "Đồng";
         return "Chưa xếp hạng";
     }
 
     /* ===== Suy ra hạng từ tổng điểm thăng hạng ===== */
     public static String tierForPoints(long points) {
-        if (points >= GOLD_MIN)   return "Vàng";
-        if (points >= SILVER_MIN) return "Bạc";
-        if (points >= BRONZE_MIN) return "Đồng";
+        if (points >= DIAMOND_MIN) return "Kim Cương";
+        if (points >= GOLD_MIN)    return "Vàng";
+        if (points >= SILVER_MIN)  return "Bạc";
+        if (points >= BRONZE_MIN)  return "Đồng";
         return "Chưa xếp hạng";
     }
 
     /* ===== % giảm theo hạng (áp dụng trên subtotal) ===== */
     public static double discountPercent(String tier) {
         return switch (normalizeTier(tier)) {
+            case "Kim Cương" -> 0.20; // 20%
             case "Vàng" -> 0.15; // 15%
             case "Bạc" -> 0.10; // 10%
             case "Đồng" -> 0.05; // 5%
@@ -48,6 +53,12 @@ public final class LoyaltyPolicy {
     public static List<String> benefitsForTier(String tier) {
         String t = normalizeTier(tier);
         return switch (t) {
+            case "Kim Cương" -> Arrays.asList(
+                    "Giảm 20% trên tổng tiền hàng",
+                    "Ưu tiên hỗ trợ 24/7",
+                    "Quà tặng đặc biệt hàng tháng",
+                    "Đổi quà với giá ưu đãi nhất"
+            );
             case "Vàng" -> Arrays.asList(
                     "Giảm 15% trên tổng tiền hàng",
                     "Ưu tiên hỗ trợ & khuyến mãi",
@@ -100,7 +111,11 @@ public final class LoyaltyPolicy {
             long need = Math.max(0, GOLD_MIN - currentPoints);
             return new NextTierInfo("Vàng", GOLD_MIN, need, benefitsForTier("Vàng"));
         }
+        if (currentPoints <= GOLD_MAX) {
+            long need = Math.max(0, DIAMOND_MIN - currentPoints);
+            return new NextTierInfo("Kim Cương", DIAMOND_MIN, need, benefitsForTier("Kim Cương"));
+        }
         // Đã là hạng cao nhất
-        return new NextTierInfo(null, GOLD_MIN, 0, benefitsForTier("Vàng"));
+        return new NextTierInfo(null, DIAMOND_MIN, 0, benefitsForTier("Kim Cương"));
     }
 }

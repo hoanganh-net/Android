@@ -17,7 +17,7 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.request.RequestOptions;
 import com.pro.milkteaapp.R;
-import com.pro.milkteaapp.activity.admin.ProductEditorActivity;
+import com.pro.milkteaapp.activity.admin.AdminProductEditorActivity;
 import com.pro.milkteaapp.models.Products;
 import com.pro.milkteaapp.utils.ImageUtils;
 
@@ -32,6 +32,7 @@ public class AdminProductAdapter extends RecyclerView.Adapter<AdminProductAdapte
     public interface OnProductActionListener {
         void onEditProduct(Products product);
         void onDeleteProduct(Products product);
+        void onToggleFeatured(Products product, boolean featured);
     }
 
     private final OnProductActionListener listener;
@@ -93,7 +94,7 @@ public class AdminProductAdapter extends RecyclerView.Adapter<AdminProductAdapte
     @Override
     public ProductViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View v = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.item_admin_product, parent, false);
+                .inflate(R.layout.admin_item_product, parent, false);
         return new ProductViewHolder(v);
     }
 
@@ -109,7 +110,7 @@ public class AdminProductAdapter extends RecyclerView.Adapter<AdminProductAdapte
 
     public class ProductViewHolder extends RecyclerView.ViewHolder {
         private final TextView productName, productCategory, productPrice;
-        private final ImageView productImage;
+        private final ImageView productImage, iconFeatured;
         private final View btnEdit, btnDelete;
 
         public ProductViewHolder(@NonNull View itemView) {
@@ -118,6 +119,7 @@ public class AdminProductAdapter extends RecyclerView.Adapter<AdminProductAdapte
             productCategory = itemView.findViewById(R.id.productCategory);
             productPrice    = itemView.findViewById(R.id.productPrice);
             productImage    = itemView.findViewById(R.id.productImage);
+            iconFeatured    = itemView.findViewById(R.id.iconFeatured);
             btnEdit         = itemView.findViewById(R.id.btnEdit);
             btnDelete       = itemView.findViewById(R.id.btnDelete);
         }
@@ -131,7 +133,7 @@ public class AdminProductAdapter extends RecyclerView.Adapter<AdminProductAdapte
             if (isHttpUrl(img)) {
                 RequestOptions opts = new RequestOptions()
                         .placeholder(R.drawable.ic_placeholder)
-                        .error(R.drawable.ic_loading)
+                        .error(R.drawable.ic_placeholder)
                         .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC);
 
                 Glide.with(itemView)
@@ -152,8 +154,8 @@ public class AdminProductAdapter extends RecyclerView.Adapter<AdminProductAdapte
                 if (listener != null) {
                     listener.onEditProduct(prod);
                 } else {
-                    Intent intent = new Intent(itemView.getContext(), ProductEditorActivity.class);
-                    intent.putExtra(ProductEditorActivity.EXTRA_PRODUCT_ID, safeStr(prod.getId()));
+                    Intent intent = new Intent(itemView.getContext(), AdminProductEditorActivity.class);
+                    intent.putExtra(AdminProductEditorActivity.EXTRA_PRODUCT_ID, safeStr(prod.getId()));
                     itemView.getContext().startActivity(intent);
                 }
             };
@@ -166,6 +168,43 @@ public class AdminProductAdapter extends RecyclerView.Adapter<AdminProductAdapte
                     int pos = getBindingAdapterPosition();
                     if (pos == RecyclerView.NO_POSITION) return;
                     if (listener != null) listener.onDeleteProduct(productList.get(pos));
+                });
+            }
+
+            // Hiển thị icon featured - luôn hiển thị để có thể toggle
+            boolean isFeatured = p.getFeatured() != null && p.getFeatured();
+            if (iconFeatured != null) {
+                // Luôn hiển thị icon, đổi icon và màu dựa trên trạng thái
+                iconFeatured.setVisibility(View.VISIBLE);
+                iconFeatured.setAlpha(1.0f);
+                iconFeatured.clearColorFilter();
+                
+                if (isFeatured) {
+                    // Featured: icon star filled màu vàng
+                    iconFeatured.setImageResource(R.drawable.ic_star_filled);
+                } else {
+                    // Không featured: icon star outline màu xám
+                    iconFeatured.setImageResource(R.drawable.ic_star_outline);
+                }
+                
+                iconFeatured.setOnClickListener(v -> {
+                    int pos = getBindingAdapterPosition();
+                    if (pos == RecyclerView.NO_POSITION) return;
+                    Products prod = productList.get(pos);
+                    boolean newFeatured = !isFeatured;
+                    
+                    // Cập nhật UI ngay lập tức (optimistic update)
+                    prod.setFeatured(newFeatured);
+                    if (newFeatured) {
+                        iconFeatured.setImageResource(R.drawable.ic_star_filled);
+                    } else {
+                        iconFeatured.setImageResource(R.drawable.ic_star_outline);
+                    }
+                    
+                    // Gọi listener để cập nhật Firestore
+                    if (listener != null) {
+                        listener.onToggleFeatured(prod, newFeatured);
+                    }
                 });
             }
 

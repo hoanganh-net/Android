@@ -19,6 +19,7 @@ public class Products implements Serializable {
     private String createdByUid;
     private Date createdAt;
     private Date updatedAt;
+    private Boolean featured;  // Sản phẩm nổi bật
 
     public Products() {}
 
@@ -49,6 +50,7 @@ public class Products implements Serializable {
 
     public Date getCreatedAt() { return createdAt; }
     public Date getUpdatedAt() { return updatedAt; }
+    public Boolean getFeatured() { return featured; }
 
     // Setters
     public void setId(String id) { this.id = id; }
@@ -64,6 +66,7 @@ public class Products implements Serializable {
 
     public void setCreatedAt(Date createdAt) { this.createdAt = createdAt; }
     public void setUpdatedAt(Date updatedAt) { this.updatedAt = updatedAt; }
+    public void setFeatured(Boolean featured) { this.featured = featured; }
 
     // ===== Alias cho dữ liệu cũ (nếu tồn tại key khác) =====
     @PropertyName("title")

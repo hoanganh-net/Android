@@ -10,23 +10,28 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
-import androidx.viewpager2.widget.CompositePageTransformer;
-import androidx.viewpager2.widget.MarginPageTransformer;
-import androidx.viewpager2.widget.ViewPager2;
-
 import com.airbnb.lottie.LottieAnimationView;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.pro.milkteaapp.R;
-import com.pro.milkteaapp.adapter.BannerAdapter;
+import com.pro.milkteaapp.adapter.ComboAdapter;
+import com.pro.milkteaapp.adapter.ProductsSectionAdapter;
 import com.pro.milkteaapp.adapter.ProductsSmallAdapter;
 import com.pro.milkteaapp.adapter.ReviewAdapter;
+import com.pro.milkteaapp.SessionManager;
+import com.pro.milkteaapp.fragment.bottomsheet.ComboDetailBottomSheet;
+import com.pro.milkteaapp.models.Combo;
+import com.pro.milkteaapp.models.ComboCartItem;
 import com.pro.milkteaapp.models.Products;
 import com.pro.milkteaapp.models.Review;
+import com.pro.milkteaapp.repository.ComboRepository;
+import com.pro.milkteaapp.repository.ProductsRepository;
+import com.pro.milkteaapp.repository.UsersRepository;
+import com.pro.milkteaapp.utils.ImageLoader;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,18 +39,25 @@ import java.util.Objects;
 
 public class HomeFragment extends Fragment {
 
-    private ViewPager2 vpBanner;
-    private RecyclerView rvTopPrice, rvReviews;
-    private SwipeRefreshLayout swipeRefresh;
+    private RecyclerView rvTopPrice, rvReviews, recyclerViewCombo;
     private LottieAnimationView lavSeeMore;   // nút animation đỏ
+    private android.widget.TextView textGreeting;
+    private de.hdodenhof.circleimageview.CircleImageView profileIcon;
+    private android.view.View comboSection;
 
-    private ProductsSmallAdapter topPriceAdapter;
+    private ProductsSectionAdapter topPriceAdapter;
     private ReviewAdapter reviewAdapter;
+    private ComboAdapter comboAdapter;
 
     private final List<Products> topProducts = new ArrayList<>();
     private final List<Review> reviews = new ArrayList<>();
+    private final List<Combo> combos = new ArrayList<>();
 
-    private final FirebaseFirestore db = FirebaseFirestore.getInstance();
+    private ProductsRepository productsRepository;
+    private ComboRepository comboRepository;
+    private UsersRepository usersRepository;
+    private FirebaseFirestore db; // Vẫn cần cho query orders có rating
+    private com.google.firebase.firestore.ListenerRegistration userListener;
 
     public HomeFragment() {
     }
@@ -55,54 +67,255 @@ public class HomeFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater,
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_home, container, false);
+        return inflater.inflate(R.layout.user_fragment_home, container, false);
     }
 
     @Override
     public void onViewCreated(@NonNull View v, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(v, savedInstanceState);
+        productsRepository = new ProductsRepository();
+        comboRepository = new ComboRepository();
+        usersRepository = new UsersRepository();
+        db = FirebaseFirestore.getInstance(); // Vẫn cần cho query orders có rating
+        
         initViews(v);
-        setupBanner();
         setupTopProducts();
+        setupComboSection();
         setupReviewList();
-        setupSwipeRefresh();
         setupSeeMoreButton();   // bấm mũi tên đỏ → qua trang sản phẩm
+        greetUser();
+        setupProfileIconClickListener();
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        // Load reviews khi fragment start
+        if (reviewAdapter != null && reviews.isEmpty()) {
+            loadRecentOrderReviews();
+        }
+        // Reload featured products khi fragment start (giống AdminOrdersFragment)
+        if (topPriceAdapter != null) {
+            loadFeaturedProducts();
+        }
+        // Combo đã được load trong setupComboSection(), không cần reload ở đây
     }
 
     private void initViews(@NonNull View v) {
-        vpBanner = v.findViewById(R.id.vpBanner);
         rvTopPrice = v.findViewById(R.id.rvTopPrice);
         rvReviews = v.findViewById(R.id.rvReviews);
-        swipeRefresh = v.findViewById(R.id.swipeRefresh);
         lavSeeMore = v.findViewById(R.id.lavSeeMore);   // có trong XML mới
+        textGreeting = v.findViewById(R.id.textGreeting);
+        profileIcon = v.findViewById(R.id.profileIcon);
+        recyclerViewCombo = v.findViewById(R.id.recyclerViewCombo);
+        comboSection = v.findViewById(R.id.comboSection);
     }
 
-    // ===== Banner =====
-    private void setupBanner() {
-        BannerAdapter bannerAdapter = new BannerAdapter(
-                new int[]{R.drawable.banner_1, R.drawable.banner_2, R.drawable.banner_3}
-        );
-        vpBanner.setAdapter(bannerAdapter);
-        vpBanner.setOffscreenPageLimit(3);
-
-        CompositePageTransformer transformer = new CompositePageTransformer();
-        transformer.addTransformer(new MarginPageTransformer(dp(12)));
-        vpBanner.setPageTransformer(transformer);
+    // ===== Combo Section =====
+    private void setupComboSection() {
+        if (recyclerViewCombo == null) {
+            android.util.Log.e("HomeFragment", "recyclerViewCombo is null!");
+            return;
+        }
+        // Đảm bảo combo section hiển thị ngay từ đầu (sẽ ẩn nếu không có data)
+        if (comboSection != null) {
+            comboSection.setVisibility(View.VISIBLE);
+        }
+        // Sử dụng GridLayoutManager 2 cột giống sản phẩm nổi bật
+        GridLayoutManager glm = new GridLayoutManager(requireContext(), 2);
+        recyclerViewCombo.setLayoutManager(glm);
+        recyclerViewCombo.setHasFixedSize(false); // Không dùng fixed size với wrap_content
+        recyclerViewCombo.setNestedScrollingEnabled(false);
+        recyclerViewCombo.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        
+        comboAdapter = new ComboAdapter(requireContext(), combo -> {
+            if (combo != null) {
+                ComboDetailBottomSheet sheet = ComboDetailBottomSheet.newInstance(combo);
+                sheet.setListener((c, qty, productOptions) -> {
+                    // Thêm combo vào giỏ hàng với các tùy chọn sản phẩm (mỗi sản phẩm có size riêng)
+                    ComboCartItem newItem = new ComboCartItem(c, qty, productOptions);
+                    
+                    // Kiểm tra xem combo đã có trong giỏ chưa (theo comboId và size)
+                    boolean found = false;
+                    for (int i = 0; i < com.pro.milkteaapp.fragment.CartFragment.comboCartItems.size(); i++) {
+                        ComboCartItem existing = com.pro.milkteaapp.fragment.CartFragment.comboCartItems.get(i);
+                        if (existing.equals(newItem)) {
+                            existing.increaseQuantity(qty);
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        com.pro.milkteaapp.fragment.CartFragment.comboCartItems.add(newItem);
+                    }
+                    
+                    android.widget.Toast.makeText(requireContext(),
+                            "Đã thêm " + qty + " " + c.getName() + " vào giỏ hàng",
+                            android.widget.Toast.LENGTH_SHORT).show();
+                });
+                sheet.show(getParentFragmentManager(), "combo_detail_sheet");
+            }
+        });
+        recyclerViewCombo.setAdapter(comboAdapter);
+        
+        // Load combos ngay sau khi setup (giống sản phẩm nổi bật)
+        loadCombos();
+        
+        android.util.Log.d("HomeFragment", "setupComboSection completed");
     }
 
-    // ===== Sản phẩm nổi bật (demo) =====
+    private void loadCombos() {
+        if (comboRepository == null) {
+            android.util.Log.e("HomeFragment", "comboRepository is null!");
+            return;
+        }
+        if (comboAdapter == null) {
+            android.util.Log.e("HomeFragment", "comboAdapter is null! setupComboSection() may not have been called.");
+            return;
+        }
+        android.util.Log.d("HomeFragment", "Loading combos...");
+        comboRepository.fetchActiveCombos(new ComboRepository.OnCombosListener() {
+            @Override
+            public void onCombosReceived(@NonNull List<Combo> comboList) {
+                android.util.Log.d("HomeFragment", "Received " + comboList.size() + " combos");
+                if (!isAdded() || getContext() == null) {
+                    android.util.Log.w("HomeFragment", "Fragment not attached, ignoring combo update");
+                    return;
+                }
+                combos.clear();
+                combos.addAll(comboList);
+                android.util.Log.d("HomeFragment", "Combos list size: " + combos.size());
+                
+                // Update UI (giống sản phẩm nổi bật) - đảm bảo chạy trên UI thread
+                if (!isAdded() || getContext() == null) {
+                    android.util.Log.w("HomeFragment", "Fragment not attached, skipping UI update");
+                    return;
+                }
+                
+                // Đảm bảo chạy trên UI thread
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(() -> {
+                        if (comboAdapter != null && recyclerViewCombo != null) {
+                            android.util.Log.d("HomeFragment", "Submitting " + combos.size() + " combos to adapter");
+                            comboAdapter.submitList(new ArrayList<>(combos));
+                            android.util.Log.d("HomeFragment", "Adapter item count: " + comboAdapter.getItemCount());
+                            // Force layout để đảm bảo RecyclerView được measure lại
+                            recyclerViewCombo.post(() -> {
+                                recyclerViewCombo.requestLayout();
+                                android.util.Log.d("HomeFragment", "RecyclerView requested layout, visibility: " + recyclerViewCombo.getVisibility());
+                            });
+                        } else {
+                            android.util.Log.e("HomeFragment", "comboAdapter or recyclerViewCombo is null!");
+                        }
+                        // Ẩn/hiện combo section
+                        if (comboSection != null) {
+                            comboSection.setVisibility(combos.isEmpty() ? View.GONE : View.VISIBLE);
+                            android.util.Log.d("HomeFragment", "Combo section visibility: " + (combos.isEmpty() ? "GONE" : "VISIBLE"));
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onError(@NonNull Exception error) {
+                android.util.Log.e("HomeFragment", "Error loading combos: " + error.getMessage(), error);
+                error.printStackTrace();
+                // Vẫn hiển thị combo section ngay cả khi có lỗi, để user biết có section này
+                // Chỉ ẩn nếu thực sự không có combo
+                if (comboSection != null && combos.isEmpty()) {
+                    comboSection.setVisibility(View.GONE);
+                }
+            }
+        });
+    }
+
+    // ===== Sản phẩm nổi bật =====
     private void setupTopProducts() {
-        rvTopPrice.setLayoutManager(
-                new LinearLayoutManager(requireContext(), RecyclerView.HORIZONTAL, false));
+        // Sử dụng GridLayoutManager 2 cột giống ProductFragment
+        GridLayoutManager glm = new GridLayoutManager(requireContext(), 2);
+        glm.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
+            @Override
+            public int getSpanSize(int position) {
+                // Tất cả items đều là product (không có header), nên span = 1
+                return 1;
+            }
+        });
+        rvTopPrice.setLayoutManager(glm);
+        rvTopPrice.setHasFixedSize(true);
         rvTopPrice.setNestedScrollingEnabled(false);
-        rvTopPrice.setOverScrollMode(View.OVER_SCROLL_NEVER);
-        rvTopPrice.addItemDecoration(new SpacingDecoration(dp(8)));
 
-        topPriceAdapter = new ProductsSmallAdapter(requireContext(), p -> {
-            // sau này mở chi tiết sản phẩm thì viết ở đây
+        topPriceAdapter = new ProductsSectionAdapter(new ProductsSectionAdapter.OnProductClick() {
+            @Override
+            public void onClick(Products milkTea) {
+                if (milkTea == null || !isAdded()) return;
+                // Mở ProductDetailBottomSheet để đặt hàng
+                com.pro.milkteaapp.fragment.bottomsheet.ProductDetailBottomSheet bottomSheet =
+                        com.pro.milkteaapp.fragment.bottomsheet.ProductDetailBottomSheet.newInstance(milkTea);
+                bottomSheet.setListener((product, qty, size, sugar, ice, note, toppings) -> {
+                    // Thêm vào giỏ hàng (giống ProductFragment)
+                    com.pro.milkteaapp.models.CartItem newItem = 
+                            new com.pro.milkteaapp.models.CartItem(product, qty, size, sugar, ice, note, toppings);
+                    
+                    int existed = -1;
+                    for (int i = 0; i < com.pro.milkteaapp.fragment.CartFragment.cartItems.size(); i++) {
+                        if (newItem.equals(com.pro.milkteaapp.fragment.CartFragment.cartItems.get(i))) {
+                            existed = i;
+                            break;
+                        }
+                    }
+                    if (existed >= 0) {
+                        com.pro.milkteaapp.fragment.CartFragment.cartItems.get(existed).increaseQuantity(qty);
+                    } else {
+                        com.pro.milkteaapp.fragment.CartFragment.cartItems.add(newItem);
+                    }
+                    
+                    String label = newItem.getToppingsLabel();
+                    android.widget.Toast.makeText(requireContext(),
+                            "Đã thêm " + qty + " " + product.getName() + 
+                            ("".equals(label) ? "" : " (" + label + ")"),
+                            android.widget.Toast.LENGTH_SHORT).show();
+                });
+                bottomSheet.show(getParentFragmentManager(), "product_detail");
+            }
         });
         rvTopPrice.setAdapter(topPriceAdapter);
 
+        // Load featured products từ Firestore
+        loadFeaturedProducts();
+    }
+
+    private void loadFeaturedProducts() {
+        productsRepository.fetchFeaturedProducts(10, new ProductsRepository.OnProductsListener() {
+            @Override
+            public void onProductsReceived(@NonNull List<Products> products) {
+                android.util.Log.d("HomeFragment", "Loaded " + products.size() + " featured products");
+                topProducts.clear();
+                topProducts.addAll(products);
+                
+                // Chuyển đổi sang format của ProductsSectionAdapter (list of Rows)
+                List<ProductsSectionAdapter.Row> rows = new ArrayList<>();
+                for (Products p : topProducts) {
+                    rows.add(ProductsSectionAdapter.Row.product(p));
+                }
+                topPriceAdapter.submitRows(rows);
+                
+                // Nếu không có sản phẩm nổi bật, hiển thị demo data
+                if (products.isEmpty()) {
+                    android.util.Log.w("HomeFragment", "No featured products found, showing demo data");
+                    loadDemoProducts();
+                }
+            }
+
+            @Override
+            public void onError(@NonNull Exception error) {
+                android.util.Log.e("HomeFragment", "Error loading featured products: " + error.getMessage(), error);
+                // Fallback: sử dụng demo data nếu load thất bại
+                loadDemoProducts();
+            }
+        });
+    }
+
+    private void loadDemoProducts() {
         topProducts.clear();
         topProducts.add(new Products() {{
             setId("demo-5");
@@ -149,8 +362,13 @@ public class HomeFragment extends Fragment {
             setDescription("Đậm vị cacao.");
             setSearchableName("tra sua socola");
         }});
-
-        topPriceAdapter.submitList(new ArrayList<>(topProducts));
+        
+        // Chuyển đổi sang format của ProductsSectionAdapter
+        List<ProductsSectionAdapter.Row> rows = new ArrayList<>();
+        for (Products p : topProducts) {
+            rows.add(ProductsSectionAdapter.Row.product(p));
+        }
+        topPriceAdapter.submitRows(rows);
     }
 
     // ===== Reviews =====
@@ -170,6 +388,8 @@ public class HomeFragment extends Fragment {
     private void loadRecentOrderReviews() {
         final int LIMIT = 20;
 
+        // Note: Vẫn giữ query trực tiếp vì cần DocumentSnapshot để enrich user info
+        // Có thể refactor sau để OrdersRepository trả về Order objects đã được enrich
         Query q = db.collection("orders")
                 .whereGreaterThan("rating", 0)
                 .orderBy("rating", Query.Direction.DESCENDING)
@@ -205,24 +425,29 @@ public class HomeFragment extends Fragment {
                 final String userId = s(d.get("userId"));
 
                 if (!TextUtils.isEmpty(userId)) {
-                    db.collection("users").document(userId).get()
-                            .addOnSuccessListener(u -> {
-                                String displayName = s(u.get("displayName"));
-                                String fullName = s(u.get("fullName"));
-                                String nameField = s(u.get("name"));
-                                String email = s(u.get("email"));
-                                String avatar = firstNonEmpty(s(u.get("avatar")), s(u.get("photoUrl")));
+                    usersRepository.fetchUserById(userId, new UsersRepository.OnUserListener() {
+                        @Override
+                        public void onUserReceived(@NonNull com.pro.milkteaapp.models.User user) {
+                            String fullName = user.getFullName();
+                            String email = user.getEmail();
+                            String avatar = user.getAvatar();
 
-                                String finalName = firstNonEmpty(
-                                        displayName, fullName, nameField, emailPrefix(email), "Người dùng"
-                                );
+                            String finalName = firstNonEmpty(
+                                    fullName, emailPrefix(email), "Người dùng"
+                            );
 
-                                if (position >= 0 && position < reviews.size()) {
-                                    Review r = new Review(finalName, comment, avatar, stars);
-                                    reviews.set(position, r);
-                                    reviewAdapter.notifyItemChanged(position);
-                                }
-                            });
+                            if (position >= 0 && position < reviews.size()) {
+                                Review r = new Review(finalName, comment, avatar, stars);
+                                reviews.set(position, r);
+                                reviewAdapter.notifyItemChanged(position);
+                            }
+                        }
+
+                        @Override
+                        public void onError(@NonNull Exception error) {
+                            // Nếu không load được user, giữ nguyên "Người dùng"
+                        }
+                    });
                 }
                 idx++;
             }
@@ -231,15 +456,6 @@ public class HomeFragment extends Fragment {
 
     // ===== Pull to refresh =====
     @SuppressLint("NotifyDataSetChanged")
-    private void setupSwipeRefresh() {
-        swipeRefresh.setOnRefreshListener(() -> {
-            loadRecentOrderReviews();
-            topPriceAdapter.notifyDataSetChanged();
-            rvTopPrice.smoothScrollToPosition(0);
-            rvReviews.smoothScrollToPosition(0);
-            swipeRefresh.setRefreshing(false);
-        });
-    }
 
     // ===== Nút Lottie đỏ “Xem thêm sản phẩm” =====
     private void setupSeeMoreButton() {
@@ -295,5 +511,130 @@ public class HomeFragment extends Fragment {
         if (arr == null) return null;
         for (String s : arr) if (s != null && !s.trim().isEmpty()) return s.trim();
         return null;
+    }
+
+    /**
+     * Chào user và hiển thị avatar
+     */
+    @SuppressLint("SetTextI18n")
+    private void greetUser() {
+        if (textGreeting == null || profileIcon == null) return;
+
+        SessionManager session = new SessionManager(requireContext());
+        String cachedName = session.getDisplayName();
+        String cachedAvatar = session.getAvatar();
+        String docId = session.getUid();
+
+        // Hiển thị tên ngay từ session hoặc fallback
+        String displayName = cachedName;
+        if (TextUtils.isEmpty(displayName)) {
+            // Fallback từ FirebaseAuth
+            com.google.firebase.auth.FirebaseUser fUser = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
+            if (fUser != null) {
+                displayName = fUser.getDisplayName();
+                if (TextUtils.isEmpty(displayName)) {
+                    displayName = fUser.getEmail();
+                }
+            }
+            if (TextUtils.isEmpty(displayName)) {
+                displayName = "Người dùng";
+            }
+        }
+        textGreeting.setText("Xin chào, " + displayName + "!");
+
+        // Avatar từ session (nếu có) → hiển thị ngay
+        ImageLoader.load(profileIcon, cachedAvatar, R.drawable.ic_avatar_default);
+
+        // Nếu session đã có docId → nghe realtime
+        if (!TextUtils.isEmpty(docId)) {
+            listenUserAvatarAndNameRealtime(docId, session);
+            return;
+        }
+
+        // Nếu chưa có docId → query theo email lần đầu
+        com.google.firebase.auth.FirebaseUser fUser = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser();
+        if (fUser != null) {
+            String email = fUser.getEmail();
+            if (!TextUtils.isEmpty(email)) {
+                usersRepository.fetchUserByEmail(email, new UsersRepository.OnUserListener() {
+                    @Override
+                    public void onUserReceived(@NonNull com.pro.milkteaapp.models.User user) {
+                        if (!isAdded() || textGreeting == null || profileIcon == null) return;
+                        String id = user.getUid();
+                        String fullName = user.getFullName();
+                        String role = user.getRole();
+                        String avatar = user.getAvatar();
+
+                        // Lưu lại toàn bộ vào session
+                        session.saveUserFromFirestore(id, email, fullName, role, avatar);
+
+                        // Bind UI
+                        String display = !TextUtils.isEmpty(fullName) ? fullName : email;
+                        textGreeting.setText("Xin chào, " + display + "!");
+                        ImageLoader.load(profileIcon, avatar, R.drawable.ic_avatar_default);
+
+                        // Nghe realtime
+                        listenUserAvatarAndNameRealtime(id, session);
+                    }
+
+                    @Override
+                    public void onError(@NonNull Exception error) {
+                        android.util.Log.w("HomeFragment", "Failed to fetch user by email", error);
+                    }
+                });
+            }
+        }
+    }
+
+    @SuppressLint("SetTextI18n")
+    private void listenUserAvatarAndNameRealtime(@NonNull String docId, @NonNull SessionManager session) {
+        if (userListener != null) userListener.remove();
+        userListener = usersRepository.listenUserById(docId, new UsersRepository.OnUserListener() {
+            @Override
+            public void onUserReceived(@NonNull com.pro.milkteaapp.models.User user) {
+                if (!isAdded() || textGreeting == null || profileIcon == null) return;
+                
+                String fullName = user.getFullName() != null ? user.getFullName() : "";
+                String avatar = user.getAvatar() != null ? user.getAvatar() : "";
+                String email = user.getEmail() != null ? user.getEmail() : "";
+                String role = user.getRole() != null ? user.getRole() : "";
+
+                // Cập nhật UI
+                String display = !TextUtils.isEmpty(fullName)
+                        ? fullName
+                        : (!TextUtils.isEmpty(email) ? email : "Người dùng");
+                textGreeting.setText("Xin chào, " + display + "!");
+                ImageLoader.load(profileIcon, avatar, R.drawable.ic_avatar_default);
+
+                // Cập nhật session
+                session.saveUserFromFirestore(docId, email, fullName, role, avatar);
+            }
+
+            @Override
+            public void onError(@NonNull Exception error) {
+                // Log error silently
+            }
+        });
+    }
+
+    private void setupProfileIconClickListener() {
+        if (profileIcon == null) return;
+        profileIcon.setOnClickListener(v -> {
+            if (!isAdded()) return;
+            // Chuyển bottom navigation sang tab profile
+            if (requireActivity() instanceof com.pro.milkteaapp.activity.MainActivity) {
+                ((com.pro.milkteaapp.activity.MainActivity) requireActivity())
+                        .selectBottomNav(R.id.navigation_profile);
+            }
+        });
+    }
+
+    @Override
+    public void onDestroyView() {
+        if (userListener != null) {
+            userListener.remove();
+            userListener = null;
+        }
+        super.onDestroyView();
     }
 }

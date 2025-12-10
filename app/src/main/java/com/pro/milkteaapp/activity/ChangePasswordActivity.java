@@ -4,30 +4,37 @@ import android.os.Bundle;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.pro.milkteaapp.databinding.ActivityChangePasswordBinding;
+import com.pro.milkteaapp.databinding.UserActivityChangePasswordBinding;
 
 import java.util.Objects;
 
 public class ChangePasswordActivity extends AppCompatActivity {
 
-    private ActivityChangePasswordBinding binding;
+    private UserActivityChangePasswordBinding binding;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        binding = ActivityChangePasswordBinding.inflate(getLayoutInflater());
+        binding = UserActivityChangePasswordBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
         setupToolbar();
         setupChangePasswordButton();
     }
 
+    private android.widget.TextView customTitleView;
+    
     private void setupToolbar() {
         setSupportActionBar(binding.toolbar);
         if (getSupportActionBar() != null) {
-            getSupportActionBar().setTitle("Đổi mật khẩu");
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
+        centerToolbarTitle(binding.toolbar, "ĐỔI MẬT KHẨU");
+    }
+    
+    private void centerToolbarTitle(com.google.android.material.appbar.MaterialToolbar toolbar, String title) {
+        customTitleView = com.pro.milkteaapp.utils.ToolbarUtils.centerToolbarTitle(
+                toolbar, title, customTitleView, getSupportActionBar());
     }
 
     private void setupChangePasswordButton() {

@@ -43,7 +43,7 @@
         @NonNull @Override
         public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
             View v = LayoutInflater.from(parent.getContext())
-                    .inflate(R.layout.item_admin_rating, parent, false);
+                    .inflate(R.layout.admin_item_rating, parent, false);
             return new VH(v);
         }
 

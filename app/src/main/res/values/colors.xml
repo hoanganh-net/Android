@@ -70,9 +70,6 @@
     <color name="bottom_nav_selected">#FF6D4C41</color>
     <color name="bottom_nav_unselected">#FF9E9E9E</color>
 
-    <!-- Status bar color -->
-    <color name="status_bar">#FF4E342E</color>
-
     <color name="primary_color">#6200EE</color>
     <color name="accent_color">#03DAC5</color>
     <color name="gray_light">#F5F5F5</color>

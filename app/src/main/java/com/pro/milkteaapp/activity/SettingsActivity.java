@@ -3,27 +3,35 @@ package com.pro.milkteaapp.activity;
 import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.pro.milkteaapp.databinding.ActivitySettingsBinding;
+import com.pro.milkteaapp.R;
+import com.pro.milkteaapp.databinding.UserActivitySettingsBinding;
 
 public class SettingsActivity extends AppCompatActivity {
 
-    private ActivitySettingsBinding binding;
+    private UserActivitySettingsBinding binding;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        binding = ActivitySettingsBinding.inflate(getLayoutInflater());
+        binding = UserActivitySettingsBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
         setupToolbar();
     }
 
+    private android.widget.TextView customTitleView;
+    
     private void setupToolbar() {
         setSupportActionBar(binding.toolbar);
         if (getSupportActionBar() != null) {
-            getSupportActionBar().setTitle("Cài đặt");
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
+        centerToolbarTitle(binding.toolbar, "CÀI ĐẶT");
+    }
+    
+    private void centerToolbarTitle(com.google.android.material.appbar.MaterialToolbar toolbar, String title) {
+        customTitleView = com.pro.milkteaapp.utils.ToolbarUtils.centerToolbarTitle(
+                toolbar, title, customTitleView, getSupportActionBar());
     }
 
     @Override

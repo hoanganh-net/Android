@@ -12,8 +12,10 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.pro.milkteaapp.databinding.ItemCheckoutRowBinding;
 import com.pro.milkteaapp.models.CartItem;
+import com.pro.milkteaapp.models.ComboCartItem;
 import com.pro.milkteaapp.models.Products;
 import com.pro.milkteaapp.models.SelectedTopping;
+import com.pro.milkteaapp.utils.ImageLoader;
 import com.pro.milkteaapp.utils.ImageUtils;
 import com.pro.milkteaapp.utils.MoneyUtils;
 
@@ -22,28 +24,49 @@ import java.util.Locale;
 
 public class CheckoutItemAdapter extends RecyclerView.Adapter<CheckoutItemAdapter.VH> {
 
+    private static final int TYPE_PRODUCT = 0;
+    private static final int TYPE_COMBO = 1;
+
     private final Context ctx;
     private final List<CartItem> items;
+    private final List<ComboCartItem> comboItems;
+    private final int totalCount;
 
-    public CheckoutItemAdapter(Context ctx, List<CartItem> items) {
+    public CheckoutItemAdapter(Context ctx, List<CartItem> items, List<ComboCartItem> comboItems) {
         this.ctx = ctx;
-        this.items = items;
+        this.items = items != null ? items : new java.util.ArrayList<>();
+        this.comboItems = comboItems != null ? comboItems : new java.util.ArrayList<>();
+        this.totalCount = this.items.size() + this.comboItems.size();
         setHasStableIds(true);
     }
 
-    // ID ổn định: productId|size|sugar|ice|note|toppingIds...
+    @Override
+    public int getItemViewType(int position) {
+        if (position < items.size()) {
+            return TYPE_PRODUCT;
+        }
+        return TYPE_COMBO;
+    }
+
+    // ID ổn định
     @Override
     public long getItemId(int position) {
-        CartItem ci = items.get(position);
-        StringBuilder key = new StringBuilder();
-        key.append(ci.getProductId()).append("|")
-                .append(ci.getSize()).append("|")
-                .append(ci.getSugar()).append("|")
-                .append(ci.getIce()).append("|")
-                .append(ci.getNote()).append("|");
-        List<SelectedTopping> ts = ci.getToppings();
-        if (ts != null) for (SelectedTopping t : ts) key.append(t.id).append(",");
-        return key.toString().replace("null","_").hashCode();
+        if (position < items.size()) {
+            CartItem ci = items.get(position);
+            StringBuilder key = new StringBuilder();
+            key.append(ci.getProductId()).append("|")
+                    .append(ci.getSize()).append("|")
+                    .append(ci.getSugar()).append("|")
+                    .append(ci.getIce()).append("|")
+                    .append(ci.getNote()).append("|");
+            List<SelectedTopping> ts = ci.getToppings();
+            if (ts != null) for (SelectedTopping t : ts) key.append(t.id).append(",");
+            return key.toString().replace("null","_").hashCode();
+        } else {
+            int comboPos = position - items.size();
+            ComboCartItem combo = comboItems.get(comboPos);
+            return (combo.getComboId() != null ? combo.getComboId() : "combo_" + comboPos).hashCode();
+        }
     }
 
     @NonNull
@@ -55,7 +78,17 @@ public class CheckoutItemAdapter extends RecyclerView.Adapter<CheckoutItemAdapte
     @SuppressLint("SetTextI18n")
     @Override
     public void onBindViewHolder(@NonNull VH h, int position) {
-        CartItem ci = items.get(position);
+        if (position < items.size()) {
+            // Product item
+            bindProductItem(h, items.get(position));
+        } else {
+            // Combo item
+            int comboPos = position - items.size();
+            bindComboItem(h, comboItems.get(comboPos));
+        }
+    }
+
+    private void bindProductItem(@NonNull VH h, CartItem ci) {
         Products p = ci.getMilkTea();
 
         // Tên
@@ -81,8 +114,8 @@ public class CheckoutItemAdapter extends RecyclerView.Adapter<CheckoutItemAdapte
         h.b.tvLine1.setText(line1.toString());
         h.b.tvLine1.setVisibility(line1.length() > 0 ? View.VISIBLE : View.GONE);
 
-        // Hàng 2: Topping (riêng 1 hàng, tự wrap)
-        String toppingLabel = ci.getToppingsLabel(); // ví dụ: "Trân châu trắng, Flan"
+        // Hàng 2: Topping
+        String toppingLabel = ci.getToppingsLabel();
         if (!TextUtils.isEmpty(toppingLabel)) {
             h.b.tvToppings.setText("Topping: " + toppingLabel);
             h.b.tvToppings.setVisibility(View.VISIBLE);
@@ -100,18 +133,40 @@ public class CheckoutItemAdapter extends RecyclerView.Adapter<CheckoutItemAdapte
         }
 
         // Đơn giá × SL và Thành tiền
-        long unit = ci.getUnitPrice(); // đã gồm size + toppings
+        long unit = ci.getUnitPrice();
         int qty = ci.getQuantity();
         h.b.tvUnitQty.setText(String.format(Locale.getDefault(), "%s × %d", MoneyUtils.formatVnd((double) unit), qty));
         h.b.tvLineTotal.setText(MoneyUtils.formatVnd((double) ci.getTotalPrice()));
 
-        // Ảnh (drawable name)
+        // Ảnh
         String imageName = p.getImageUrl();
-        int resId = ImageUtils.getImageResId(ctx, imageName);
-        h.b.img.setImageResource(resId != 0 ? resId : com.pro.milkteaapp.R.mipmap.ic_launcher);
+        ImageLoader.load(h.b.img, imageName, com.pro.milkteaapp.R.drawable.milktea);
     }
 
-    @Override public int getItemCount() { return items.size(); }
+    private void bindComboItem(@NonNull VH h, ComboCartItem comboItem) {
+        com.pro.milkteaapp.models.Combo combo = comboItem.getCombo();
+
+        // Tên
+        h.b.tvName.setText(combo != null ? combo.getName() : "Combo");
+
+        // Combo - không có size/topping/sugar/ice
+        h.b.tvLine1.setText("Combo");
+        h.b.tvLine1.setVisibility(View.VISIBLE);
+        h.b.tvToppings.setVisibility(View.GONE);
+        h.b.tvNote.setVisibility(View.GONE);
+
+        // Đơn giá × SL và Thành tiền
+        long unit = comboItem.getUnitPrice();
+        int qty = comboItem.getQuantity();
+        h.b.tvUnitQty.setText(String.format(Locale.getDefault(), "%s × %d", MoneyUtils.formatVnd((double) unit), qty));
+        h.b.tvLineTotal.setText(MoneyUtils.formatVnd((double) comboItem.getTotalPrice()));
+
+        // Ảnh
+        String imageName = comboItem.getImageUrl();
+        ImageLoader.load(h.b.img, imageName, com.pro.milkteaapp.R.drawable.milktea);
+    }
+
+    @Override public int getItemCount() { return totalCount; }
 
     static class VH extends RecyclerView.ViewHolder {
         final ItemCheckoutRowBinding b;

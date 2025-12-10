@@ -3,12 +3,6 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
-        android:id="@+id/action_profile"
-        android:icon="@drawable/ic_person"
-        android:title="Hồ sơ"
-        app:showAsAction="ifRoom" />
-
-    <item
         android:id="@+id/action_switch_to_user"
         android:title="Chế độ User"
         app:showAsAction="never" />

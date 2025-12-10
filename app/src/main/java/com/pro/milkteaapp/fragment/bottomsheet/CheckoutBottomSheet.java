@@ -7,14 +7,17 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.pro.milkteaapp.SessionManager;
 import com.pro.milkteaapp.adapter.CheckoutItemAdapter;
@@ -28,6 +31,7 @@ import com.pro.milkteaapp.models.CartItem;
 import com.pro.milkteaapp.models.CheckoutInfo;
 import com.pro.milkteaapp.models.User;
 import com.pro.milkteaapp.models.Voucher;
+import com.pro.milkteaapp.repository.AddressRepository;
 import com.pro.milkteaapp.utils.LoyaltyPolicy;
 import com.pro.milkteaapp.utils.MoneyUtils;
 import com.pro.milkteaapp.utils.VoucherUtils;
@@ -44,11 +48,14 @@ public class CheckoutBottomSheet extends BottomSheetDialogFragment {
     }
 
     private static final String ARG_ITEMS = "arg_items";
+    private static final String ARG_COMBO_ITEMS = "arg_combo_items";
 
-    public static CheckoutBottomSheet newInstance(@NonNull ArrayList<CartItem> items) {
+    public static CheckoutBottomSheet newInstance(@NonNull ArrayList<CartItem> items, 
+                                                   @NonNull ArrayList<com.pro.milkteaapp.models.ComboCartItem> comboItems) {
         CheckoutBottomSheet f = new CheckoutBottomSheet();
         Bundle b = new Bundle();
         b.putSerializable(ARG_ITEMS, items);
+        b.putSerializable(ARG_COMBO_ITEMS, comboItems);
         f.setArguments(b);
         return f;
     }
@@ -56,6 +63,7 @@ public class CheckoutBottomSheet extends BottomSheetDialogFragment {
     private BottomsheetCheckoutBinding b;
     private OnCheckoutConfirmListener listener;
     private final List<CartItem> items = new ArrayList<>();
+    private final List<com.pro.milkteaapp.models.ComboCartItem> comboItems = new ArrayList<>();
 
     // State
     @Nullable private Address selectedAddress;
@@ -94,11 +102,19 @@ public class CheckoutBottomSheet extends BottomSheetDialogFragment {
                     if (o instanceof CartItem) items.add((CartItem) o);
                 }
             }
+            Serializable comboSer = getArguments().getSerializable(ARG_COMBO_ITEMS);
+            if (comboSer != null && comboSer instanceof ArrayList<?>) {
+                for (Object o : (ArrayList<?>) comboSer) {
+                    if (o instanceof com.pro.milkteaapp.models.ComboCartItem) {
+                        comboItems.add((com.pro.milkteaapp.models.ComboCartItem) o);
+                    }
+                }
+            }
         }
 
-        // List sản phẩm
+        // List sản phẩm (sử dụng CheckoutItemAdapter với cả CartItem và ComboCartItem)
         b.rvItems.setLayoutManager(new LinearLayoutManager(requireContext()));
-        b.rvItems.setAdapter(new CheckoutItemAdapter(requireContext(), items));
+        b.rvItems.setAdapter(new CheckoutItemAdapter(requireContext(), items, comboItems));
 
         // 1) Tải địa chỉ đã chọn gần nhất (nếu có), nếu không -> 2) lấy địa chỉ mặc định
         loadInitialAddressThenRender();
@@ -147,6 +163,15 @@ public class CheckoutBottomSheet extends BottomSheetDialogFragment {
             VoucherListPickerSheet sheet = new VoucherListPickerSheet();
             sheet.setArguments(args);
             sheet.setListener(vSelected -> {
+                if (vSelected != null) {
+                    // Validate voucher trước khi áp dụng
+                    long currentSubtotal = calcSubtotal();
+                    String validationError = validateVoucher(vSelected, currentSubtotal, paymentMethod);
+                    if (validationError != null) {
+                        Toast.makeText(requireContext(), validationError, Toast.LENGTH_LONG).show();
+                        return;
+                    }
+                }
                 selectedVoucher = vSelected;
                 voucherCode = (vSelected != null ? safe(vSelected.getCode()) : "");
                 setText(b.tvVoucherValue, voucherCode.isEmpty() ? "Không áp dụng" : voucherCode);
@@ -189,53 +214,38 @@ public class CheckoutBottomSheet extends BottomSheetDialogFragment {
         }
 
         String lastId = loadLastAddressId();
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        AddressRepository addressRepository = new AddressRepository(requireContext());
 
         if (lastId != null && !lastId.trim().isEmpty()) {
             // Ưu tiên địa chỉ đã chọn lần trước
-            db.collection("users").document(uid)
-                    .collection("addresses").document(lastId)
-                    .get()
-                    .addOnSuccessListener(doc -> {
-                        if (doc.exists()) {
-                            Address a = doc.toObject(Address.class);
-                            if (a != null) {
-                                a.setId(doc.getId());
-                                selectedAddress = a;
-                                setText(b.tvAddressValue, a.displayLine());
-                                updateSummaryUI();
-                                return;
-                            }
-                        }
+            addressRepository.fetchById(lastId, new AddressRepository.OnAddressFetched() {
+                @Override
+                public void onResult(@Nullable Address a) {
+                    if (a != null) {
+                        selectedAddress = a;
+                        setText(b.tvAddressValue, a.displayLine());
+                        updateSummaryUI();
+                    } else {
                         // Không còn tồn tại -> fallback sang địa chỉ mặc định
-                        fetchDefaultAddress(uid);
-                    })
-                    .addOnFailureListener(e -> fetchDefaultAddress(uid));
+                        fetchDefaultAddress(addressRepository);
+                    }
+                }
+            }, e -> fetchDefaultAddress(addressRepository));
         } else {
             // Chưa có lựa chọn trước đó -> lấy mặc định
-            fetchDefaultAddress(uid);
+            fetchDefaultAddress(addressRepository);
         }
     }
 
-    private void fetchDefaultAddress(@NonNull String uid) {
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-        db.collection("users").document(uid)
-                .collection("addresses")
-                .whereEqualTo("isDefault", true)
-                .limit(1)
-                .get()
-                .addOnSuccessListener(qs -> {
-                    Address a = null;
-                    for (DocumentSnapshot d : qs.getDocuments()) {
-                        a = d.toObject(Address.class);
-                        if (a != null) { a.setId(d.getId()); }
-                        break;
-                    }
-                    selectedAddress = a;
-                    setText(b.tvAddressValue, a != null ? a.displayLine() : "Chọn địa chỉ");
-                    updateSummaryUI();
-                })
-                .addOnFailureListener(e -> setText(b.tvAddressValue, "Chọn địa chỉ"));
+    private void fetchDefaultAddress(@NonNull AddressRepository addressRepository) {
+        addressRepository.fetchDefault(new AddressRepository.OnAddressFetched() {
+            @Override
+            public void onResult(@Nullable Address a) {
+                selectedAddress = a;
+                setText(b.tvAddressValue, a != null ? a.displayLine() : "Chọn địa chỉ");
+                updateSummaryUI();
+            }
+        }, e -> setText(b.tvAddressValue, "Chọn địa chỉ"));
     }
 
     private void saveLastAddressId(@NonNull String id) {
@@ -259,6 +269,10 @@ public class CheckoutBottomSheet extends BottomSheetDialogFragment {
         long subtotal = 0L;
         for (CartItem it : items) {
             subtotal += it.getUnitPrice() * it.getQuantity();
+        }
+        // Thêm combo items
+        for (com.pro.milkteaapp.models.ComboCartItem comboItem : comboItems) {
+            subtotal += comboItem.getUnitPrice() * comboItem.getQuantity();
         }
         return subtotal;
     }
@@ -364,6 +378,45 @@ public class CheckoutBottomSheet extends BottomSheetDialogFragment {
     public void onDestroyView() {
         super.onDestroyView();
         b = null;
+    }
+
+    /**
+     * Validate voucher trước khi áp dụng
+     * @return null nếu hợp lệ, error message nếu không hợp lệ
+     */
+    @Nullable
+    private String validateVoucher(@NonNull Voucher voucher, long subtotal, @Nullable String paymentMethod) {
+        // Kiểm tra thời hạn
+        if (!VoucherUtils.isInRangeNow(voucher)) {
+            return "Voucher đã hết hạn";
+        }
+
+        // Kiểm tra minOrder
+        if (voucher.getMinOrder() > 0 && subtotal < voucher.getMinOrder()) {
+            return String.format(Locale.getDefault(), "Đơn hàng tối thiểu %s để sử dụng voucher này", 
+                    MoneyUtils.formatVnd(voucher.getMinOrder()));
+        }
+
+        // Kiểm tra kênh thanh toán
+        if (paymentMethod != null && voucher.getAllowedChannels() != null && !voucher.getAllowedChannels().isEmpty()) {
+            boolean allowed = false;
+            for (String channel : voucher.getAllowedChannels()) {
+                if (paymentMethod.equalsIgnoreCase(channel)) {
+                    allowed = true;
+                    break;
+                }
+            }
+            if (!allowed) {
+                return "Voucher không áp dụng cho phương thức thanh toán này";
+            }
+        }
+
+        // Kiểm tra active
+        if (!voucher.isActive()) {
+            return "Voucher không còn hoạt động";
+        }
+
+        return null; // Hợp lệ
     }
 
     private static String safe(String s) {

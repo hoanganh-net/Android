@@ -3,8 +3,8 @@
     <string name="app_name">Mikltea Anh Bảo Thịnh</string>
 
     <!-- Titles -->
-    <string name="shopping_cart">Giỏ hàng</string>
-    <string name="profile">Hồ sơ</string>
+    <string name="shopping_cart">GIỎ HÀNG</string>
+    <string name="profile">HỒ SƠ</string>
 
     <!-- Labels -->
     <string name="email">Email</string>
@@ -42,14 +42,14 @@
     <string name="unknown_item">Không rõ</string>
 
     <!-- Filters -->
-    <string name="admin_title_orders">Đơn hàng</string>
-    <string name="admin_title_users">Người dùng</string>
-    <string name="admin_title_statistics">Thống kê</string>
+    <string name="admin_title_orders">ĐƠN HÀNG</string>
+    <string name="admin_title_chat">CHAT</string>
+    <string name="admin_title_statistics">THỐNG KÊ</string>
     <string name="logged_out_successfully">Đăng xuất thành công !</string>
 
     <string name="unknown">Unknow</string>
     <string name="logout">"Đăng xuất "</string>
-    <string name="edit_profile">Sửa thông tin</string>
+    <string name="edit_profile">Sửa Thông Tin</string>
     <string name="please_login_first">Hãy đăng nhập trước !</string>
     <string name="load_failed_with_reason">Đăng nhập thất bại: %1$s</string>
     <string name="error_fullname_required">Lỗi: Yêu cầu nhập fullname</string>
@@ -59,10 +59,9 @@
     <string name="save_failed_with_reason">Lưu thất bại: %1$s</string>
     <string name="role">Vai trò</string>
     <string name="personal_info">Thông tin cá nhân</string>
-    <string name="order_history">Lịch sử đơn hàng</string>
-    <string name="settings">Cài đặt</string>
+    <string name="order_history">Lịch Sử Đơn Hàng</string>
     <string name="admin_panel">Bảng điều khiển Admin</string>
-    <string name="address_book">Danh sách địa chỉ</string>
+    <string name="address_book">DANH SÁCH ĐỊA CHỈ</string>
     <string name="add_address">Thêm địa chỉ</string>
     <string name="address_line1">Số nhà/Đường</string>
     <string name="address_line2">Xã/Phường</string>
@@ -73,10 +72,10 @@
     <string name="save">Lưu</string>
     <string name="edit_address">Chỉnh sửa địa chỉ</string>
     <string name="Intro">Trà sữa tươi mỗi ngày — chọn mức đường, đá, topping theo ý bạn!</string>
-    <string name="admin_title_management">Quản lý</string>
+    <string name="admin_title_management">QUẢN LÝ</string>
     <string name="add">Thêm</string>
-    <string name="title_edit_product">Sửa Sản Phẩm</string>
-    <string name="title_add_product">Thêm Sản Phẩm</string>
+    <string name="title_edit_product">SỬA SẢN PHẨM</string>
+    <string name="title_add_product">THÊM SẢN PHẨM</string>
     <string name="voucher_code">Mã giảm giá</string>
     <string name="payment_method">Phương thức thanh toán</string>
     <string name="subtotal">Tạm tính</string>

@@ -2,7 +2,9 @@ package com.pro.milkteaapp.fragment.admin.management;
 
 import android.app.AlertDialog;
 import android.os.Bundle;
+import android.text.Editable;
 import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.view.*;
 import android.widget.Toast;
 
@@ -11,20 +13,27 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
-import com.google.firebase.Timestamp;
-import com.google.firebase.firestore.*;
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.firebase.firestore.ListenerRegistration;
 import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.adapter.admin.AdminRatingsAdapter;
-import com.pro.milkteaapp.databinding.FragmentAdminRatingsBinding;
+import com.pro.milkteaapp.databinding.AdminFragmentRatingsBinding;
+import com.pro.milkteaapp.repository.OrdersRepository;
+import com.pro.milkteaapp.repository.UsersRepository;
 
 import java.util.*;
+import java.util.Locale;
 
 public class RatingManageFragment extends Fragment {
 
-    private FragmentAdminRatingsBinding b;
-    private FirebaseFirestore db;
+    private AdminFragmentRatingsBinding b;
+    private OrdersRepository ordersRepository;
+    private UsersRepository usersRepository;
     private ListenerRegistration reg;
     private AdminRatingsAdapter adapter;
+    private TextInputEditText searchEditText;
+    private final List<AdminRatingsAdapter.Item> allItems = new ArrayList<>();
+    private String lastSearch = "";
 
     // cache user để đỡ gọi Firestore lặp lại
     private final Map<String, UserBrief> userCache = new HashMap<>();
@@ -34,19 +43,113 @@ public class RatingManageFragment extends Fragment {
     @Nullable @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
                              @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        b = FragmentAdminRatingsBinding.inflate(inflater, container, false);
+        b = AdminFragmentRatingsBinding.inflate(inflater, container, false);
 
-        db = FirebaseFirestore.getInstance();
+        ordersRepository = new OrdersRepository();
+        usersRepository = new UsersRepository();
 
         b.recycler.setLayoutManager(new LinearLayoutManager(requireContext()));
         adapter = new AdminRatingsAdapter(this::onDeleteClicked);
         b.recycler.setAdapter(adapter);
 
+        searchEditText = b.getRoot().findViewById(R.id.searchEditText);
+        if (searchEditText != null) {
+            searchEditText.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    lastSearch = s == null ? "" : s.toString();
+                    filterRatings();
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {}
+            });
+        }
+
         b.swipeRefresh.setOnRefreshListener(this::reload);
 
-        showLoading(true);
-        listenData(); // realtime
+        // Load một lần ban đầu (giống AdminProductsFragment)
+        loadOnce();
+
         return b.getRoot();
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        startRealtimeIfReady();
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        stopRealtime();
+    }
+
+    private void startRealtimeIfReady() {
+        if (b == null || !isAdded()) return;
+        listenData();
+    }
+
+    private void stopRealtime() {
+        if (reg != null) {
+            reg.remove();
+            reg = null;
+        }
+    }
+
+    // Load một lần ban đầu
+    private void loadOnce() {
+        if (!isAdded() || b == null) return;
+        showLoading(true);
+        ordersRepository.fetchOrdersWithRating(200, new OrdersRepository.OnOrdersListener() {
+            @Override
+            public void onOrdersReceived(@NonNull List<com.pro.milkteaapp.models.Order> orders) {
+                if (!isAdded() || b == null) return;
+                b.swipeRefresh.setRefreshing(false);
+                showLoading(false);
+
+                List<AdminRatingsAdapter.Item> items = new ArrayList<>();
+
+                for (com.pro.milkteaapp.models.Order order : orders) {
+                    Double rating = order.getRating();
+                    if (rating == null || rating <= 0) continue;
+
+                    String orderId = order.getId();
+                    String nameDenorm = order.getUserName();
+                    String avatarDenorm = order.getUserAvatar();
+                    String userId = firstNonEmpty(order.getUserId(), order.getRatedBy());
+                    String comment = order.getReview();
+                    long when = order.getRatedAt() != null ? order.getRatedAt().toDate().getTime() : 0L;
+
+                    items.add(new AdminRatingsAdapter.Item(
+                            orderId,
+                            userId,
+                            firstNonEmpty(nameDenorm, "Người dùng"),
+                            avatarDenorm,
+                            rating,
+                            comment,
+                            when
+                    ));
+                }
+
+                allItems.clear();
+                allItems.addAll(items);
+                filterRatings();
+            }
+
+            @Override
+            public void onError(@NonNull Exception error) {
+                if (!isAdded() || b == null) return;
+                b.swipeRefresh.setRefreshing(false);
+                showLoading(false);
+                showEmpty(true);
+                Toast.makeText(requireContext(), "Lỗi tải: " + error.getMessage(), Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     private void reload() {
@@ -55,95 +158,94 @@ public class RatingManageFragment extends Fragment {
     }
 
     private void listenData() {
-        Query q = db.collection("orders")
-                .whereGreaterThan("rating", 0)
-                .orderBy("ratedAt", Query.Direction.DESCENDING)
-                .limit(200);
+        // Note: Firestore không hỗ trợ orderBy nhiều field nếu không có composite index
+        // Nên tạm thời chỉ orderBy ratedAt
+        reg = ordersRepository.listenOrdersWithRating(200, new OrdersRepository.OnOrdersListener() {
+            @Override
+            public void onOrdersReceived(@NonNull List<com.pro.milkteaapp.models.Order> orders) {
+                if (!isAdded() || b == null) return;
 
-        reg = q.addSnapshotListener((snap, e) -> {
-            if (!isAdded() || b == null) return;
+                b.swipeRefresh.setRefreshing(false);
+                showLoading(false);
 
-            b.swipeRefresh.setRefreshing(false);
-            showLoading(false);
+                List<AdminRatingsAdapter.Item> items = new ArrayList<>();
 
-            if (e != null) {
-                showEmpty(true);
-                Toast.makeText(requireContext(), "Lỗi tải: " + e, Toast.LENGTH_LONG).show();
-                return;
-            }
-            if (snap == null || snap.isEmpty()) {
-                adapter.submitList(Collections.emptyList());
-                showEmpty(true);
-                return;
-            }
+                for (com.pro.milkteaapp.models.Order order : orders) {
+                    Double rating = order.getRating();
+                    if (rating == null || rating <= 0) continue;
 
-            List<DocumentSnapshot> docs = snap.getDocuments();
-            List<AdminRatingsAdapter.Item> items = new ArrayList<>(docs.size());
+                    String orderId = order.getId();
+                    String nameDenorm = order.getUserName();
+                    String avatarDenorm = order.getUserAvatar();
+                    String userId = firstNonEmpty(order.getUserId(), order.getRatedBy());
+                    String comment = order.getReview();
+                    long when = order.getRatedAt() != null ? order.getRatedAt().toDate().getTime() : 0L;
 
-            for (DocumentSnapshot d : docs) {
-                String orderId = d.getId();
-                Double rating  = toDouble(d.get("rating"));
-                if (rating == null || rating <= 0) continue;
+                    items.add(new AdminRatingsAdapter.Item(
+                            orderId,
+                            userId,
+                            firstNonEmpty(nameDenorm, "Người dùng"),
+                            avatarDenorm,
+                            rating,
+                            comment,
+                            when
+                    ));
+                }
 
-                // ƯU TIÊN dùng denormalized fields
-                String nameDenorm   = asStr(d.get("userName"));
-                String avatarDenorm = asStr(d.get("userAvatar"));
+                allItems.clear();
+                allItems.addAll(items);
+                filterRatings();
 
-                // Lấy userId: ưu tiên field "userId", nếu trống thì fallback "ratedBy"
-                String userId  = firstNonEmpty(asStr(d.get("userId")), asStr(d.get("ratedBy")));
-                String comment = asStr(d.get("review"));
-                Timestamp ts   = d.getTimestamp("ratedAt");
-                long when      = ts == null ? 0L : ts.toDate().getTime();
+                // Enrich cho những mục còn thiếu tên/avatar
+                b.recycler.post(() -> {
+                    for (int i = 0; i < items.size(); i++) {
+                        final int pos = i;
+                        AdminRatingsAdapter.Item it = items.get(pos);
 
-                items.add(new AdminRatingsAdapter.Item(
-                        orderId,
-                        userId,
-                        // nếu đã có tên denorm thì dùng ngay, không cần enrich
-                        firstNonEmpty(nameDenorm, "Người dùng"),
-                        avatarDenorm,
-                        rating,
-                        comment,
-                        when
-                ));
-            }
+                        // nếu đã có tên denorm thì bỏ qua
+                        if (!TextUtils.isEmpty(it.userName) && !"Người dùng".equals(it.userName)) continue;
 
-            adapter.submitList(items);
-            showEmpty(items.isEmpty());
+                        if (TextUtils.isEmpty(it.userId)) continue;
 
-            // Enrich cho những mục còn thiếu tên/avatar
-            b.recycler.post(() -> {
-                for (int i = 0; i < items.size(); i++) {
-                    final int pos = i;
-                    AdminRatingsAdapter.Item it = items.get(pos);
+                        UserBrief cached = userCache.get(it.userId);
+                        if (cached != null) {
+                            applyUserBrief(pos, cached);
+                            continue;
+                        }
 
-                    // nếu đã có tên denorm thì bỏ qua
-                    if (!TextUtils.isEmpty(it.userName) && !"Người dùng".equals(it.userName)) continue;
-
-                    if (TextUtils.isEmpty(it.userId)) continue;
-
-                    UserBrief cached = userCache.get(it.userId);
-                    if (cached != null) {
-                        applyUserBrief(pos, cached);
-                        continue;
-                    }
-
-                    db.collection("users").document(it.userId).get()
-                            .addOnSuccessListener(u -> {
+                        usersRepository.fetchUserById(it.userId, new UsersRepository.OnUserListener() {
+                            @Override
+                            public void onUserReceived(@NonNull com.pro.milkteaapp.models.User user) {
                                 UserBrief br = new UserBrief(
                                         firstNonEmpty(
-                                                u.getString("displayName"),
-                                                u.getString("fullName"),
-                                                u.getString("name"),
-                                                emailPrefix(u.getString("email")),
+                                                user.getFullName(),
+                                                user.getDisplayName(),
+                                                emailPrefix(user.getEmail()),
                                                 "Người dùng"
                                         ),
-                                        firstNonEmpty(u.getString("avatar"), u.getString("photoUrl"))
+                                        user.getAvatar() // User model chỉ có getAvatar(), không có getPhotoUrl()
                                 );
                                 userCache.put(it.userId, br);
                                 applyUserBrief(pos, br);
-                            });
-                }
-            });
+                            }
+
+                            @Override
+                            public void onError(@NonNull Exception error) {
+                                // Ignore error
+                            }
+                        });
+                    }
+                });
+            }
+
+            @Override
+            public void onError(@NonNull Exception error) {
+                if (!isAdded() || b == null) return;
+                b.swipeRefresh.setRefreshing(false);
+                showLoading(false);
+                showEmpty(true);
+                Toast.makeText(requireContext(), "Lỗi tải: " + error.getMessage(), Toast.LENGTH_LONG).show();
+            }
         });
     }
 
@@ -177,20 +279,23 @@ public class RatingManageFragment extends Fragment {
         showLoading(true);
         Map<String, Object> upd = new HashMap<>();
         upd.put("rating", 0);
-        upd.put("review", FieldValue.delete());
-        upd.put("ratedAt", FieldValue.delete());
+        upd.put("review", com.google.firebase.firestore.FieldValue.delete());
+        upd.put("ratedAt", com.google.firebase.firestore.FieldValue.delete());
         // KHÔNG xóa userId / ratedBy / userName / userAvatar để tiện debug & audit
 
-        db.collection("orders").document(orderId)
-                .update(upd)
-                .addOnSuccessListener(v -> {
-                    showLoading(false);
-                    Toast.makeText(requireContext(), "Đã xoá đánh giá của đơn #" + orderId, Toast.LENGTH_SHORT).show();
-                })
-                .addOnFailureListener(err -> {
-                    showLoading(false);
-                    Toast.makeText(requireContext(), "Lỗi xoá: " + err, Toast.LENGTH_LONG).show();
-                });
+        ordersRepository.updateOrder(orderId, upd, new OrdersRepository.OnOrderUpdateListener() {
+            @Override
+            public void onSuccess() {
+                showLoading(false);
+                Toast.makeText(requireContext(), "Đã xoá đánh giá của đơn #" + orderId, Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onError(@NonNull Exception error) {
+                showLoading(false);
+                Toast.makeText(requireContext(), "Lỗi xoá: " + error.getMessage(), Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     private void showLoading(boolean show) {
@@ -202,21 +307,39 @@ public class RatingManageFragment extends Fragment {
         b.empty.setVisibility(empty ? View.VISIBLE : View.GONE);
     }
 
+    private void filterRatings() {
+        if (allItems.isEmpty()) {
+            adapter.submitList(new ArrayList<>());
+            showEmpty(true);
+            return;
+        }
+
+        String query = lastSearch.trim().toLowerCase(Locale.ROOT);
+        if (query.isEmpty()) {
+            adapter.submitList(new ArrayList<>(allItems));
+            showEmpty(allItems.isEmpty());
+            return;
+        }
+
+        List<AdminRatingsAdapter.Item> filtered = new ArrayList<>();
+        for (AdminRatingsAdapter.Item item : allItems) {
+            String userName = item.userName != null ? item.userName.toLowerCase(Locale.ROOT) : "";
+            String comment = item.comment != null ? item.comment.toLowerCase(Locale.ROOT) : "";
+            String orderId = item.orderId != null ? item.orderId.toLowerCase(Locale.ROOT) : "";
+            if (userName.contains(query) || comment.contains(query) || orderId.contains(query)) {
+                filtered.add(item);
+            }
+        }
+        adapter.submitList(filtered);
+        showEmpty(filtered.isEmpty());
+    }
+
     @Override
     public void onDestroyView() {
         if (reg != null) { reg.remove(); reg = null; }
         b = null;
         super.onDestroyView();
     }
-
-    // ===== Helpers =====
-    private static Double toDouble(Object o) {
-        if (o instanceof Double) return (Double) o;
-        if (o instanceof Long)   return ((Long) o).doubleValue();
-        if (o instanceof Integer)return ((Integer) o).doubleValue();
-        return null;
-    }
-    private static String asStr(Object o) { return o == null ? null : String.valueOf(o); }
 
     private static String firstNonEmpty(String... arr) {
         if (arr == null) return null;
@@ -229,14 +352,18 @@ public class RatingManageFragment extends Fragment {
         return at > 0 ? email.substring(0, at) : email;
     }
 
-    private static class UserBrief {
-        final String name;
-        final String avatar; // URL hoặc tên drawable
-        UserBrief(String name, String avatar) { this.name = name; this.avatar = avatar; }
+    /**
+     * @param avatar URL hoặc tên drawable
+     */
+    private record UserBrief(String name, String avatar) {
     }
     @Override
     public void onResume() {
         super.onResume();
-        reload();
+        // Chỉ reload nếu listener chưa được đăng ký
+        if (reg == null) {
+            showLoading(true);
+            listenData();
+        }
     }
 }

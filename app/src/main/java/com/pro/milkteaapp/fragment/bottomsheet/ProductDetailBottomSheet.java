@@ -20,17 +20,16 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.android.material.button.MaterialButton;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.Query;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.adapter.ToppingSelectAdapter;
 import com.pro.milkteaapp.models.Products;
 import com.pro.milkteaapp.models.SelectedTopping;
 import com.pro.milkteaapp.models.Topping;
+import com.pro.milkteaapp.repository.ToppingsRepository;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 public class ProductDetailBottomSheet extends BottomSheetDialogFragment {
@@ -139,7 +138,7 @@ public class ProductDetailBottomSheet extends BottomSheetDialogFragment {
         if (TextUtils.isEmpty(raw)) raw = product.getImageUrl();
         if (!TextUtils.isEmpty(raw)) {
             if (isHttpUrl(raw)) {
-                Glide.with(this).load(raw).placeholder(R.drawable.ic_milk_tea).error(R.drawable.ic_bank).into(milkTeaImage);
+                Glide.with(this).load(raw).placeholder(R.drawable.ic_milk_tea).error(R.drawable.ic_placeholder).into(milkTeaImage);
             } else {
                 int resId = resolveDrawableRes(requireContext(), raw);
                 milkTeaImage.setImageResource(resId != 0 ? resId : R.drawable.ic_milk_tea);
@@ -205,31 +204,48 @@ public class ProductDetailBottomSheet extends BottomSheetDialogFragment {
 
     /** Load topping theo category + active=true; nếu sản phẩm không có category thì hiển thị tất cả active */
     private void loadToppingsForCategory(@NonNull String category) {
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-        Query q = db.collection("toppings").whereEqualTo("active", true);
+        ToppingsRepository toppingsRepository = new ToppingsRepository();
+        
         if (!TextUtils.isEmpty(category)) {
-            q = q.whereArrayContains("categories", category);
-        }
-        q = q.orderBy("name");
-
-        q.get().addOnSuccessListener(snap -> {
-            available.clear();
-            if (snap != null) {
-                for (QueryDocumentSnapshot d : snap) {
-                    Topping t = d.toObject(Topping.class);
-                    t.setId(d.getId());
-                    available.add(t);
+            toppingsRepository.fetchToppingsByCategory(category, new ToppingsRepository.OnToppingsListener() {
+                @Override
+                public void onToppingsReceived(@NonNull List<Topping> toppings) {
+                    available.clear();
+                    available.addAll(toppings);
+                    toppingsEmpty.setVisibility(available.isEmpty() ? View.VISIBLE : View.GONE);
+                    recyclerToppings.setVisibility(available.isEmpty() ? View.GONE : View.VISIBLE);
+                    toppingAdapter.submitList(available, selected);
+                    updateTotal();
                 }
-            }
-            toppingsEmpty.setVisibility(available.isEmpty() ? View.VISIBLE : View.GONE);
-            recyclerToppings.setVisibility(available.isEmpty() ? View.GONE : View.VISIBLE);
-            toppingAdapter.submitList(available, selected);
-            updateTotal();
-        }).addOnFailureListener(e -> {
-            Log.e(TAG, "Load toppings failed: " + e.getMessage(), e);
-            toppingsEmpty.setVisibility(View.VISIBLE);
-            recyclerToppings.setVisibility(View.GONE);
-        });
+
+                @Override
+                public void onError(@NonNull Exception error) {
+                    Log.e(TAG, "Load toppings failed: " + error.getMessage(), error);
+                    toppingsEmpty.setVisibility(View.VISIBLE);
+                    recyclerToppings.setVisibility(View.GONE);
+                }
+            });
+        } else {
+            // Nếu không có category, load tất cả active toppings
+            toppingsRepository.fetchActiveToppings(new ToppingsRepository.OnToppingsListener() {
+                @Override
+                public void onToppingsReceived(@NonNull List<Topping> toppings) {
+                    available.clear();
+                    available.addAll(toppings);
+                    toppingsEmpty.setVisibility(available.isEmpty() ? View.VISIBLE : View.GONE);
+                    recyclerToppings.setVisibility(available.isEmpty() ? View.GONE : View.VISIBLE);
+                    toppingAdapter.submitList(available, selected);
+                    updateTotal();
+                }
+
+                @Override
+                public void onError(@NonNull Exception error) {
+                    Log.e(TAG, "Load toppings failed: " + error.getMessage(), error);
+                    toppingsEmpty.setVisibility(View.VISIBLE);
+                    recyclerToppings.setVisibility(View.GONE);
+                }
+            });
+        }
     }
 
     private void updateTotal() {

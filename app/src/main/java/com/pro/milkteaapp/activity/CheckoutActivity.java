@@ -1,5 +1,6 @@
 package com.pro.milkteaapp.activity;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.widget.Toast;
@@ -16,13 +17,17 @@ import com.pro.milkteaapp.SessionManager;
 import com.pro.milkteaapp.fragment.bottomsheet.CheckoutBottomSheet;
 import com.pro.milkteaapp.models.CartItem;
 import com.pro.milkteaapp.models.CheckoutInfo;
+import com.pro.milkteaapp.models.ComboCartItem;
 import com.pro.milkteaapp.models.Products;
 import com.pro.milkteaapp.models.SelectedTopping;
+import com.pro.milkteaapp.payment.PaymentRequest;
+import com.pro.milkteaapp.payment.PaymentService;
 import com.pro.milkteaapp.utils.MoneyUtils;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -30,6 +35,7 @@ public class CheckoutActivity extends AppCompatActivity
         implements CheckoutBottomSheet.OnCheckoutConfirmListener {
 
     private final ArrayList<CartItem> cartItems = new ArrayList<>();
+    private final ArrayList<ComboCartItem> comboCartItems = new ArrayList<>();
     @Nullable
     private CheckoutInfo checkoutInfo;
 
@@ -57,6 +63,15 @@ public class CheckoutActivity extends AppCompatActivity
             }
         }
 
+        Serializable comboExtra = getIntent().getSerializableExtra("combo_cart_items");
+        if (comboExtra instanceof ArrayList<?> raw) {
+            for (Object o : raw) {
+                if (o instanceof ComboCartItem) {
+                    comboCartItems.add((ComboCartItem) o);
+                }
+            }
+        }
+
         Serializable infoSer = getIntent().getSerializableExtra("checkout_info");
         if (infoSer instanceof CheckoutInfo) {
             checkoutInfo = (CheckoutInfo) infoSer;
@@ -64,7 +79,7 @@ public class CheckoutActivity extends AppCompatActivity
     }
 
     private void openCheckoutBottomSheet() {
-        CheckoutBottomSheet sheet = CheckoutBottomSheet.newInstance(cartItems);
+        CheckoutBottomSheet sheet = CheckoutBottomSheet.newInstance(cartItems, comboCartItems);
         sheet.setOnCheckoutConfirmListener(this);
         sheet.show(getSupportFragmentManager(), "CheckoutBottomSheet");
     }
@@ -72,13 +87,94 @@ public class CheckoutActivity extends AppCompatActivity
     @Override
     public void onCheckoutConfirmed(@NonNull CheckoutInfo info) {
         this.checkoutInfo = info;
-        placeOrder();
+        
+        // Kiểm tra nếu cần thanh toán online
+        PaymentService paymentService = PaymentService.getInstance(this);
+        if (paymentService.requiresOnlinePayment(info.getPaymentMethod())) {
+            processOnlinePayment(info);
+        } else {
+            // COD - tạo order ngay
+            placeOrder(null);
+        }
+    }
+    
+    /**
+     * Xử lý thanh toán online (Momo, VNPAY, Card)
+     */
+    private void processOnlinePayment(@NonNull CheckoutInfo info) {
+        // Lấy userId
+        String effectiveUid = null;
+        try {
+            effectiveUid = new SessionManager(getApplicationContext()).getUid();
+        } catch (Throwable ignored) {}
+        if (TextUtils.isEmpty(effectiveUid)) {
+            effectiveUid = auth.getCurrentUser() != null ? auth.getCurrentUser().getUid() : "";
+        }
+        
+        // Tạo order ID tạm để thanh toán
+        String tempOrderId = db.collection("orders").document().getId();
+        long amount = (long) info.getGrandTotal();
+        
+        // Tạo return URL (deep link để nhận kết quả)
+        String returnUrl = "milkteaapp://payment/return?orderId=" + tempOrderId + "&method=" + info.getPaymentMethod();
+        String cancelUrl = "milkteaapp://payment/cancel?orderId=" + tempOrderId;
+        
+        PaymentRequest request = new PaymentRequest(
+                tempOrderId,
+                effectiveUid,
+                amount,
+                "Thanh toán đơn hàng #" + tempOrderId,
+                returnUrl,
+                cancelUrl
+        );
+        
+        // Mở PaymentActivity để xử lý thanh toán
+        Intent paymentIntent = PaymentActivity.createIntent(
+                this,
+                info.getPaymentMethod(),
+                request,
+                tempOrderId
+        );
+        
+        startActivityForResult(paymentIntent, REQUEST_CODE_PAYMENT);
+    }
+    
+    private static final int REQUEST_CODE_PAYMENT = 1001;
+    
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        
+        if (requestCode == REQUEST_CODE_PAYMENT) {
+            if (resultCode == RESULT_OK && data != null) {
+                boolean success = data.getBooleanExtra("success", false);
+                String transactionId = data.getStringExtra("transactionId");
+                String orderId = data.getStringExtra("orderId");
+                String message = data.getStringExtra("message");
+                
+                if (success && transactionId != null) {
+                    // Thanh toán thành công - tạo order
+                    placeOrder(transactionId);
+                } else {
+                    // Thanh toán thất bại hoặc hủy
+                    if (message != null) {
+                        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+                    }
+                }
+            } else {
+                // Người dùng quay lại mà không thanh toán
+                Toast.makeText(this, "Bạn đã hủy thanh toán", Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 
     private long computeSubtotalFromCart() {
         long sum = 0;
         for (CartItem i : cartItems) {
             sum += i.getTotalPrice();
+        }
+        for (ComboCartItem comboItem : comboCartItems) {
+            sum += comboItem.getTotalPrice();
         }
         return sum;
     }
@@ -107,8 +203,8 @@ public class CheckoutActivity extends AppCompatActivity
                 : Math.max(0L, getSubtotal() - getDiscount() + getShippingFee());
     }
 
-    private void placeOrder() {
-        if (cartItems.isEmpty()) {
+    private void placeOrder(@Nullable String transactionId) {
+        if (cartItems.isEmpty() && comboCartItems.isEmpty()) {
             Toast.makeText(this, "Giỏ hàng trống", Toast.LENGTH_SHORT).show();
             finish();
             return;
@@ -159,15 +255,23 @@ public class CheckoutActivity extends AppCompatActivity
         order.put("discount", discount);
         order.put("shippingFee", shipping);
         order.put("finalTotal", finalTotal);      // ✅ đổi từ "total" → "finalTotal"
+        PaymentService paymentService = PaymentService.getInstance(this);
         order.put("paymentMethod", paymentMethod);
+        order.put("paymentStatus", paymentService.requiresOnlinePayment(paymentMethod) 
+                ? (transactionId != null ? "SUCCESS" : "PENDING") 
+                : "PENDING");
+        if (transactionId != null) {
+            order.put("transactionId", transactionId);
+        }
         order.put("shippingLabel", shippingLabel);
         order.put("voucherCode", TextUtils.isEmpty(voucherCode) ? null : voucherCode);
         order.put("status", "PENDING");           // ✅ chuẩn hóa status
         order.put("createdAt", FieldValue.serverTimestamp()); // ✅ đồng bộ timestamp server
 
-        WriteBatch batch = db.batch();
-        batch.set(db.collection("orders").document(orderId), order);
+        // Tạo items array để lưu vào order document
+        List<Map<String, Object>> itemsList = new ArrayList<>();
 
+        // Thêm CartItem vào items array
         for (CartItem item : cartItems) {
             Products p = item.getMilkTea();
             Map<String, Object> row = new HashMap<>();
@@ -196,15 +300,25 @@ public class CheckoutActivity extends AppCompatActivity
                 }
             }
             row.put("toppings", tops);
-
-            String itemId = db.collection("orders").document(orderId)
-                    .collection("items").document().getId();
-            batch.set(
-                    db.collection("orders").document(orderId)
-                            .collection("items").document(itemId),
-                    row
-            );
+            itemsList.add(row);
         }
+
+        // Thêm ComboCartItem vào items array
+        android.util.Log.d("CheckoutActivity", "comboCartItems size: " + comboCartItems.size());
+        for (ComboCartItem comboItem : comboCartItems) {
+            Map<String, Object> row = comboItem.toOrderItemMap();
+            android.util.Log.d("CheckoutActivity", "Combo item map: " + row);
+            android.util.Log.d("CheckoutActivity", "Combo item type field: " + row.get("type"));
+            itemsList.add(row);
+        }
+        android.util.Log.d("CheckoutActivity", "Total items in itemsList: " + itemsList.size());
+
+        // Thêm items array vào order
+        order.put("items", itemsList);
+        android.util.Log.d("CheckoutActivity", "Order items field set, size: " + itemsList.size());
+
+        WriteBatch batch = db.batch();
+        batch.set(db.collection("orders").document(orderId), order);
 
         final String finalEffectiveUid = effectiveUid;
         final String finalVoucherCode = voucherCode;

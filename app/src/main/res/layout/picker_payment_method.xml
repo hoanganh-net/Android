@@ -18,4 +18,8 @@
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnMomo" android:layout_width="match_parent" android:layout_height="48dp"
         android:text="Momo" android:textAllCaps="false" android:layout_marginTop="8dp"/>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnCard" android:layout_width="match_parent" android:layout_height="48dp"
+        android:text="Thẻ ngân hàng" android:textAllCaps="false" android:layout_marginTop="8dp"/>
 </LinearLayout>

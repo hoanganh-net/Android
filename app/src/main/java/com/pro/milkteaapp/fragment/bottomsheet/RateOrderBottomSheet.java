@@ -51,7 +51,7 @@ public class RateOrderBottomSheet extends BottomSheetDialogFragment {
     public View onCreateView(@NonNull LayoutInflater inflater,
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.bs_rate_order, container, false);
+        View v = inflater.inflate(R.layout.bottomsheet_rate_order, container, false);
         ratingBar   = v.findViewById(R.id.ratingBar);
         reviewInput = v.findViewById(R.id.edtReview);
         btnSubmit   = v.findViewById(R.id.btnSubmit);

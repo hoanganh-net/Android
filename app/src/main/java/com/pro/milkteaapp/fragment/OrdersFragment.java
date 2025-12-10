@@ -11,14 +11,12 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.google.android.material.tabs.TabLayout;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
-import com.google.firebase.firestore.Query;
 import com.pro.milkteaapp.SessionManager;
 import com.pro.milkteaapp.adapter.OrdersAdapter;
-import com.pro.milkteaapp.databinding.FragmentOrdersBinding;
+import com.pro.milkteaapp.databinding.UserFragmentOrdersBinding;
 import com.pro.milkteaapp.models.Order;
+import com.pro.milkteaapp.repository.OrdersRepository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,8 +39,8 @@ public class OrdersFragment extends Fragment implements OrdersAdapter.Listener {
         return newInstance(filter, true);
     }
 
-    private FragmentOrdersBinding b;
-    private FirebaseFirestore db;
+    private UserFragmentOrdersBinding b;
+    private OrdersRepository ordersRepository;
     private ListenerRegistration registration;
     private final List<Order> allOrders = new ArrayList<>();
     private OrdersAdapter adapter;
@@ -55,13 +53,13 @@ public class OrdersFragment extends Fragment implements OrdersAdapter.Listener {
     public View onCreateView(@NonNull android.view.LayoutInflater inflater,
                              @Nullable android.view.ViewGroup container,
                              @Nullable Bundle s) {
-        b = FragmentOrdersBinding.inflate(inflater, container, false);
+        b = UserFragmentOrdersBinding.inflate(inflater, container, false);
         return b.getRoot();
     }
 
     @Override
     public void onViewCreated(@NonNull View v, @Nullable Bundle s) {
-        db = FirebaseFirestore.getInstance();
+        ordersRepository = new OrdersRepository();
 
         if (getArguments() != null) {
             String arg = getArguments().getString(ARG_FILTER);
@@ -120,25 +118,21 @@ public class OrdersFragment extends Fragment implements OrdersAdapter.Listener {
             return;
         }
 
-        Query q = db.collection("orders")
-                .whereEqualTo("userId", customUserId)
-                .orderBy("createdAt", Query.Direction.DESCENDING);
+        registration = ordersRepository.listenOrdersByUserId(customUserId, new OrdersRepository.OnOrdersListener() {
+            @Override
+            public void onOrdersReceived(@NonNull List<Order> orders) {
+                allOrders.clear();
+                allOrders.addAll(orders);
+                applyFilterAndRender();
+            }
 
-        registration = q.addSnapshotListener((snap, e) -> {
-            if (e != null) {
+            @Override
+            public void onError(@NonNull Exception error) {
                 if (isAdded()) {
                     Toast.makeText(requireContext(),
-                            "Lỗi tải đơn: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                            "Lỗi tải đơn: " + error.getMessage(), Toast.LENGTH_LONG).show();
                 }
-                return;
             }
-            if (snap == null) return;
-
-            allOrders.clear();
-            for (DocumentSnapshot d : snap.getDocuments()) {
-                allOrders.add(Order.from(d));
-            }
-            applyFilterAndRender();
         });
     }
 

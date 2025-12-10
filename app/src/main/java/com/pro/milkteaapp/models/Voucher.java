@@ -4,9 +4,10 @@ import androidx.annotation.Nullable;
 
 import com.google.firebase.Timestamp;
 
+import java.io.Serializable;
 import java.util.List;
 
-public class Voucher {
+public class Voucher implements Serializable {
     private String id;                 // Firestore docId (set thủ công sau khi toObjects)
     private String code;               // TRASUA15K
     private String type;               // ORDER_FIXED | ORDER_PERCENT | SHIPPING_FIXED
@@ -20,6 +21,7 @@ public class Voucher {
     private boolean active;
     @Nullable private List<String> allowedChannels; // ["COD","MOMO","CARD"]
     @Nullable private String description;
+    @Nullable private Long pointsRequired; // Số điểm cần để đổi voucher này (nullable, chỉ có khi voucher có thể đổi bằng điểm)
 
     public Voucher() {}
 
@@ -39,6 +41,7 @@ public class Voucher {
     public boolean isActive() { return active; }
     @Nullable public List<String> getAllowedChannels() { return allowedChannels; }
     @Nullable public String getDescription() { return description; }
+    @Nullable public Long getPointsRequired() { return pointsRequired; }
 
     public void setCode(String code) { this.code = code; }
     public void setType(String type) { this.type = type; }
@@ -52,4 +55,5 @@ public class Voucher {
     public void setActive(boolean active) { this.active = active; }
     public void setAllowedChannels(@Nullable List<String> allowedChannels) { this.allowedChannels = allowedChannels; }
     public void setDescription(@Nullable String description) { this.description = description; }
+    public void setPointsRequired(@Nullable Long pointsRequired) { this.pointsRequired = pointsRequired; }
 }

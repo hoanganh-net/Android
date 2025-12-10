@@ -11,14 +11,13 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestore;
 import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.SessionManager;
+import com.pro.milkteaapp.repository.UsersRepository;
 import com.pro.milkteaapp.utils.LoyaltyPolicy;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -48,7 +47,7 @@ public class LoyaltyTierBottomSheet extends BottomSheetDialogFragment {
 
     private TextView tvCurrentTier, tvCurrentPoints, tvNextInfo;
     private TextView tvBenefitsCurrent, tvBenefitsNext;
-    private TextView tvRuleUnrank, tvRuleBronze, tvRuleSilver, tvRuleGold;
+    private TextView tvRuleUnrank, tvRuleBronze, tvRuleSilver, tvRuleGold, tvRuleDiamond;
 
     private long initialPoints = 0L;
     private boolean hasInitial = false;
@@ -79,6 +78,7 @@ public class LoyaltyTierBottomSheet extends BottomSheetDialogFragment {
         tvRuleBronze = v.findViewById(R.id.tvRuleBronze);
         tvRuleSilver = v.findViewById(R.id.tvRuleSilver);
         tvRuleGold   = v.findViewById(R.id.tvRuleGold);
+        tvRuleDiamond = v.findViewById(R.id.tvRuleDiamond);
 
         renderStaticRules();
 
@@ -97,12 +97,19 @@ public class LoyaltyTierBottomSheet extends BottomSheetDialogFragment {
         String unrank = "0–" + LoyaltyPolicy.UNRANK_MAX + ": Chưa xếp hạng";
         String bronze = LoyaltyPolicy.BRONZE_MIN + "–" + LoyaltyPolicy.BRONZE_MAX + ": Đồng (giảm 5%)";
         String silver = LoyaltyPolicy.SILVER_MIN + "–" + LoyaltyPolicy.SILVER_MAX + ": Bạc (giảm 10%)";
-        String gold   = "≥" + LoyaltyPolicy.GOLD_MIN + ": Vàng (giảm 15%)"; // 🔸 Sửa giảm 15%
+        String gold   = LoyaltyPolicy.GOLD_MIN + "–" + LoyaltyPolicy.GOLD_MAX + ": Vàng (giảm 15%)";
+        String diamond = "≥" + LoyaltyPolicy.DIAMOND_MIN + ": Kim Cương (giảm 20%)";
 
         tvRuleUnrank.setText(unrank);
         tvRuleBronze.setText(bronze);
         tvRuleSilver.setText(silver);
         tvRuleGold.setText(gold);
+        
+        // Hiển thị Diamond tier
+        TextView tvRuleDiamond = getView() != null ? getView().findViewById(R.id.tvRuleDiamond) : null;
+        if (tvRuleDiamond != null) {
+            tvRuleDiamond.setText(diamond);
+        }
     }
 
     /** Load user theo docId USRxxxxx */
@@ -118,25 +125,23 @@ public class LoyaltyTierBottomSheet extends BottomSheetDialogFragment {
             return;
         }
 
-        FirebaseFirestore.getInstance()
-                .collection("users")
-                .document(docId)
-                .get()
-                .addOnSuccessListener(this::bindDoc)
-                .addOnFailureListener(e -> applyUI("Chưa xếp hạng", 0));
-    }
+        UsersRepository usersRepository = new UsersRepository();
+        usersRepository.fetchUserById(docId, new UsersRepository.OnUserListener() {
+            @Override
+            public void onUserReceived(@NonNull com.pro.milkteaapp.models.User user) {
+                long points = user.getLoyaltyPoints();
+                String tier = user.getLoyaltyTier();
+                if (TextUtils.isEmpty(tier)) {
+                    tier = LoyaltyPolicy.tierForPoints(points);
+                }
+                applyUI(tier, points);
+            }
 
-    private void bindDoc(@Nullable DocumentSnapshot doc) {
-        long points = 0L;
-        String tier = null;
-        if (doc != null && doc.exists()) {
-            Long p = doc.getLong("loyaltyPoints");
-            if (p != null) points = p;
-            String t = doc.getString("loyaltyTier");
-            if (!TextUtils.isEmpty(t)) tier = t;
-        }
-        if (TextUtils.isEmpty(tier)) tier = LoyaltyPolicy.tierForPoints(points);
-        applyUI(tier, points);
+            @Override
+            public void onError(@NonNull Exception error) {
+                applyUI("Chưa xếp hạng", 0);
+            }
+        });
     }
 
     @SuppressLint("SetTextI18n")
@@ -147,8 +152,29 @@ public class LoyaltyTierBottomSheet extends BottomSheetDialogFragment {
         LoyaltyPolicy.NextTierInfo next = LoyaltyPolicy.nextTier(points);
         if (next.targetTier == null) {
             tvNextInfo.setText("Bạn đang ở hạng cao nhất.");
+            // Ẩn phần "Quyền lợi khi lên hạng kế tiếp" khi đã ở hạng cao nhất
+            View benefitsNextLabel = getView() != null ? getView().findViewById(R.id.tvBenefitsNextLabel) : null;
+            if (benefitsNextLabel != null) {
+                benefitsNextLabel.setVisibility(android.view.View.GONE);
+            }
+            tvBenefitsNext.setVisibility(android.view.View.GONE);
+            // Ẩn divider trước phần "Quyền lợi khi lên hạng"
+            View dividerBeforeNext = getView() != null ? getView().findViewById(R.id.dividerBeforeNext) : null;
+            if (dividerBeforeNext != null) {
+                dividerBeforeNext.setVisibility(android.view.View.GONE);
+            }
         } else {
             tvNextInfo.setText("Còn " + next.remainingPoints + " điểm để lên " + next.targetTier);
+            // Hiển thị phần "Quyền lợi khi lên hạng kế tiếp"
+            View benefitsNextLabel = getView() != null ? getView().findViewById(R.id.tvBenefitsNextLabel) : null;
+            if (benefitsNextLabel != null) {
+                benefitsNextLabel.setVisibility(android.view.View.VISIBLE);
+            }
+            tvBenefitsNext.setVisibility(android.view.View.VISIBLE);
+            View dividerBeforeNext = getView() != null ? getView().findViewById(R.id.dividerBeforeNext) : null;
+            if (dividerBeforeNext != null) {
+                dividerBeforeNext.setVisibility(android.view.View.VISIBLE);
+            }
         }
 
         List<String> curBenefits = LoyaltyPolicy.benefitsForTier(currentTier);
@@ -156,7 +182,7 @@ public class LoyaltyTierBottomSheet extends BottomSheetDialogFragment {
 
         List<String> nextBenefits;
         if (next.targetTier == null) {
-            nextBenefits = LoyaltyPolicy.benefitsForTier(currentTier);
+            nextBenefits = new ArrayList<>(); // Không hiển thị gì khi đã ở hạng cao nhất
         } else if (!next.nextTierBenefits.isEmpty()) {
             nextBenefits = next.nextTierBenefits;
         } else {

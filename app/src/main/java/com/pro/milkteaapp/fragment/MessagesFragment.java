@@ -6,8 +6,11 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
+import com.google.android.material.navigation.NavigationView;
 
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
@@ -17,10 +20,12 @@ import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.SessionManager;
+import com.pro.milkteaapp.activity.MainActivity;
 import com.pro.milkteaapp.adapter.MessagesAdapter;
 import com.pro.milkteaapp.databinding.FragmentMessagesBinding;
+import com.pro.milkteaapp.fragment.bottomsheet.ChatWithAdminBottomSheet;
 import com.pro.milkteaapp.fragment.bottomsheet.RateOrderBottomSheet;
-import com.pro.milkteaapp.models.MessageModel;
+import com.pro.milkteaapp.models.Message;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,19 +35,81 @@ public class MessagesFragment extends Fragment {
     private FragmentMessagesBinding binding;
     private MessagesAdapter adapter;
     private ListenerRegistration registration;
+    private String selectedFilter = "Tất cả";
 
-    public MessagesFragment() { super(R.layout.fragment_messages); }
+    public MessagesFragment() { super(R.layout.user_fragment_messages); }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         binding = FragmentMessagesBinding.bind(view);
-
+        
+        // Setup tin nhắn hệ thống
         binding.recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
         adapter = new MessagesAdapter(this::onMessageClick);
         binding.recyclerView.setAdapter(adapter);
 
         binding.swipeRefresh.setOnRefreshListener(this::reloadOnce);
+        
+        // Setup nút chat với admin
+        binding.btnChatWithAdmin.setOnClickListener(v -> {
+            ChatWithAdminBottomSheet bottomSheet = ChatWithAdminBottomSheet.newInstance();
+            bottomSheet.show(getParentFragmentManager(), ChatWithAdminBottomSheet.TAG);
+        });
+        
+        setupToolbar();
+        setupDrawer();
         startListening();
+    }
+    
+    private void setupToolbar() {
+        if (getActivity() == null || binding == null) return;
+        androidx.appcompat.app.AppCompatActivity activity = (androidx.appcompat.app.AppCompatActivity) getActivity();
+        activity.setSupportActionBar(binding.toolbar);
+        
+        // Setup drawer button click
+        View btnDrawer = binding.getRoot().findViewById(R.id.btnDrawer);
+        if (btnDrawer != null) {
+            btnDrawer.setOnClickListener(v -> {
+                if (binding.drawerLayout != null) {
+                    binding.drawerLayout.openDrawer(GravityCompat.END);
+                }
+            });
+        }
+    }
+    
+    private void setupDrawer() {
+        if (binding == null) return;
+        
+        // Setup drawer menu click
+        if (binding.navigationView != null) {
+            binding.navigationView.setNavigationItemSelectedListener(item -> {
+                int itemId = item.getItemId();
+                String filter = "Tất cả";
+                
+                if (itemId == R.id.menu_all) {
+                    filter = "Tất cả";
+                } else if (itemId == R.id.menu_system) {
+                    filter = "Hệ thống";
+                } else if (itemId == R.id.menu_chat) {
+                    filter = "Chat với Admin";
+                }
+                
+                selectedFilter = filter;
+                filterMessages();
+                
+                if (binding.drawerLayout != null) {
+                    binding.drawerLayout.closeDrawer(GravityCompat.END);
+                }
+                return true;
+            });
+        }
+    }
+    
+    private void filterMessages() {
+        // Filter logic sẽ được implement trong adapter hoặc khi load data
+        if (adapter != null) {
+            adapter.setFilter(selectedFilter);
+        }
     }
 
     private void startListening() {
@@ -65,11 +132,11 @@ public class MessagesFragment extends Fragment {
                 return;
             }
 
-            List<MessageModel> data = new ArrayList<>();
+            List<Message> data = new ArrayList<>();
             if (snap != null) {
                 for (DocumentSnapshot d : snap.getDocuments()) {
-                    MessageModel m = d.toObject(MessageModel.class);
-                    if (m == null) m = new MessageModel();
+                    Message m = d.toObject(Message.class);
+                    if (m == null) m = new Message();
                     m.setId(d.getId());
                     data.add(m);
                 }
@@ -96,10 +163,10 @@ public class MessagesFragment extends Fragment {
                         if (e != null) Toast.makeText(getContext(), e.getMessage(), Toast.LENGTH_LONG).show();
                         return;
                     }
-                    List<MessageModel> data = new ArrayList<>();
+                    List<Message> data = new ArrayList<>();
                     for (DocumentSnapshot d : t.getResult().getDocuments()) {
-                        MessageModel m = d.toObject(MessageModel.class);
-                        if (m == null) m = new MessageModel();
+                        Message m = d.toObject(Message.class);
+                        if (m == null) m = new Message();
                         m.setId(d.getId());
                         data.add(m);
                     }
@@ -108,7 +175,7 @@ public class MessagesFragment extends Fragment {
                 });
     }
 
-    private void onMessageClick(@NonNull MessageModel m) {
+    private void onMessageClick(@NonNull Message m) {
         String uid = getUnifiedUidOrNotify();
         if (uid != null) {
             FirebaseFirestore.getInstance()
@@ -162,9 +229,13 @@ public class MessagesFragment extends Fragment {
         return FirebaseAuth.getInstance().getCurrentUser().getUid();
     }
 
+
     @Override
     public void onDestroyView() {
-        if (registration != null) { registration.remove(); registration = null; }
+        if (registration != null) { 
+            registration.remove(); 
+            registration = null; 
+        }
         binding = null;
         super.onDestroyView();
     }

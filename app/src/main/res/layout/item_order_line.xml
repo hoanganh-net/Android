@@ -14,7 +14,10 @@
         android:layout_width="match_parent" android:layout_height="wrap_content"
         android:layout_marginTop="2dp"
         android:text="Size L • Topping: Trân châu, Pudding"
-        android:textColor="?android:attr/textColorSecondary"/>
+        android:textColor="?android:attr/textColorSecondary"
+        android:maxLines="10"
+        android:ellipsize="end"
+        android:textSize="13sp"/>
 
     <TextView
         android:id="@+id/tvNote"

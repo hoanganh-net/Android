@@ -58,26 +58,43 @@ public class AddressAdapter extends RecyclerView.Adapter<AddressAdapter.VH> {
         h.tvNamePhone.setText(name + phone);
         h.tvAddressLines.setText(a.displayLine());
 
-        // Ẩn/hiện nhóm nút theo mode
+        // Hiển thị badge "Mặc định" và làm nổi bật địa chỉ mặc định
+        boolean isDefault = a.isDefault();
+        @ColorInt int primary = MaterialColors.getColor(h.itemView, androidx.appcompat.R.attr.colorPrimary);
+        
+        MaterialCardView card = h.card;
+        
         if (pickerMode) {
+            // Ở picker mode: ẩn badge và các nút
+            h.tvDefaultBadge.setVisibility(View.GONE);
             h.btnSetDefault.setVisibility(View.GONE);
             h.btnEdit.setVisibility(View.GONE);
             h.btnDelete.setVisibility(View.GONE);
-        } else {
-            h.btnSetDefault.setVisibility(View.VISIBLE);
-            h.btnEdit.setVisibility(View.VISIBLE);
-            h.btnDelete.setVisibility(View.VISIBLE);
-        }
-
-        // Highlight selection ở picker
-        MaterialCardView card = h.card;
-        if (pickerMode) {
+            
+            // Highlight selection ở picker
             int strokeWidth = position == selectedIndex ? dp(h.itemView, 2) : dp(h.itemView, 0);
-            @ColorInt int primary = MaterialColors.getColor(h.itemView, androidx.appcompat.R.attr.colorPrimary);
             card.setStrokeColor(primary);
             card.setStrokeWidth(strokeWidth);
+            card.setCardElevation(strokeWidth > 0 ? dp(h.itemView, 4) : dp(h.itemView, 2));
         } else {
-            card.setStrokeWidth(0);
+            // Ở mode quản lý: hiển thị badge và các nút
+            if (isDefault) {
+                h.tvDefaultBadge.setVisibility(View.VISIBLE);
+                // Làm nổi bật: thêm border và tăng elevation
+                card.setStrokeColor(primary);
+                card.setStrokeWidth(dp(h.itemView, 2));
+                card.setCardElevation(dp(h.itemView, 4));
+                // Ẩn nút "Mặc định" vì đã là mặc định rồi
+                h.btnSetDefault.setVisibility(View.GONE);
+            } else {
+                h.tvDefaultBadge.setVisibility(View.GONE);
+                card.setStrokeWidth(0);
+                card.setCardElevation(dp(h.itemView, 2));
+                h.btnSetDefault.setVisibility(View.VISIBLE);
+            }
+            
+            h.btnEdit.setVisibility(View.VISIBLE);
+            h.btnDelete.setVisibility(View.VISIBLE);
         }
 
         h.itemView.setOnClickListener(v -> {
@@ -102,7 +119,7 @@ public class AddressAdapter extends RecyclerView.Adapter<AddressAdapter.VH> {
 
     static class VH extends RecyclerView.ViewHolder {
         MaterialCardView card;
-        TextView tvNamePhone, tvAddressLines;
+        TextView tvNamePhone, tvAddressLines, tvDefaultBadge;
         MaterialButton btnSetDefault, btnEdit, btnDelete;
 
         VH(@NonNull View v) {
@@ -110,6 +127,7 @@ public class AddressAdapter extends RecyclerView.Adapter<AddressAdapter.VH> {
             card = (MaterialCardView) v;
             tvNamePhone = v.findViewById(R.id.tvNamePhone);
             tvAddressLines = v.findViewById(R.id.tvAddressLines);
+            tvDefaultBadge = v.findViewById(R.id.tvDefaultBadge);
             btnSetDefault = v.findViewById(R.id.btnSetDefault);
             btnEdit = v.findViewById(R.id.btnEdit);
             btnDelete = v.findViewById(R.id.btnDelete);

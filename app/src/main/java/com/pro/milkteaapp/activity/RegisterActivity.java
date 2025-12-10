@@ -24,8 +24,10 @@ import com.google.firebase.auth.FirebaseAuthWeakPasswordException;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.SessionManager;
-import com.pro.milkteaapp.data.UserIDGenerator;
+import com.pro.milkteaapp.generator.UserIDGenerator;
+import com.pro.milkteaapp.models.Address;
 import com.pro.milkteaapp.models.User;
+import com.pro.milkteaapp.repository.AddressRepository;
 
 public class RegisterActivity extends AppCompatActivity {
 
@@ -42,7 +44,7 @@ public class RegisterActivity extends AppCompatActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_register);
+        setContentView(R.layout.user_activity_register);
 
         initViews();
         setupFirebase();
@@ -213,11 +215,69 @@ public class RegisterActivity extends AppCompatActivity {
 
         db.collection("users").document(userId)
                 .set(user)
-                .addOnSuccessListener(unused -> handleRegistrationSuccess(userId))
+                .addOnSuccessListener(unused -> {
+                    // Tạo địa chỉ mặc định từ thông tin đăng ký
+                    createDefaultAddress(userId, fullName, phone, address);
+                })
                 .addOnFailureListener(e -> {
                     setLoading(false);
                     Toast.makeText(this, "Lỗi lưu hồ sơ: " + e.getMessage(), Toast.LENGTH_LONG).show();
                 });
+    }
+
+    /**
+     * Tạo địa chỉ mặc định từ thông tin đăng ký
+     */
+    private void createDefaultAddress(String userId, String fullName, String phone, String addressText) {
+        if (TextUtils.isEmpty(addressText)) {
+            // Nếu không có địa chỉ, vẫn hoàn tất đăng ký nhưng không tạo địa chỉ
+            handleRegistrationSuccess(userId);
+            return;
+        }
+
+        // Parse địa chỉ đơn giản: giả sử format là "Số nhà, Đường, Quận/Huyện, Tỉnh/TP"
+        // Hoặc có thể chỉ là một dòng địa chỉ đơn giản
+        Address address = new Address();
+        address.setFullName(fullName);
+        address.setPhone(phone != null ? phone : "");
+        
+        // Tách địa chỉ thành các phần (nếu có dấu phẩy)
+        String[] parts = addressText.split(",");
+        if (parts.length >= 1) {
+            address.setLine1(parts[0].trim());
+        }
+        if (parts.length >= 2) {
+            address.setLine2(parts[1].trim());
+        }
+        if (parts.length >= 3) {
+            address.setCity(parts[2].trim());
+        }
+        if (parts.length >= 4) {
+            address.setProvince(parts[3].trim());
+        }
+        // Nếu không có dấu phẩy, coi toàn bộ là line1
+        if (parts.length == 1) {
+            address.setLine1(addressText.trim());
+        }
+        
+        address.setDefault(true); // Địa chỉ đăng ký là mặc định
+
+        // Lưu địa chỉ vào Firestore
+        // Cần dùng userId trực tiếp vì chưa có SessionManager được set
+        AddressRepository repo = new AddressRepository(this);
+        // Tạm thời set userId vào SessionManager trước khi tạo địa chỉ
+        try {
+            new SessionManager(this).setUid(userId);
+        } catch (Throwable ignored) {}
+        
+        repo.addOrUpdate(address, saved -> {
+            // Địa chỉ đã được tạo thành công
+            handleRegistrationSuccess(userId);
+        }, e -> {
+            // Nếu tạo địa chỉ thất bại, vẫn hoàn tất đăng ký
+            Log.w("Register", "Failed to create default address: " + e.getMessage());
+            handleRegistrationSuccess(userId);
+        });
     }
 
     private void handleRegistrationSuccess(String userId) {

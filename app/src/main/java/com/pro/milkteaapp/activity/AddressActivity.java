@@ -10,9 +10,10 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.firestore.ListenerRegistration;
+import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.adapter.AddressAdapter;
-import com.pro.milkteaapp.databinding.ActivityAddressBinding;
-import com.pro.milkteaapp.fragment.AddEditAddressDialog;
+import com.pro.milkteaapp.databinding.UserActivityAddressBinding;
+import com.pro.milkteaapp.fragment.dialog.AddressDialogFragment;
 import com.pro.milkteaapp.models.Address;
 import com.pro.milkteaapp.repository.AddressRepository;
 
@@ -20,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class AddressActivity extends AppCompatActivity
-        implements AddressAdapter.Listener, AddEditAddressDialog.Listener {
+        implements AddressAdapter.Listener, AddressDialogFragment.Listener {
 
     private final List<Address> data = new ArrayList<>();
     private AddressAdapter adapter;
@@ -33,13 +34,16 @@ public class AddressActivity extends AppCompatActivity
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        ActivityAddressBinding binding = ActivityAddressBinding.inflate(getLayoutInflater());
+        UserActivityAddressBinding binding = UserActivityAddressBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
         // Khởi tạo repo với Context để dùng custom userId (USRxxxxx)
         repo = new AddressRepository(this);
 
         MaterialToolbar tb = binding.toolbar;
+        setSupportActionBar(tb);
+        centerToolbarTitle(tb, getString(R.string.address_book));
+        // Setup navigation icon click sau khi centerToolbarTitle để đảm bảo không bị ghi đè
         tb.setNavigationOnClickListener(v -> finish());
 
         binding.rvAddress.setLayoutManager(new LinearLayoutManager(this));
@@ -47,8 +51,15 @@ public class AddressActivity extends AppCompatActivity
         binding.rvAddress.setAdapter(adapter);
 
         FloatingActionButton fab = binding.fabAdd;
-        fab.setOnClickListener(v -> AddEditAddressDialog.newInstance(null)
+        fab.setOnClickListener(v -> AddressDialogFragment.newInstance(null)
                 .show(getSupportFragmentManager(), "add_address"));
+    }
+    
+    private android.widget.TextView customTitleView;
+    
+    private void centerToolbarTitle(com.google.android.material.appbar.MaterialToolbar toolbar, String title) {
+        customTitleView = com.pro.milkteaapp.utils.ToolbarUtils.centerToolbarTitle(
+                toolbar, title, customTitleView, getSupportActionBar());
     }
 
     /** Đăng ký lắng nghe realtime khi Activity hiển thị */
@@ -80,7 +91,7 @@ public class AddressActivity extends AppCompatActivity
     @Override
     public void onItemClick(int position) {
         if (position < 0 || position >= data.size()) return;
-        AddEditAddressDialog.newInstance(data.get(position))
+        AddressDialogFragment.newInstance(data.get(position))
                 .show(getSupportFragmentManager(), "edit_address");
     }
 
@@ -111,7 +122,7 @@ public class AddressActivity extends AppCompatActivity
         });
     }
 
-    // =============== AddEditAddressDialog.Listener ===============
+    // =============== AddressDialogFragment.Listener ===============
 
     @Override
     public void onAddressSaved(Address address, boolean isEdit) {

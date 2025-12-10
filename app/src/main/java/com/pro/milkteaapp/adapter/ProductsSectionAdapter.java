@@ -149,7 +149,7 @@ public class ProductsSectionAdapter extends RecyclerView.Adapter<RecyclerView.Vi
                     Glide.with(itemView)
                             .load(url)
                             .placeholder(R.drawable.ic_milk_tea)
-                            .error(R.drawable.ic_products)
+                            .error(R.drawable.ic_placeholder)
                             .into(milkTeaImage);
                 } else {
                     // Trường hợp code cũ lưu "tên resource" (vd: milk_tea_1)

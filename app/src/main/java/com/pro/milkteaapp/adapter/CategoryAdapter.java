@@ -82,7 +82,7 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.VH> {
     @Override
     public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         @LayoutRes int layout = (viewType == 1)
-                ? R.layout.item_category_admin
+                ? R.layout.admin_item_category
                 : R.layout.item_category;
         View v = LayoutInflater.from(parent.getContext()).inflate(layout, parent, false);
         return new VH(v, viewType == 1);

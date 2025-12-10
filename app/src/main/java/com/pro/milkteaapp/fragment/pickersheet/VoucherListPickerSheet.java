@@ -20,9 +20,9 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
-import com.google.firebase.firestore.Query;
 import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.models.Voucher;
+import com.pro.milkteaapp.repository.VouchersRepository;
 import com.pro.milkteaapp.utils.MoneyUtils;
 import com.pro.milkteaapp.utils.VoucherUtils;
 
@@ -62,6 +62,7 @@ public class VoucherListPickerSheet extends BottomSheetDialogFragment {
     // ===== UI =====
     private RecyclerView rv;
     private ChipGroup chipGroup;
+    private TextView tvEmpty;
 
     // ===== Data =====
     private final List<Voucher> all = new ArrayList<>();
@@ -73,7 +74,8 @@ public class VoucherListPickerSheet extends BottomSheetDialogFragment {
     @Nullable private String payment; // "COD" | "Momo" | "Thẻ" ...
     @Nullable private String userId;
 
-    // ===== Firestore =====
+    // ===== Repository =====
+    private VouchersRepository vouchersRepository;
     private ListenerRegistration reg;
 
     @Nullable @Override
@@ -81,6 +83,9 @@ public class VoucherListPickerSheet extends BottomSheetDialogFragment {
         View v = inflater.inflate(R.layout.bottomsheet_voucher_picker, container, false);
         rv = v.findViewById(R.id.rv);
         chipGroup = v.findViewById(R.id.chipGroupType);
+        tvEmpty = v.findViewById(R.id.tvEmpty);
+
+        vouchersRepository = new VouchersRepository();
 
         rv.setLayoutManager(new LinearLayoutManager(requireContext()));
         rv.setAdapter(adapter);
@@ -112,44 +117,46 @@ public class VoucherListPickerSheet extends BottomSheetDialogFragment {
 
     @Override public void onResume() {
         super.onResume();
-        // Lắng nghe vouchers active
-        reg = FirebaseFirestore.getInstance()
-                .collection("vouchers")
-                .whereEqualTo("active", true)
-                .orderBy("code", Query.Direction.ASCENDING)
-                .addSnapshotListener((snap, e) -> {
-                    if (e != null) {
-                        Toast.makeText(requireContext(), "Lỗi tải voucher: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                        return;
-                    }
-                    all.clear();
-                    if (snap != null) {
-                        List<Voucher> list = snap.toObjects(Voucher.class);
-                        for (int i = 0; i < snap.size(); i++) {
-                            Voucher v = list.get(i);
-                            DocumentSnapshot d = snap.getDocuments().get(i);
-                            v.setId(d.getId());
-                        }
-                        // Điều kiện chung: thời hạn, min order, kênh thanh toán
-                        Date today0 = stripTime(new Date());
-                        for (Voucher v : list) {
-                            if (!VoucherUtils.isInRangeNow(v)) continue;
-                            if (v.getEndAt() != null && v.getEndAt().toDate().before(today0)) continue;
+        // Lắng nghe vouchers active bằng VouchersRepository
+        reg = vouchersRepository.listenActiveVouchers(new VouchersRepository.OnVouchersListener() {
+            @Override
+            public void onVouchersReceived(@NonNull List<Voucher> vouchers) {
+                all.clear();
+                // Điều kiện chung: thời hạn, min order, kênh thanh toán
+                Date today0 = stripTime(new Date());
+                for (Voucher v : vouchers) {
+                    // Kiểm tra thời hạn
+                    if (!VoucherUtils.isInRangeNow(v)) continue;
+                    if (v.getEndAt() != null && v.getEndAt().toDate().before(today0)) continue;
 
-                            if (payment != null && v.getAllowedChannels()!=null && !v.getAllowedChannels().isEmpty()){
-                                boolean ok = false;
-                                for (String ch : v.getAllowedChannels()) {
-                                    if (payment.equalsIgnoreCase(ch)) { ok = true; break; }
-                                }
-                                if (!ok) continue;
+                    // Kiểm tra minOrder
+                    if (v.getMinOrder() > 0 && subtotal < v.getMinOrder()) continue;
+
+                    // Kiểm tra kênh thanh toán
+                    if (payment != null && v.getAllowedChannels() != null && !v.getAllowedChannels().isEmpty()) {
+                        boolean ok = false;
+                        for (String ch : v.getAllowedChannels()) {
+                            if (payment.equalsIgnoreCase(ch)) {
+                                ok = true;
+                                break;
                             }
-                            all.add(v);
                         }
+                        if (!ok) continue;
                     }
-                    // Check hạn mức mỗi KH nếu có userId
-                    if (userId != null) checkPerUserLimitThenFilter();
-                    else applyFilter();
-                });
+                    all.add(v);
+                }
+                // Check hạn mức mỗi KH nếu có userId
+                if (userId != null) checkPerUserLimitThenFilter();
+                else applyFilter();
+            }
+
+            @Override
+            public void onError(@NonNull Exception error) {
+                Toast.makeText(requireContext(), "Lỗi tải voucher: " + error.getMessage(), Toast.LENGTH_LONG).show();
+                all.clear();
+                applyFilter();
+            }
+        });
     }
 
     @Override public void onPause() {
@@ -199,6 +206,19 @@ public class VoucherListPickerSheet extends BottomSheetDialogFragment {
             if(type==null || type.equals(v.getType())) shown.add(v);
         }
         adapter.notifyDataSetChanged();
+        updateEmptyState();
+    }
+
+    /** Cập nhật trạng thái empty */
+    private void updateEmptyState() {
+        if (tvEmpty == null) return;
+        if (shown.isEmpty()) {
+            tvEmpty.setVisibility(View.VISIBLE);
+            rv.setVisibility(View.GONE);
+        } else {
+            tvEmpty.setVisibility(View.GONE);
+            rv.setVisibility(View.VISIBLE);
+        }
     }
 
     // ===== Adapter hiển thị picker_voucher.xml =====

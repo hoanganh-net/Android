@@ -1,5 +1,6 @@
 package com.pro.milkteaapp.repository;
 
+import android.content.Context;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -9,6 +10,7 @@ import androidx.annotation.Nullable;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.*;
+import com.pro.milkteaapp.SessionManager;
 
 import java.util.function.Consumer;
 
@@ -18,7 +20,7 @@ public class AuthRepository {
 
     private final FirebaseAuth auth;
     private final FirebaseFirestore db;
-    private final UserLocalStore localStore;
+    private final SessionManager sessionManager;
     private final boolean emailVerifyRequired;
 
     public interface AutoLoginCallback {
@@ -34,41 +36,41 @@ public class AuthRepository {
 
     public AuthRepository(@NonNull FirebaseAuth auth,
                           @NonNull FirebaseFirestore db,
-                          @NonNull UserLocalStore localStore,
+                          @NonNull Context context,
                           boolean emailVerifyRequired) {
         this.auth = auth;
         this.db = db;
-        this.localStore = localStore;
+        this.sessionManager = new SessionManager(context);
         this.emailVerifyRequired = emailVerifyRequired;
     }
 
     // ====== AUTO LOGIN NẾU CÓ SESSION CŨ ======
     public void autoLoginIfPossible(@NonNull AutoLoginCallback callback) {
-        if (!localStore.isLoggedIn()) {
+        if (!sessionManager.isLoggedIn()) {
             callback.onNotAvailable();
             return;
         }
 
         FirebaseUser fbUser = auth.getCurrentUser();
         if (fbUser == null) {
-            localStore.clearLoggedInFlag();
+            sessionManager.setLoggedIn(false);
             callback.onError("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.");
             return;
         }
 
         if (emailVerifyRequired && !fbUser.isEmailVerified()) {
-            localStore.clearLoggedInFlag();
+            sessionManager.setLoggedIn(false);
             callback.onError("Email của bạn chưa được xác thực.");
             return;
         }
 
         // Ưu tiên dùng custom userId (USRxxxxx) từ SessionManager nếu đã có
-        String cachedCustomId = localStore.getCachedUidFromSession();
+        String cachedCustomId = sessionManager.getUid();
         if (!TextUtils.isEmpty(cachedCustomId)) {
             fetchRoleByCustomId(cachedCustomId, new RoleCallback() {
                 @Override
                 public void onSuccess(String customId, String role, @Nullable String displayName) {
-                    localStore.cacheIdentityOnLogin(customId, displayName, role);
+                    sessionManager.saveUserSession(customId, null, displayName, role);
                     callback.onSuccess(role);
                 }
 
@@ -76,7 +78,7 @@ public class AuthRepository {
                 public void onFailure(Exception e) {
                     Log.w(TAG, "fetchRoleByCustomId failed in autoLogin: " + e.getMessage());
                     // Không lấy được role vẫn cho vào user
-                    localStore.cacheIdentityOnLogin(cachedCustomId, null, "user");
+                    sessionManager.saveUserSession(cachedCustomId, null, null, "user");
                     callback.onSuccess("user");
                 }
             });
@@ -90,7 +92,7 @@ public class AuthRepository {
                 customId -> fetchRoleByCustomId(customId, new RoleCallback() {
                     @Override
                     public void onSuccess(String cid, String role, @Nullable String displayName) {
-                        localStore.cacheIdentityOnLogin(cid, displayName, role);
+                        sessionManager.saveUserSession(cid, null, displayName, role);
                         callback.onSuccess(role);
                     }
 
@@ -101,13 +103,13 @@ public class AuthRepository {
                         fetchRoleByLegacyUid(fbUser.getUid(), new RoleCallback() {
                             @Override
                             public void onSuccess(String cid, String role, @Nullable String displayName) {
-                                localStore.cacheIdentityOnLogin(cid, displayName, role);
+                                sessionManager.saveUserSession(cid, null, displayName, role);
                                 callback.onSuccess(role);
                             }
 
                             @Override
                             public void onFailure(Exception ex) {
-                                localStore.cacheIdentityOnLogin(fbUser.getUid(), null, "user");
+                                sessionManager.saveUserSession(fbUser.getUid(), null, null, "user");
                                 callback.onSuccess("user");
                             }
                         });
@@ -119,13 +121,13 @@ public class AuthRepository {
                     fetchRoleByLegacyUid(fbUser.getUid(), new RoleCallback() {
                         @Override
                         public void onSuccess(String cid, String role, @Nullable String displayName) {
-                            localStore.cacheIdentityOnLogin(cid, displayName, role);
+                            sessionManager.saveUserSession(cid, null, displayName, role);
                             callback.onSuccess(role);
                         }
 
                         @Override
                         public void onFailure(Exception ex) {
-                            localStore.cacheIdentityOnLogin(fbUser.getUid(), null, "user");
+                            sessionManager.saveUserSession(fbUser.getUid(), null, null, "user");
                             callback.onSuccess("user");
                         }
                     });
@@ -158,7 +160,7 @@ public class AuthRepository {
                             customId -> fetchRoleByCustomId(customId, new RoleCallback() {
                                 @Override
                                 public void onSuccess(String cid, String role, @Nullable String displayName) {
-                                    localStore.cacheIdentityOnLogin(cid, displayName, role);
+                                    sessionManager.saveUserSession(cid, fbUser.getEmail(), displayName, role);
                                     callback.onSuccess(role);
                                 }
 
@@ -169,14 +171,14 @@ public class AuthRepository {
                                     fetchRoleByLegacyUid(fbUser.getUid(), new RoleCallback() {
                                         @Override
                                         public void onSuccess(String cid, String role, @Nullable String displayName) {
-                                            localStore.cacheIdentityOnLogin(cid, displayName, role);
+                                            sessionManager.saveUserSession(cid, fbUser.getEmail(), displayName, role);
                                             callback.onSuccess(role);
                                         }
 
                                         @Override
                                         public void onFailure(Exception ex) {
                                             // Nếu DB hoàn toàn không có gì, vẫn cho vào user
-                                            localStore.cacheIdentityOnLogin(fbUser.getUid(), null, "user");
+                                            sessionManager.saveUserSession(fbUser.getUid(), fbUser.getEmail(), null, "user");
                                             callback.onSuccess("user");
                                         }
                                     });
@@ -185,13 +187,13 @@ public class AuthRepository {
                             e -> fetchRoleByLegacyUid(fbUser.getUid(), new RoleCallback() {
                                 @Override
                                 public void onSuccess(String cid, String role, @Nullable String displayName) {
-                                    localStore.cacheIdentityOnLogin(cid, displayName, role);
+                                    sessionManager.saveUserSession(cid, fbUser.getEmail(), displayName, role);
                                     callback.onSuccess(role);
                                 }
 
                                 @Override
                                 public void onFailure(Exception ex) {
-                                    localStore.cacheIdentityOnLogin(fbUser.getUid(), null, "user");
+                                    sessionManager.saveUserSession(fbUser.getUid(), fbUser.getEmail(), null, "user");
                                     callback.onSuccess("user");
                                 }
                             })

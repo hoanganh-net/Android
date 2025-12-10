@@ -167,7 +167,7 @@ public class AdminOrdersAdapter extends ListAdapter<Order, AdminOrdersAdapter.VH
     /* ===== Adapter overrides ===== */
     @NonNull @Override
     public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_admin_order, parent, false);
+        View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.admin_item_order, parent, false);
         return new VH(v);
     }
 

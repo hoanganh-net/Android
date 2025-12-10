@@ -14,15 +14,14 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.pro.milkteaapp.activity.admin.AdminMainActivity;
 import com.pro.milkteaapp.repository.AuthRepository;
-import com.pro.milkteaapp.repository.UserLocalStore;
-import com.pro.milkteaapp.databinding.ActivityLoginBinding;
+import com.pro.milkteaapp.databinding.UserActivityLoginBinding;
 
 public class LoginActivity extends AppCompatActivity {
 
     // Bật nếu bạn yêu cầu email đã xác thực mới cho vào app
     private static final boolean EMAIL_VERIFY_REQUIRED = false;
 
-    private ActivityLoginBinding binding;
+    private UserActivityLoginBinding binding;
 
     // Repo lo hết phần Firebase + Firestore + lưu local
     private AuthRepository authRepository;
@@ -34,14 +33,14 @@ public class LoginActivity extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        binding = ActivityLoginBinding.inflate(getLayoutInflater());
+        binding = UserActivityLoginBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
         // Khởi tạo repository
         authRepository = new AuthRepository(
                 FirebaseAuth.getInstance(),
                 FirebaseFirestore.getInstance(),
-                new UserLocalStore(getApplicationContext()),
+                getApplicationContext(),
                 EMAIL_VERIFY_REQUIRED
         );
 

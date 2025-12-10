@@ -5,6 +5,7 @@ import android.view.*;
 import androidx.annotation.*;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.pro.milkteaapp.databinding.PickerPaymentMethodBinding;
+import com.pro.milkteaapp.payment.PaymentService;
 
 public class PaymentMethodPickerSheet extends BottomSheetDialogFragment {
 
@@ -21,9 +22,14 @@ public class PaymentMethodPickerSheet extends BottomSheetDialogFragment {
     }
 
     @Override public void onViewCreated(@NonNull View v, @Nullable Bundle s) {
-        b.btnCOD.setOnClickListener(v1 -> pick("COD"));
-        b.btnVNPAY.setOnClickListener(v1 -> pick("VNPAY"));
-        b.btnMomo.setOnClickListener(v1 -> pick("Momo"));
+        b.btnCOD.setOnClickListener(v1 -> pick(PaymentService.METHOD_COD));
+        b.btnVNPAY.setOnClickListener(v1 -> pick(PaymentService.METHOD_VNPAY));
+        b.btnMomo.setOnClickListener(v1 -> pick(PaymentService.METHOD_MOMO));
+        
+        // Thêm nút thẻ nếu có trong layout
+        if (b.btnCard != null) {
+            b.btnCard.setOnClickListener(v1 -> pick(PaymentService.METHOD_CARD));
+        }
     }
 
     private void pick(String m) { if (listener!=null) listener.onPicked(m); dismiss(); }

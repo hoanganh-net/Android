@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_products"
+            android:title="🛒 Sản phẩm" />
+        
+        <item
+            android:id="@+id/nav_category"
+            android:title="📂 Danh mục" />
+        
+        <item
+            android:id="@+id/nav_toppings"
+            android:title="🍡 Toppings" />
+        
+        <item
+            android:id="@+id/nav_combo"
+            android:title="🎁 Combo" />
+        
+        <item
+            android:id="@+id/nav_voucher"
+            android:title="🔖 Giảm giá" />
+        
+        <item
+            android:id="@+id/nav_point_redemption"
+            android:title="🪙 Đổi điểm" />
+        
+        <item
+            android:id="@+id/nav_rating"
+            android:title="⭐ Đánh giá" />
+        
+        <item
+            android:id="@+id/nav_users"
+            android:title="👥 Người dùng" />
+    </group>
+    
+</menu>
+

@@ -8,6 +8,7 @@ import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
@@ -17,19 +18,21 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
 import com.google.android.material.appbar.AppBarLayout;
-import com.google.android.material.textfield.MaterialAutoCompleteTextView;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.*;
+import com.google.android.material.navigation.NavigationView;
+import com.google.firebase.firestore.ListenerRegistration;
 import com.pro.milkteaapp.R;
-import com.pro.milkteaapp.SessionManager;
 import com.pro.milkteaapp.adapter.ProductsSectionAdapter;
 import com.pro.milkteaapp.databinding.FragmentProductBinding;
 import com.pro.milkteaapp.fragment.bottomsheet.ProductDetailBottomSheet;
 import com.pro.milkteaapp.models.CartItem;
 import com.pro.milkteaapp.models.Products;
-import com.pro.milkteaapp.utils.ImageLoader;
+import com.pro.milkteaapp.repository.CategoriesRepository;
+import com.pro.milkteaapp.repository.ProductsRepository;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -49,13 +52,11 @@ public class ProductFragment extends Fragment implements ProductsSectionAdapter.
     private final List<String> categories = new ArrayList<>();
     private final Map<String, Integer> headerPositions = new HashMap<>();
 
-    private FirebaseFirestore db;
+    private ProductsRepository productsRepository;
+    private CategoriesRepository categoriesRepository;
     private ListenerRegistration subProducts;
-    private ListenerRegistration userListener;
 
     private AppBarLayout appBar;
-    private MaterialAutoCompleteTextView actvCategoryCollapsed;
-    private ArrayAdapter<String> ddAdapter;
 
     @Nullable
     @Override
@@ -69,7 +70,8 @@ public class ProductFragment extends Fragment implements ProductsSectionAdapter.
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        db = FirebaseFirestore.getInstance();
+        productsRepository = new ProductsRepository();
+        categoriesRepository = new CategoriesRepository();
         adapter = new ProductsSectionAdapter(this);
 
         GridLayoutManager glm = new GridLayoutManager(getContext(), 2);
@@ -84,36 +86,10 @@ public class ProductFragment extends Fragment implements ProductsSectionAdapter.
         binding.recyclerView.setAdapter(adapter);
 
         appBar = binding.appbar;
-        actvCategoryCollapsed = binding.actvCategoryCollapsed;
-
-        binding.collapsedBarContainer.setAlpha(0f);
-        binding.collapsedBarContainer.setVisibility(View.GONE);
-        setupAppBarOffsetBehavior();
-
-        ddAdapter = new ArrayAdapter<>(requireContext(), R.layout._item_dropdown, new ArrayList<>());
-        actvCategoryCollapsed.setAdapter(ddAdapter);
-        actvCategoryCollapsed.setText(ALL, false);
-        actvCategoryCollapsed.setThreshold(0);
-        actvCategoryCollapsed.setOnClickListener(v -> actvCategoryCollapsed.showDropDown());
-        actvCategoryCollapsed.setOnFocusChangeListener((v, hasFocus) -> { if (hasFocus) actvCategoryCollapsed.showDropDown(); });
-        actvCategoryCollapsed.setOnTouchListener((v, e) -> { actvCategoryCollapsed.showDropDown(); return false; });
-
-        actvCategoryCollapsed.setOnItemClickListener((parent1, v1, position1, id1) -> {
-            String selected = (String) parent1.getItemAtPosition(position1);
-            if (binding != null) binding.searchEditText.setText("");
-            if (appBar != null) appBar.setExpanded(false, true);
-            if (ALL.equals(selected)) {
-                assert binding != null;
-                binding.recyclerView.post(() -> binding.recyclerView.smoothScrollToPosition(0));
-            } else {
-                scrollToCategorySmooth(selected, dpToPx());
-            }
-        });
 
         setupFabCart();
-        greetUser();          // ✅ bản mới
         setupSearchListener();
-        setupProfileIconClickListener();
+        setupDrawer();
 
         loadCategoriesThenListenProducts();
     }
@@ -141,56 +117,62 @@ public class ProductFragment extends Fragment implements ProductsSectionAdapter.
     private void loadCategoriesThenListenProducts() {
         setLoading(true);
         categories.clear();
-        db.collection("categories").whereEqualTo("active", true).orderBy("name", Query.Direction.ASCENDING)
-                .get()
-                .addOnSuccessListener(qs -> {
-                    for (DocumentSnapshot d : qs.getDocuments()) {
-                        String name = d.getString("name");
-                        if (!TextUtils.isEmpty(name)) categories.add(name.trim());
-                    }
-                    bindCollapsedCategoryDropdown();
-                    listenProductsRealtime();
-                })
-                .addOnFailureListener(e -> {
-                    Log.w("Firestore", "Load categories failed: " + e.getMessage());
-                    bindCollapsedCategoryDropdown();
-                    listenProductsRealtime();
-                });
+        categoriesRepository.fetchActiveCategories(new CategoriesRepository.OnCategoriesListener() {
+            @Override
+            public void onCategoriesReceived(@NonNull List<com.pro.milkteaapp.models.Category> categoryList) {
+                for (com.pro.milkteaapp.models.Category cat : categoryList) {
+                    String name = cat.getName();
+                    if (!TextUtils.isEmpty(name)) categories.add(name.trim());
+                }
+                updateDrawerMenu();
+                listenProductsRealtime();
+            }
+
+            @Override
+            public void onError(@NonNull Exception error) {
+                Log.w("Firestore", "Load categories failed: " + error.getMessage());
+                listenProductsRealtime();
+            }
+        });
     }
 
     private void listenProductsRealtime() {
         if (subProducts != null) { subProducts.remove(); subProducts = null; }
         setLoading(true); setEmpty(false);
-        Query q = db.collection("products")
-                .orderBy("category", Query.Direction.ASCENDING)
-                .orderBy("name", Query.Direction.ASCENDING);
-        subProducts = q.addSnapshotListener((snapshot, e) -> {
-            if (!isAdded() || binding == null) return;
-            setLoading(false);
-            allProducts.clear();
-            if (e != null) {
-                Log.e("Firestore", "Listen products failed", e);
-                adapter.submitRows(new ArrayList<>()); setEmpty(true); return;
+        subProducts = productsRepository.listenAllProducts(new ProductsRepository.OnProductsListener() {
+            @Override
+            public void onProductsReceived(@NonNull List<Products> products) {
+                if (!isAdded() || binding == null) return;
+                setLoading(false);
+                allProducts.clear();
+                allProducts.addAll(products);
+                ensureCategoriesIfEmpty();
+                updateDrawerMenu();
+                
+                // Apply current filter
+                if (selectedCategory.equals(ALL)) {
+                    rebuildSectionsAndShow(null);
+                } else {
+                    filterByCategory(selectedCategory);
+                }
             }
-            fillProductsFromSnapshot(snapshot);
-            ensureCategoriesIfEmpty();
-            rebuildSectionsAndShow(null);
+
+            @Override
+            public void onError(@NonNull Exception error) {
+                if (!isAdded() || binding == null) return;
+                Log.e("Firestore", "Listen products failed", error);
+                setLoading(false);
+                adapter.submitRows(new ArrayList<>());
+                setEmpty(true);
+            }
         });
     }
 
-    private void fillProductsFromSnapshot(@Nullable QuerySnapshot snapshot) {
-        if (snapshot != null && !snapshot.isEmpty()) {
-            for (DocumentSnapshot doc : snapshot.getDocuments()) {
-                Products m = doc.toObject(Products.class);
-                if (m == null) continue;
-                if (TextUtils.isEmpty(m.getId())) m.setId(doc.getId());
-                if (m.getImageUrl() == null) {
-                    String legacy = doc.getString("image");
-                    if (legacy != null) m.setImageUrl(legacy);
-                }
-                allProducts.add(m);
-            }
-        }
+    // Method này không còn cần thiết vì Repository đã parse sẵn
+    // Giữ lại để tương thích nếu có code khác gọi
+    @Deprecated
+    private void fillProductsFromSnapshot(@Nullable Object snapshot) {
+        // Không còn sử dụng, logic đã được chuyển vào Repository
     }
 
     private void ensureCategoriesIfEmpty() {
@@ -201,7 +183,6 @@ public class ProductFragment extends Fragment implements ProductsSectionAdapter.
             if (!cat.isEmpty() && !seen.containsKey(cat)) seen.put(cat, true);
         }
         categories.addAll(seen.keySet());
-        bindCollapsedCategoryDropdown();
     }
 
     private void rebuildSectionsAndShow(@Nullable String filterQuery) {
@@ -253,36 +234,6 @@ public class ProductFragment extends Fragment implements ProductsSectionAdapter.
         return result;
     }
 
-    private void setupAppBarOffsetBehavior() {
-        if (appBar == null || binding == null) return;
-        appBar.addOnOffsetChangedListener((appBarLayout, verticalOffset) -> {
-            int total = appBarLayout.getTotalScrollRange();
-            int offset = Math.abs(verticalOffset);
-            float triggerPercent = 0.65f;
-            boolean shouldShow = total > 0 && offset >= total * triggerPercent;
-            if (shouldShow) {
-                if (binding.collapsedBarContainer.getVisibility() != View.VISIBLE) {
-                    binding.collapsedBarContainer.setVisibility(View.VISIBLE);
-                    binding.collapsedBarContainer.animate().alpha(1f).setDuration(200).start();
-                }
-            } else {
-                if (binding.collapsedBarContainer.getVisibility() == View.VISIBLE) {
-                    binding.collapsedBarContainer.animate()
-                            .alpha(0f)
-                            .setDuration(200)
-                            .withEndAction(() -> binding.collapsedBarContainer.setVisibility(View.GONE))
-                            .start();
-                }
-            }
-        });
-    }
-
-    private void bindCollapsedCategoryDropdown() {
-        if (actvCategoryCollapsed == null || ddAdapter == null) return;
-        List<String> ordered = orderCategories(categories);
-        ddAdapter.clear(); ddAdapter.addAll(ordered); ddAdapter.notifyDataSetChanged();
-        if (!ALL.contentEquals(actvCategoryCollapsed.getText())) actvCategoryCollapsed.setText(ALL, false);
-    }
 
     private void setupSearchListener() {
         if (binding == null) return;
@@ -290,9 +241,32 @@ public class ProductFragment extends Fragment implements ProductsSectionAdapter.
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void afterTextChanged(Editable s) {}
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
-                rebuildSectionsAndShow(s == null ? "" : s.toString());
+                String query = s == null ? "" : s.toString();
+                if (selectedCategory.equals(ALL)) {
+                    rebuildSectionsAndShow(query);
+                } else {
+                    filterByCategoryWithQuery(selectedCategory, query);
+                }
             }
         });
+    }
+    
+    private void filterByCategoryWithQuery(@NonNull String category, @NonNull String query) {
+        if (category.equals(ALL)) {
+            rebuildSectionsAndShow(query);
+            return;
+        }
+        
+        String catKey = norm(category);
+        List<Products> filtered = new ArrayList<>();
+        for (Products p : allProducts) {
+            String pCatKey = norm(p.getCategory());
+            if (pCatKey.equals(catKey)) {
+                filtered.add(p);
+            }
+        }
+        
+        rebuildSectionsWithProducts(filtered, query);
     }
 
     private void setLoading(boolean show) { if (binding != null) binding.loadingOverlay.setVisibility(show ? View.VISIBLE : View.GONE); }
@@ -308,135 +282,141 @@ public class ProductFragment extends Fragment implements ProductsSectionAdapter.
         });
     }
 
-    /**
-     * Chào user theo thứ tự:
-     * 1. Nếu đã có trong Session (tên + avatar) → dùng luôn
-     * 2. Nếu có docId (USRxxxxx) → nghe realtime Firestore → set lại session
-     * 3. Nếu chưa có docId → query theo email lần đầu → set session
-     * 4. Cuối cùng mới rơi xuống email
-     */
-    @SuppressLint("SetTextI18n")
-    private void greetUser() {
+    private String selectedCategory = ALL;
+    
+    private void setupDrawer() {
         if (binding == null) return;
-
-        SessionManager session = new SessionManager(requireContext());
-        String cachedName = session.getDisplayName();
-        String cachedAvatar = session.getAvatar();
-
-        // nếu session đã có tên → ưu tiên
-        if (!TextUtils.isEmpty(cachedName)) {
-            binding.textGreeting.setText("Xin chào, " + cachedName + "!");
-        } else {
-            // fallback cũ từ SharedPreferences (phòng trường hợp màn cũ có save)
-            SharedPreferences prefs = requireActivity().getSharedPreferences("MyPrefs", android.content.Context.MODE_PRIVATE);
-            String name = prefs.getString("username", "");
-            if (TextUtils.isEmpty(name)) {
-                String authName = null;
-                if (FirebaseAuth.getInstance().getCurrentUser() != null) {
-                    authName = FirebaseAuth.getInstance().getCurrentUser().getDisplayName();
-                    if (TextUtils.isEmpty(authName)) authName = FirebaseAuth.getInstance().getCurrentUser().getEmail();
+        
+        // Setup toolbar menu click để mở drawer
+        binding.toolbar.setOnMenuItemClickListener(item -> {
+            if (item.getItemId() == R.id.action_drawer) {
+                if (binding.drawerLayout != null) {
+                    binding.drawerLayout.openDrawer(androidx.core.view.GravityCompat.END);
                 }
-                name = !TextUtils.isEmpty(authName) ? authName : "Người dùng";
+                return true;
             }
-            binding.textGreeting.setText("Xin chào, " + name + "!");
+            return false;
+        });
+        
+        // Setup drawer menu click
+        if (binding.navigationView != null) {
+            binding.navigationView.setNavigationItemSelectedListener(item -> {
+                int itemId = item.getItemId();
+                String category = item.getTitle().toString();
+                
+                // Update selected category
+                selectedCategory = category;
+                
+                // Filter products
+                filterByCategory(category);
+                
+                // Close drawer
+                if (binding.drawerLayout != null) {
+                    binding.drawerLayout.closeDrawer(androidx.core.view.GravityCompat.END);
+                }
+                
+                return true;
+            });
         }
-
-        // avatar từ session (nếu có) → hiển thị ngay
-        ImageLoader.load(binding.profileIcon, cachedAvatar, R.drawable.ic_avatar_default);
-
-        // 2. nếu session đã có docId (USRxxxxx) → nghe realtime
-        String docId = session.getUid();
-        if (!TextUtils.isEmpty(docId)) {
-            listenUserAvatarAndNameRealtime(docId, session);
+    }
+    
+    private void updateDrawerMenu() {
+        if (binding == null || binding.navigationView == null) return;
+        
+        android.view.Menu menu = binding.navigationView.getMenu();
+        menu.clear();
+        
+        // Add "Tất cả" first
+        menu.add(android.view.Menu.NONE, R.id.menu_all, android.view.Menu.NONE, ALL)
+            .setCheckable(true)
+            .setChecked(selectedCategory.equals(ALL));
+        
+        // Add categories
+        List<String> orderedCats = orderCategories(categories);
+        for (int i = 0; i < orderedCats.size(); i++) {
+            String cat = orderedCats.get(i);
+            if (cat.equals(ALL)) continue; // Skip "Tất cả" as it's already added
+            
+            int menuId = android.view.Menu.FIRST + i;
+            menu.add(android.view.Menu.NONE, menuId, android.view.Menu.NONE, cat)
+                .setCheckable(true)
+                .setChecked(selectedCategory.equals(cat));
+        }
+    }
+    
+    private void filterByCategory(@NonNull String category) {
+        if (category.equals(ALL)) {
+            rebuildSectionsAndShow(null);
             return;
         }
-
-        // 3. nếu chưa có docId → query theo email lần đầu
-        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
-            String email = FirebaseAuth.getInstance().getCurrentUser().getEmail();
-            if (!TextUtils.isEmpty(email)) {
-                db.collection("users")
-                        .whereEqualTo("email", email)
-                        .limit(1)
-                        .get()
-                        .addOnSuccessListener(qs -> {
-                            if (!isAdded() || binding == null) return;
-                            if (!qs.isEmpty()) {
-                                DocumentSnapshot doc = qs.getDocuments().get(0);
-                                String id = doc.getId();
-                                String fullName = doc.getString("fullName");
-                                String role = doc.getString("role");
-                                String avatar = doc.getString("avatar");
-
-                                // lưu lại toàn bộ vào session để lần sau không bị "Xin chào, gmail"
-                                session.saveUserFromFirestore(
-                                        id,
-                                        email,
-                                        fullName,
-                                        role,
-                                        avatar
-                                );
-
-                                // bind UI
-                                String display = !TextUtils.isEmpty(fullName) ? fullName : email;
-                                binding.textGreeting.setText("Xin chào, " + display + "!");
-                                ImageLoader.load(binding.profileIcon, avatar, R.drawable.ic_avatar_default);
-
-                                // và nghe realtime luôn
-                                listenUserAvatarAndNameRealtime(id, session);
-                            }
-                        });
+        
+        // Filter products by category
+        String catKey = norm(category);
+        List<Products> filtered = new ArrayList<>();
+        for (Products p : allProducts) {
+            String pCatKey = norm(p.getCategory());
+            if (pCatKey.equals(catKey)) {
+                filtered.add(p);
             }
         }
+        
+        // Rebuild sections with filtered products
+        rebuildSectionsWithProducts(filtered, null);
     }
-
-    @SuppressLint("SetTextI18n")
-    private void listenUserAvatarAndNameRealtime(@NonNull String docId, @NonNull SessionManager session) {
-        if (userListener != null) userListener.remove();
-        userListener = db.collection("users").document(docId)
-                .addSnapshotListener((snap, e) -> {
-                    if (!isAdded() || binding == null) return;
-                    if (snap != null && snap.exists()) {
-                        String fullName = snap.getString("fullName");
-                        String avatar   = snap.getString("avatar");
-                        String email    = snap.getString("email");
-                        String role     = snap.getString("role");
-
-                        // cập nhật UI
-                        String display = !TextUtils.isEmpty(fullName)
-                                ? fullName
-                                : (!TextUtils.isEmpty(email) ? email : "Người dùng");
-                        binding.textGreeting.setText("Xin chào, " + display + "!");
-                        ImageLoader.load(binding.profileIcon, avatar, R.drawable.ic_avatar_default);
-
-                        // cập nhật session để màn khác dùng lại
-                        session.saveUserFromFirestore(
-                                docId,
-                                email,
-                                fullName,
-                                role,
-                                avatar
-                        );
-                    }
-                });
-    }
-
-    private void setupProfileIconClickListener() {
-        if (binding == null) return;
-        binding.profileIcon.setOnClickListener(v -> {
-            if (!isAdded()) return;
-            requireActivity().getSupportFragmentManager()
-                    .beginTransaction()
-                    .replace(R.id.fragment_container, new ProfileFragment())
-                    .addToBackStack(null)
-                    .commit();
-        });
+    
+    private void rebuildSectionsWithProducts(@NonNull List<Products> productsToShow, @Nullable String filterQuery) {
+        String q = filterQuery == null ? "" : filterQuery.trim().toLowerCase(Locale.getDefault());
+        List<ProductsSectionAdapter.Row> rows = new ArrayList<>();
+        headerPositions.clear();
+        
+        // Group by category (use normalized key for matching, but original name for display)
+        Map<String, List<Products>> categoryMap = new LinkedHashMap<>();
+        Map<String, String> normalizedToOriginal = new HashMap<>();
+        
+        // Build mapping from normalized to original category names
+        for (String originalCat : categories) {
+            String normalized = norm(originalCat);
+            normalizedToOriginal.put(normalized, originalCat);
+        }
+        
+        for (Products p : productsToShow) {
+            String catNormalized = norm(safe(p.getCategory()));
+            if (catNormalized.isEmpty()) catNormalized = "khác";
+            
+            // Get original category name (with proper casing)
+            String catOriginal = normalizedToOriginal.get(catNormalized);
+            if (catOriginal == null) {
+                // If not found in categories list, use the product's category as-is or "Khác"
+                catOriginal = safe(p.getCategory());
+                if (catOriginal.isEmpty()) catOriginal = "Khác";
+            }
+            
+            if (q.isEmpty() || matchesQuery(p, q)) {
+                categoryMap.putIfAbsent(catOriginal, new ArrayList<>());
+                categoryMap.get(catOriginal).add(p);
+            }
+        }
+        
+        // Build rows using original category names
+        for (Map.Entry<String, List<Products>> entry : categoryMap.entrySet()) {
+            String cat = entry.getKey();
+            List<Products> products = entry.getValue();
+            if (products.isEmpty()) continue;
+            
+            headerPositions.put(cat, rows.size());
+            rows.add(ProductsSectionAdapter.Row.header(cat));
+            for (Products p : products) {
+                rows.add(ProductsSectionAdapter.Row.product(p));
+            }
+        }
+        
+        adapter.submitRows(rows);
+        setEmpty(rows.isEmpty());
     }
 
     @Override
     public void onDestroyView() {
         if (subProducts != null) { subProducts.remove(); subProducts = null; }
-        if (userListener != null) { userListener.remove(); userListener = null; }
         binding = null;
         super.onDestroyView();
     }
@@ -467,6 +447,7 @@ public class ProductFragment extends Fragment implements ProductsSectionAdapter.
         sheet.show(getParentFragmentManager(), "product_detail_sheet");
     }
 
+    // ===== Combo Section =====
     private static String safe(String s){ return s == null ? "" : s; }
     private static String norm(String s) { return s == null ? "" : s.trim().toLowerCase(Locale.getDefault()); }
 }

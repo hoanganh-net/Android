@@ -10,7 +10,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.pro.milkteaapp.R;
-import com.pro.milkteaapp.models.MessageModel;
+import com.pro.milkteaapp.models.Message;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -19,20 +19,47 @@ import java.util.Locale;
 
 public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.VH> {
 
-    public interface OnMessageClick { void onClick(@NonNull MessageModel m); }
+    public interface OnMessageClick { void onClick(@NonNull Message m); }
 
-    private final List<MessageModel> data = new ArrayList<>();
+    private final List<Message> data = new ArrayList<>();
+    private final List<Message> allData = new ArrayList<>();
     private final OnMessageClick onClick;
     private final SimpleDateFormat fmt = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
+    private String currentFilter = "Tất cả";
 
     public MessagesAdapter(OnMessageClick onClick) {
         this.onClick = onClick;
         setHasStableIds(true);
     }
 
-    public void submit(List<MessageModel> newData) {
+    public void submit(List<Message> newData) {
+        allData.clear();
+        if (newData != null) allData.addAll(newData);
+        applyFilter();
+    }
+    
+    public void setFilter(String filter) {
+        currentFilter = filter;
+        applyFilter();
+    }
+    
+    private void applyFilter() {
         data.clear();
-        if (newData != null) data.addAll(newData);
+        if ("Tất cả".equals(currentFilter)) {
+            data.addAll(allData);
+        } else if ("Hệ thống".equals(currentFilter)) {
+            for (Message m : allData) {
+                if (m.getType() != null && (m.getType().startsWith("order_") || "system".equals(m.getType()))) {
+                    data.add(m);
+                }
+            }
+        } else if ("Chat với Admin".equals(currentFilter)) {
+            for (Message m : allData) {
+                if (m.getType() != null && "chat".equals(m.getType())) {
+                    data.add(m);
+                }
+            }
+        }
         notifyDataSetChanged();
     }
 
@@ -48,7 +75,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesAdapter.VH> {
     }
 
     @Override public void onBindViewHolder(@NonNull VH h, int position) {
-        MessageModel m = data.get(position);
+        Message m = data.get(position);
         h.tvTitle.setText(titleFromType(m.getType()));
         h.tvMessage.setText(m.getMessage() != null ? m.getMessage() : "");
         h.tvTime.setText(m.getCreatedAt() != null ? fmt.format(m.getCreatedAt().toDate()) : "");

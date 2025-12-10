@@ -12,7 +12,7 @@ import androidx.fragment.app.FragmentManager;
 
 import com.google.android.material.navigation.NavigationBarView;
 import com.pro.milkteaapp.R;
-import com.pro.milkteaapp.databinding.ActivityMainBinding;
+import com.pro.milkteaapp.databinding.UserActivityMainBinding;
 import com.pro.milkteaapp.fragment.CartFragment;
 import com.pro.milkteaapp.fragment.HomeFragment;
 import com.pro.milkteaapp.fragment.MessagesFragment;
@@ -21,7 +21,7 @@ import com.pro.milkteaapp.fragment.ProfileFragment;
 
 public class MainActivity extends AppCompatActivity {
 
-    private ActivityMainBinding binding;
+    private UserActivityMainBinding binding;
 
     private static final long NAV_DEBOUNCE_MS = 400L;
     private long lastNavClick = 0L;
@@ -36,23 +36,29 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        binding = ActivityMainBinding.inflate(getLayoutInflater());
-        setContentView(binding.getRoot());
+        try {
+            binding = UserActivityMainBinding.inflate(getLayoutInflater());
+            setContentView(binding.getRoot());
 
-        // Lắng nghe chọn bottom nav
-        binding.bottomNavigationView.setOnItemSelectedListener(onNavSelectedListener);
+            // Lắng nghe chọn bottom nav
+            binding.bottomNavigationView.setOnItemSelectedListener(onNavSelectedListener);
 
-        // Reselect: ví dụ, về top nếu bấm lại tab hiện tại
-        binding.bottomNavigationView.setOnItemReselectedListener(item -> {
-            Fragment f = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
-            // ((HomeFragment) f).scrollToTop();
-        });
+            // Reselect: ví dụ, về top nếu bấm lại tab hiện tại
+            binding.bottomNavigationView.setOnItemReselectedListener(item -> {
+                Fragment f = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
+                // ((HomeFragment) f).scrollToTop();
+            });
 
-        // Nếu có intent điều hướng → xử lý; ngược lại lần đầu vào chọn Home
-        boolean handled = handleIntent(getIntent());
-        if (!handled && savedInstanceState == null) {
-            binding.bottomNavigationView.setSelectedItemId(R.id.navigation_home);
-            navigateTo(R.id.navigation_home);
+            // Nếu có intent điều hướng → xử lý; ngược lại lần đầu vào chọn Home
+            boolean handled = handleIntent(getIntent());
+            if (!handled && savedInstanceState == null) {
+                binding.bottomNavigationView.setSelectedItemId(R.id.navigation_home);
+                navigateTo(R.id.navigation_home);
+            }
+        } catch (Exception e) {
+            // Lỗi khởi tạo -> fallback về LoginActivity
+            android.util.Log.e("MainActivity", "Lỗi khởi tạo: " + e.getMessage(), e);
+            finish();
         }
     }
 

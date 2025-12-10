@@ -92,6 +92,45 @@ public class AddressRepository {
                 .addOnFailureListener(e -> { if (err != null) err.onError(e); });
     }
 
+    /**
+     * Lấy một address theo ID
+     */
+    public void fetchById(@NonNull String addressId, @NonNull OnAddressFetched cb, @Nullable OnError err) {
+        colRef().document(addressId).get()
+                .addOnSuccessListener(doc -> {
+                    if (doc != null && doc.exists()) {
+                        Address a = toAddress(doc);
+                        if (a != null) {
+                            cb.onResult(a);
+                        } else {
+                            if (err != null) err.onError(new Exception("Failed to parse address"));
+                        }
+                    } else {
+                        if (err != null) err.onError(new Exception("Address not found"));
+                    }
+                })
+                .addOnFailureListener(e -> { if (err != null) err.onError(e); });
+    }
+
+    /**
+     * Lấy địa chỉ mặc định
+     */
+    public void fetchDefault(@NonNull OnAddressFetched cb, @Nullable OnError err) {
+        colRef()
+                .whereEqualTo("isDefault", true)
+                .limit(1)
+                .get()
+                .addOnSuccessListener(snap -> {
+                    Address a = null;
+                    if (snap != null && !snap.isEmpty()) {
+                        DocumentSnapshot d = snap.getDocuments().get(0);
+                        a = toAddress(d);
+                    }
+                    cb.onResult(a);
+                })
+                .addOnFailureListener(e -> { if (err != null) err.onError(e); });
+    }
+
     /** Realtime: tự cập nhật UI khi add/edit/delete */
     public ListenerRegistration listenAll(@NonNull OnAddresses cb, @Nullable OnError err) {
         return colRef()
@@ -111,15 +150,50 @@ public class AddressRepository {
 
     public void addOrUpdate(@NonNull Address a, @NonNull OnAddressSaved onDone, @Nullable OnError err) {
         Map<String, Object> map = toMap(a);
-        if (a.getId() == null || a.getId().isEmpty()) {
-            map.put("createdAt", FieldValue.serverTimestamp());
-            colRef().add(map)
-                    .addOnSuccessListener(ref -> { a.setId(ref.getId()); onDone.onSaved(a); })
-                    .addOnFailureListener(e -> { if (err != null) err.onError(e); });
+        boolean isNew = a.getId() == null || a.getId().isEmpty();
+        
+        // Nếu địa chỉ này được set làm mặc định, cần set tất cả địa chỉ khác thành false
+        if (a.isDefault()) {
+            // Lấy tất cả địa chỉ hiện tại
+            colRef().get().addOnSuccessListener(snap -> {
+                WriteBatch batch = db.batch();
+                
+                // Set tất cả địa chỉ khác thành false
+                for (DocumentSnapshot d : snap.getDocuments()) {
+                    if (isNew || !d.getId().equals(a.getId())) {
+                        batch.update(d.getReference(), "isDefault", false);
+                    }
+                }
+                
+                // Thêm hoặc cập nhật địa chỉ hiện tại
+                if (isNew) {
+                    map.put("createdAt", FieldValue.serverTimestamp());
+                    // Tạo document reference mới
+                    var newDocRef = colRef().document();
+                    a.setId(newDocRef.getId()); // Set ID trước để có thể dùng trong batch
+                    batch.set(newDocRef, map);
+                    batch.commit()
+                            .addOnSuccessListener(unused -> onDone.onSaved(a))
+                            .addOnFailureListener(e -> { if (err != null) err.onError(e); });
+                } else {
+                    batch.update(colRef().document(a.getId()), map);
+                    batch.commit()
+                            .addOnSuccessListener(unused -> onDone.onSaved(a))
+                            .addOnFailureListener(e -> { if (err != null) err.onError(e); });
+                }
+            }).addOnFailureListener(e -> { if (err != null) err.onError(e); });
         } else {
-            colRef().document(a.getId()).set(map, SetOptions.merge())
-                    .addOnSuccessListener(unused -> onDone.onSaved(a))
-                    .addOnFailureListener(e -> { if (err != null) err.onError(e); });
+            // Không phải địa chỉ mặc định, thêm/cập nhật bình thường
+            if (isNew) {
+                map.put("createdAt", FieldValue.serverTimestamp());
+                colRef().add(map)
+                        .addOnSuccessListener(ref -> { a.setId(ref.getId()); onDone.onSaved(a); })
+                        .addOnFailureListener(e -> { if (err != null) err.onError(e); });
+            } else {
+                colRef().document(a.getId()).set(map, SetOptions.merge())
+                        .addOnSuccessListener(unused -> onDone.onSaved(a))
+                        .addOnFailureListener(e -> { if (err != null) err.onError(e); });
+            }
         }
     }
 
@@ -178,5 +252,6 @@ public class AddressRepository {
 
     public interface OnAddresses { void onResult(@NonNull List<Address> addresses); }
     public interface OnAddressSaved { void onSaved(@NonNull Address saved); }
+    public interface OnAddressFetched { void onResult(@Nullable Address address); }
     public interface OnError { void onError(@NonNull Exception e); }
 }

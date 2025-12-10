@@ -16,18 +16,15 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.google.android.material.tabs.TabLayout;
 import com.google.firebase.Timestamp;
-import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
-import com.google.firebase.firestore.Query;
 import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.activity.admin.AdminOrderDetailActivity;
 import com.pro.milkteaapp.adapter.admin.AdminOrdersAdapter;
 import com.pro.milkteaapp.models.Order;
+import com.pro.milkteaapp.repository.OrdersRepository;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 public class AdminOrdersFragment extends Fragment {
@@ -36,6 +33,7 @@ public class AdminOrdersFragment extends Fragment {
     private RecyclerView recyclerView;
     private View emptyState, loadingState;
     private SwipeRefreshLayout swipeRefresh;
+    private OrdersRepository ordersRepository;
     private ListenerRegistration registration;
     private AdminOrdersAdapter adapter;
 
@@ -47,7 +45,7 @@ public class AdminOrdersFragment extends Fragment {
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
 
-        View v = inflater.inflate(R.layout.activity_admin_orders, container, false);
+        View v = inflater.inflate(R.layout.admin_activity_orders, container, false);
 
         tabAdmin     = v.findViewById(R.id.tabAdmin);
         swipeRefresh = v.findViewById(R.id.swipeRefresh);
@@ -55,6 +53,8 @@ public class AdminOrdersFragment extends Fragment {
         emptyState   = v.findViewById(R.id.emptyState);
         loadingState = v.findViewById(R.id.loadingState);
 
+        ordersRepository = new OrdersRepository();
+        
         setupTabs();
         setupRecyclerView();
 
@@ -120,76 +120,119 @@ public class AdminOrdersFragment extends Fragment {
     private void loadData() {
         if (!isAdded()) return;
 
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-        Query q;
-
-        // Query server theo field “ổn định” để có index đơn giản, rồi sort lại trên client.
-        if ("PENDING".equalsIgnoreCase(currentStatus)) {
-            q = db.collection("orders")
-                    .whereEqualTo("status", "PENDING")
-                    .orderBy("createdAt", Query.Direction.DESCENDING);
-        } else if ("FINISHED".equalsIgnoreCase(currentStatus)) {
-            // vẫn orderBy createdAt (ít index), client sort lại theo finishedAt
-            q = db.collection("orders")
-                    .whereEqualTo("status", "FINISHED")
-                    .orderBy("createdAt", Query.Direction.DESCENDING);
-        } else { // CANCELLED tab → lấy cả CANCELLED & CANCELED
-            q = db.collection("orders")
-                    .whereIn("status", Arrays.asList("CANCELLED", "CANCELED"))
-                    .orderBy("createdAt", Query.Direction.DESCENDING);
-        }
-
         if (registration != null) { registration.remove(); registration = null; }
 
-        registration = q.addSnapshotListener((snap, err) -> {
-            if (!isAdded()) return;
-
-            swipeRefresh.setRefreshing(false);
-
-            if (err != null) {
-                showLoading(false);
-                showEmpty();
-                toastLong("Lỗi tải: " + err.getMessage());
-                return;
-            }
-
-            List<Order> data = new ArrayList<>();
-            if (snap != null) {
-                for (DocumentSnapshot d : snap.getDocuments()) {
-                    // Dùng factory để map an toàn mọi alias field
-                    Order o = Order.from(d);
-                    data.add(o);
+        // Query theo status
+        if ("PENDING".equalsIgnoreCase(currentStatus)) {
+            registration = ordersRepository.listenAllOrders(new OrdersRepository.OnOrdersListener() {
+                @Override
+                public void onOrdersReceived(@NonNull List<Order> orders) {
+                    if (!isAdded()) return;
+                    swipeRefresh.setRefreshing(false);
+                    // Filter chỉ PENDING
+                    List<Order> filtered = new ArrayList<>();
+                    for (Order o : orders) {
+                        if ("PENDING".equalsIgnoreCase(o.getStatus())) {
+                            filtered.add(o);
+                        }
+                    }
+                    adapter.submitList(filtered);
+                    if (filtered.isEmpty()) {
+                        showEmpty();
+                    } else {
+                        showList();
+                    }
+                    showLoading(false);
                 }
-            }
 
-            // ===== Client-side sort theo timestamp “đúng nghĩa” =====
-            if ("CANCELLED".equalsIgnoreCase(currentStatus)) {
-                // Ưu tiên cancelledAt/canceledAt, fallback createdAt
-                Collections.sort(data, (a, b) -> {
-                    Timestamp ta = firstNonNullCancelTs(a);
-                    Timestamp tb = firstNonNullCancelTs(b);
-                    long la = tsToLong(ta != null ? ta : a.getCreatedAt());
-                    long lb = tsToLong(tb != null ? tb : b.getCreatedAt());
-                    return Long.compare(lb, la); // desc
-                });
-            } else if ("FINISHED".equalsIgnoreCase(currentStatus)) {
-                // Ưu tiên finishedAt, fallback createdAt
-                Collections.sort(data, (a, b) -> {
-                    long la = tsToLong(a.getFinishedAt() != null ? a.getFinishedAt() : a.getCreatedAt());
-                    long lb = tsToLong(b.getFinishedAt() != null ? b.getFinishedAt() : b.getCreatedAt());
-                    return Long.compare(lb, la); // desc
-                });
-            } // PENDING: đã orderBy createdAt desc ở server
-
-            // Chỉ hiện nút xóa ở tab Cancelled
-            adapter.setShowDelete("CANCELLED".equalsIgnoreCase(currentStatus));
-
-            adapter.submitList(data, () -> {
-                showLoading(false);
-                if (data.isEmpty()) showEmpty(); else showList();
-                recyclerView.setVisibility(View.VISIBLE);
+                @Override
+                public void onError(@NonNull Exception error) {
+                    if (!isAdded()) return;
+                    swipeRefresh.setRefreshing(false);
+                    showLoading(false);
+                    showEmpty();
+                    toastLong("Lỗi tải: " + error.getMessage());
+                }
             });
-        });
+        } else if ("FINISHED".equalsIgnoreCase(currentStatus)) {
+            registration = ordersRepository.listenAllOrders(new OrdersRepository.OnOrdersListener() {
+                @Override
+                public void onOrdersReceived(@NonNull List<Order> orders) {
+                    if (!isAdded()) return;
+                    swipeRefresh.setRefreshing(false);
+                    // Filter chỉ FINISHED
+                    List<Order> filtered = new ArrayList<>();
+                    for (Order o : orders) {
+                        if ("FINISHED".equalsIgnoreCase(o.getStatus())) {
+                            filtered.add(o);
+                        }
+                    }
+                    // Sort theo finishedAt
+                    filtered.sort((a, b) -> {
+                        long la = tsToLong(a.getFinishedAt() != null ? a.getFinishedAt() : a.getCreatedAt());
+                        long lb = tsToLong(b.getFinishedAt() != null ? b.getFinishedAt() : b.getCreatedAt());
+                        return Long.compare(lb, la); // desc
+                    });
+                    adapter.submitList(filtered);
+                    if (filtered.isEmpty()) {
+                        showEmpty();
+                    } else {
+                        showList();
+                    }
+                    showLoading(false);
+                }
+
+                @Override
+                public void onError(@NonNull Exception error) {
+                    if (!isAdded()) return;
+                    swipeRefresh.setRefreshing(false);
+                    showLoading(false);
+                    showEmpty();
+                    toastLong("Lỗi tải: " + error.getMessage());
+                }
+            });
+        } else { // CANCELLED
+            registration = ordersRepository.listenAllOrders(new OrdersRepository.OnOrdersListener() {
+                @Override
+                public void onOrdersReceived(@NonNull List<Order> orders) {
+                    if (!isAdded()) return;
+                    swipeRefresh.setRefreshing(false);
+                    // Filter CANCELLED hoặc CANCELED
+                    List<Order> filtered = new ArrayList<>();
+                    for (Order o : orders) {
+                        String s = o.getStatus();
+                        if ("CANCELLED".equalsIgnoreCase(s) || "CANCELED".equalsIgnoreCase(s)) {
+                            filtered.add(o);
+                        }
+                    }
+                    // Sort theo cancelledAt
+                    filtered.sort((a, b) -> {
+                        Timestamp ta = firstNonNullCancelTs(a);
+                        Timestamp tb = firstNonNullCancelTs(b);
+                        long la = tsToLong(ta != null ? ta : a.getCreatedAt());
+                        long lb = tsToLong(tb != null ? tb : b.getCreatedAt());
+                        return Long.compare(lb, la); // desc
+                    });
+                    adapter.setShowDelete(true);
+                    adapter.submitList(filtered);
+                    if (filtered.isEmpty()) {
+                        showEmpty();
+                    } else {
+                        showList();
+                    }
+                    showLoading(false);
+                }
+
+                @Override
+                public void onError(@NonNull Exception error) {
+                    if (!isAdded()) return;
+                    swipeRefresh.setRefreshing(false);
+                    showLoading(false);
+                    showEmpty();
+                    toastLong("Lỗi tải: " + error.getMessage());
+                }
+            });
+        }
     }
 
     /** Xoá hẳn record (tab Cancelled) */

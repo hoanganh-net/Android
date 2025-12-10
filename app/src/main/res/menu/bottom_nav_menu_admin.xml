@@ -7,9 +7,9 @@
         android:title="Đơn hàng" />
 
     <item
-        android:id="@+id/adminUsers"
-        android:icon="@drawable/ic_users"
-        android:title="Người dùng" />
+        android:id="@+id/adminChat"
+        android:icon="@drawable/ic_message"
+        android:title="Chat" />
 
     <item
         android:id="@+id/adminStatistics"

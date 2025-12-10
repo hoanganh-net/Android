@@ -5,7 +5,8 @@ import android.os.Bundle;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.pro.milkteaapp.databinding.ActivityOrderHistoryBinding;
+import com.pro.milkteaapp.R;
+import com.pro.milkteaapp.databinding.UserActivityOrderHistoryBinding;
 import com.pro.milkteaapp.fragment.OrdersFragment;
 
 public class OrderHistoryActivity extends AppCompatActivity {
@@ -13,16 +14,24 @@ public class OrderHistoryActivity extends AppCompatActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        ActivityOrderHistoryBinding b = ActivityOrderHistoryBinding.inflate(getLayoutInflater());
+        UserActivityOrderHistoryBinding b = UserActivityOrderHistoryBinding.inflate(getLayoutInflater());
         setContentView(b.getRoot());
 
         setSupportActionBar(b.toolbar);
         b.toolbar.setNavigationOnClickListener(v -> getOnBackPressedDispatcher().onBackPressed());
+        centerToolbarTitle(b.toolbar, getString(R.string.order_history));
 
         if (savedInstanceState == null) {
             getSupportFragmentManager().beginTransaction()
                     .replace(b.container.getId(), OrdersFragment.newInstance("ALL", false))
                     .commit();
         }
+    }
+    
+    private android.widget.TextView customTitleView;
+    
+    private void centerToolbarTitle(com.google.android.material.appbar.MaterialToolbar toolbar, String title) {
+        customTitleView = com.pro.milkteaapp.utils.ToolbarUtils.centerToolbarTitle(
+                toolbar, title, customTitleView, getSupportActionBar());
     }
 }

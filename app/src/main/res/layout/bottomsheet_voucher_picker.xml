@@ -75,5 +75,17 @@
             android:layout_height="0dp"
             android:layout_weight="1"
             android:nestedScrollingEnabled="true" />
+
+        <!-- Empty state -->
+        <TextView
+            android:id="@+id/tvEmpty"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:gravity="center"
+            android:text="Không có voucher nào phù hợp"
+            android:textColor="@color/gray_600"
+            android:textSize="14sp"
+            android:visibility="gone" />
     </LinearLayout>
 </LinearLayout>

@@ -21,6 +21,11 @@ public class OrderLine implements Serializable {
     private int quantity;
     private double unitPrice;
     private double lineTotal;
+    
+    // Combo fields
+    private boolean isCombo;
+    private String comboId;
+    private List<ComboProductDetail> comboProducts; // Chi tiết các sản phẩm trong combo
 
     public OrderLine() {}
 
@@ -30,41 +35,97 @@ public class OrderLine implements Serializable {
         OrderLine ol = new OrderLine();
         if (m == null) return ol;
 
-        // tên sản phẩm
-        Object n = pick(m, "productName", "name", "title");
-        ol.name = n == null ? "" : String.valueOf(n);
-
-        // size/biến thể
-        Object s = pick(m, "sizeName", "size", "variant");
-        ol.size = s == null ? "" : String.valueOf(s);
-
-        ol.sugar = asString(pick(m, "sugar"));
-        ol.ice = asString(pick(m, "ice"));
-        ol.note = asString(pick(m, "note"));
-
-        // toppings: chuyển từ List<Map> thành List<Topping>
-        Object tops = m.get("toppings");
-        List<Topping> topList = new ArrayList<>();
-        if (tops instanceof List) {
-            for (Object t : (List<?>) tops) {
-                if (t instanceof Map) {
-                    // Ép kiểu an toàn từ Map sang Topping
-                    Topping topping = mapToTopping((Map<String, Object>) t);
-                    topList.add(topping);
+        // Kiểm tra xem có phải combo không
+        Object typeObj = m.get("type");
+        String typeStr = typeObj != null ? String.valueOf(typeObj).trim() : "";
+        ol.isCombo = "combo".equalsIgnoreCase(typeStr);
+        
+        android.util.Log.d("OrderLine", "Parsing item - type: " + typeStr + ", isCombo: " + ol.isCombo);
+        
+        if (ol.isCombo) {
+            // Xử lý combo
+            Object n = pick(m, "name", "productName", "title", "comboName");
+            ol.name = n == null ? "Combo" : String.valueOf(n);
+            ol.comboId = asString(pick(m, "comboId", "id"));
+            // Combo không có size ở level combo (mỗi sản phẩm có size riêng)
+            ol.size = "";
+            ol.toppings = new ArrayList<>(); // Combo không có toppings ở level combo
+            ol.sugar = "";
+            ol.ice = "";
+            
+            // Parse chi tiết các sản phẩm trong combo
+            Object productsObj = m.get("products");
+            ol.comboProducts = new ArrayList<>();
+            if (productsObj instanceof List) {
+                for (Object p : (List<?>) productsObj) {
+                    if (p instanceof Map) {
+                        Map<String, Object> productMap = (Map<String, Object>) p;
+                        ComboProductDetail detail = new ComboProductDetail();
+                        detail.productName = asString(productMap.get("productName"));
+                        detail.size = asString(productMap.get("size"));
+                        detail.sugar = asString(productMap.get("sugar"));
+                        // Bỏ đá - sản phẩm mặc định phục vụ đá riêng
+                        
+                        // Parse toppings
+                        Object tops = productMap.get("toppings");
+                        detail.toppings = new ArrayList<>();
+                        if (tops instanceof List) {
+                            for (Object t : (List<?>) tops) {
+                                if (t instanceof Map) {
+                                    Topping topping = mapToTopping((Map<String, Object>) t);
+                                    detail.toppings.add(topping);
+                                }
+                            }
+                        }
+                        ol.comboProducts.add(detail);
+                    }
                 }
             }
+            android.util.Log.d("OrderLine", "Combo parsed - name: " + ol.name + ", comboId: " + ol.comboId + ", products count: " + ol.comboProducts.size());
+        } else {
+            // Xử lý sản phẩm thường
+            // tên sản phẩm
+            Object n = pick(m, "productName", "name", "title");
+            ol.name = n == null ? "" : String.valueOf(n);
+
+            // size/biến thể
+            Object s = pick(m, "sizeName", "size", "variant");
+            ol.size = s == null ? "" : String.valueOf(s);
+
+            ol.sugar = asString(pick(m, "sugar"));
+            ol.ice = asString(pick(m, "ice"));
+            ol.note = asString(pick(m, "note"));
+
+            // toppings: chuyển từ List<Map> thành List<Topping>
+            Object tops = m.get("toppings");
+            List<Topping> topList = new ArrayList<>();
+            if (tops instanceof List) {
+                for (Object t : (List<?>) tops) {
+                    if (t instanceof Map) {
+                        // Ép kiểu an toàn từ Map sang Topping
+                        Topping topping = mapToTopping((Map<String, Object>) t);
+                        topList.add(topping);
+                    }
+                }
+            }
+            ol.toppings = topList;
         }
-        ol.toppings = topList;
+        
+        // Note cho cả combo và sản phẩm thường
+        ol.note = asString(pick(m, "note"));
 
-        // số lượng
+        // số lượng (cho cả combo và sản phẩm thường)
         ol.quantity = toInt(pick(m, "quantity", "qty"));
+        android.util.Log.d("OrderLine", "Quantity parsed: " + ol.quantity);
 
-        // đơn giá
+        // đơn giá (cho cả combo và sản phẩm thường)
         ol.unitPrice = toDouble(pick(m, "unitPrice", "price"));
+        android.util.Log.d("OrderLine", "UnitPrice parsed: " + ol.unitPrice);
 
-        // thành tiền dòng
+        // thành tiền dòng (cho cả combo và sản phẩm thường)
         Object lt = pick(m, "lineTotal", "totalPrice", "amount");
         ol.lineTotal = lt != null ? toDouble(lt) : (ol.unitPrice * ol.quantity);
+        android.util.Log.d("OrderLine", "LineTotal parsed: " + ol.lineTotal);
 
         return ol;
     }
@@ -122,6 +183,13 @@ public class OrderLine implements Serializable {
     public int getQuantity() { return quantity; }
     public double getUnitPrice() { return unitPrice; }
     public double getLineTotal() { return lineTotal; }
+    
+    // Combo getters
+    public boolean isCombo() { return isCombo; }
+    @NonNull public String getComboId() { return comboId == null ? "" : comboId; }
+    @NonNull public List<ComboProductDetail> getComboProducts() { 
+        return comboProducts == null ? new ArrayList<>() : comboProducts; 
+    }
 
     // ===== HIỂN THỊ PHỤ =====
     @NonNull
@@ -142,6 +210,40 @@ public class OrderLine implements Serializable {
 //                sb.append(" - ").append(t.getName()).append("");
 //            }
 //        }
+
+        // Nếu là combo, hiển thị chi tiết các sản phẩm
+        if (isCombo) {
+            List<ComboProductDetail> products = getComboProducts();
+            if (products.isEmpty()) {
+                return "Combo";
+            }
+            
+            StringBuilder comboDetail = new StringBuilder();
+            for (int i = 0; i < products.size(); i++) {
+                ComboProductDetail product = products.get(i);
+                comboDetail.append(product.productName);
+                
+                // Thêm size, đường, topping
+                List<String> options = new ArrayList<>();
+                if (!product.size.isEmpty()) options.add("Size: " + product.size);
+                if (!product.sugar.isEmpty()) options.add("Đường: " + product.sugar);
+                if (!product.toppings.isEmpty()) {
+                    StringBuilder toppingStr = new StringBuilder("Topping: ");
+                    for (int j = 0; j < product.toppings.size(); j++) {
+                        toppingStr.append(product.toppings.get(j).getName());
+                        if (j < product.toppings.size() - 1) toppingStr.append(", ");
+                    }
+                    options.add(toppingStr.toString());
+                }
+                
+                if (!options.isEmpty()) {
+                    comboDetail.append(" (").append(String.join(" • ", options)).append(")");
+                }
+                
+                if (i < products.size() - 1) comboDetail.append("\n");
+            }
+            return comboDetail.toString();
+        }
 
         // Size
         if (!getSize().isEmpty()) {
@@ -175,5 +277,20 @@ public class OrderLine implements Serializable {
         }
 
         return sb.toString().trim();  // trim để tránh xuống dòng thừa cuối cùng
+    }
+    
+    // Inner class để lưu thông tin chi tiết sản phẩm trong combo
+    public static class ComboProductDetail implements Serializable {
+        public String productName;
+        public String size;
+        public String sugar;
+        public List<Topping> toppings;
+        
+        public ComboProductDetail() {
+            this.productName = "";
+            this.size = "";
+            this.sugar = "";
+            this.toppings = new ArrayList<>();
+        }
     }
 }

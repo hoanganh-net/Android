@@ -1,9 +1,12 @@
 package com.pro.milkteaapp.activity.admin;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.text.format.DateFormat;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Toast;
@@ -11,6 +14,8 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
+
+import androidx.annotation.NonNull;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
@@ -23,8 +28,10 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Transaction;
 import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.adapter.OrderLinesAdapter;
-import com.pro.milkteaapp.databinding.ActivityAdminOrderDetailBinding;
+import com.pro.milkteaapp.databinding.AdminActivityOrderDetailBinding;
 import com.pro.milkteaapp.models.OrderLine;
+import com.pro.milkteaapp.repository.OrdersRepository;
+import com.pro.milkteaapp.repository.UsersRepository;
 import com.pro.milkteaapp.utils.MoneyUtils;
 
 import java.util.ArrayList;
@@ -36,21 +43,28 @@ public class AdminOrderDetailActivity extends AppCompatActivity {
 
     public static final String EXTRA_ORDER_ID = "order_id";
 
-    private ActivityAdminOrderDetailBinding b;
+    private AdminActivityOrderDetailBinding b;
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
     private final OrderLinesAdapter itemsAdapter = new OrderLinesAdapter();
+    private final OrdersRepository ordersRepository = new OrdersRepository();
+    private final UsersRepository usersRepository = new UsersRepository();
 
     private String orderId;
     private String userId;
+    private String userName;
     private String statusNow;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        b = ActivityAdminOrderDetailBinding.inflate(getLayoutInflater());
+        b = AdminActivityOrderDetailBinding.inflate(getLayoutInflater());
         setContentView(b.getRoot());
 
         setSupportActionBar(b.toolbar);
+        // Hiển thị nút back
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        }
         b.toolbar.setNavigationOnClickListener(v -> getOnBackPressedDispatcher().onBackPressed());
 
         b.rvItems.setLayoutManager(new LinearLayoutManager(this));
@@ -62,6 +76,9 @@ public class AdminOrderDetailActivity extends AppCompatActivity {
             finish();
             return;
         }
+        
+        // Set title ban đầu
+        centerToolbarTitle(b.toolbar, "ĐƠN #" + orderId);
 
         b.btnAdminConfirm.setOnClickListener(v -> doConfirm());
         b.btnAdminCancel.setOnClickListener(v -> showCancelDialog());
@@ -71,12 +88,32 @@ public class AdminOrderDetailActivity extends AppCompatActivity {
 
     private void loadOrder(String orderId) {
         setLoading(true);
-        final DocumentReference orderRef = db.collection("orders").document(orderId);
-        orderRef.get()
+        // Vẫn cần fetch document trực tiếp vì cần items và addressObj không có trong Order model
+        // TODO: Có thể tạo OrdersRepository.fetchOrderDocument() sau nếu cần
+        ordersRepository.fetchOrderById(orderId, new OrdersRepository.OnOrderListener() {
+            @Override
+            public void onOrderReceived(@NonNull com.pro.milkteaapp.models.Order order) {
+                // Fetch lại document để có đầy đủ thông tin (items, addressObj)
+                fetchOrderDocument(orderId);
+            }
+
+            @Override
+            public void onError(@NonNull Exception error) {
+                toastLong("Lỗi tải đơn: " + error.getMessage());
+                setLoading(false);
+                finish();
+            }
+        });
+    }
+
+    private void fetchOrderDocument(String orderId) {
+        // Tạm thời vẫn dùng direct Firestore để lấy document với items và addressObj
+        // TODO: Có thể tạo OrdersRepository.fetchOrderDocument() sau
+        db.collection("orders").document(orderId).get()
                 .addOnSuccessListener(this::bindOrder)
                 .addOnFailureListener(e -> {
-                    toastLong("Lỗi tải đơn: " + e.getMessage());
-                    finish();
+                    toastLong("Lỗi tải chi tiết đơn: " + e.getMessage());
+                    setLoading(false);
                 })
                 .addOnCompleteListener(t -> setLoading(false));
     }
@@ -97,15 +134,22 @@ public class AdminOrderDetailActivity extends AppCompatActivity {
         // Người đặt
         b.tvUser.setText("Đang tải người đặt.");
         if (!TextUtils.isEmpty(userId)) {
-            db.collection("users").document(userId).get()
-                    .addOnSuccessListener(u -> {
-                        String name = s(u.getString("name"));
-                        String email = s(u.getString("email"));
-                        b.tvUser.setText(!TextUtils.isEmpty(name) || !TextUtils.isEmpty(email)
-                                ? join(name, email)
-                                : "(Không có thông tin người dùng)");
-                    })
-                    .addOnFailureListener(e -> b.tvUser.setText("Không thể tải người dùng"));
+            usersRepository.fetchUserById(userId, new UsersRepository.OnUserListener() {
+                @Override
+                public void onUserReceived(@NonNull com.pro.milkteaapp.models.User user) {
+                    String name = user.getFullName() != null ? user.getFullName() : user.getDisplayName();
+                    String email = user.getEmail();
+                    userName = name; // Lưu userName để dùng cho chat
+                    b.tvUser.setText(!TextUtils.isEmpty(name) || !TextUtils.isEmpty(email)
+                            ? join(name, email)
+                            : "(Không có thông tin người dùng)");
+                }
+
+                @Override
+                public void onError(@NonNull Exception error) {
+                    b.tvUser.setText("Không thể tải người dùng");
+                }
+            });
         } else {
             b.tvUser.setText("(Không có userId)");
         }
@@ -132,8 +176,8 @@ public class AdminOrderDetailActivity extends AppCompatActivity {
         if (canceledAt == null) canceledAt = d.getTimestamp("cancelledAt");
         String cancelledBy = s(d.getString("cancelledBy"));
 
-        // UI
-        b.toolbar.setTitle("Đơn #" + id);
+        // UI - Title sẽ được set trong centerToolbarTitle
+        centerToolbarTitle(b.toolbar, "ĐƠN #" + id);
         b.tvOrderId.setText("#" + id);
         b.tvStatus.setText(statusNow);
 
@@ -143,6 +187,43 @@ public class AdminOrderDetailActivity extends AppCompatActivity {
         b.tvFinalTotal.setText(MoneyUtils.formatVnd(finalTotal));
 
         b.tvCreatedAt.setText(createdAt != null ? formatTs(createdAt) : "—");
+
+        // Thông tin thanh toán
+        String paymentMethod = s(d.getString("paymentMethod"));
+        if (TextUtils.isEmpty(paymentMethod)) paymentMethod = "COD";
+        b.tvPaymentMethod.setText(formatPaymentMethod(paymentMethod));
+
+        String paymentStatus = s(d.getString("paymentStatus"));
+        if (!TextUtils.isEmpty(paymentStatus)) {
+            setVisible(b.rowPaymentStatus, true);
+            b.tvPaymentStatus.setText(formatPaymentStatus(paymentStatus));
+        } else {
+            setVisible(b.rowPaymentStatus, false);
+        }
+
+        String transactionId = s(d.getString("transactionId"));
+        if (!TextUtils.isEmpty(transactionId)) {
+            setVisible(b.rowTransactionId, true);
+            b.tvTransactionId.setText(transactionId);
+        } else {
+            setVisible(b.rowTransactionId, false);
+        }
+
+        String voucherCode = s(d.getString("voucherCode"));
+        if (!TextUtils.isEmpty(voucherCode)) {
+            setVisible(b.rowVoucher, true);
+            b.tvVoucherCode.setText(voucherCode);
+        } else {
+            setVisible(b.rowVoucher, false);
+        }
+
+        String shippingLabel = s(d.getString("shippingLabel"));
+        if (!TextUtils.isEmpty(shippingLabel)) {
+            setVisible(b.rowShipping, true);
+            b.tvShippingLabel.setText(shippingLabel);
+        } else {
+            setVisible(b.rowShipping, false);
+        }
 
         setVisible(b.tvConfirmedAt, confirmedAt != null);
         if (confirmedAt != null) b.tvConfirmedAt.setText("Xác nhận: " + formatTs(confirmedAt));
@@ -225,9 +306,7 @@ public class AdminOrderDetailActivity extends AppCompatActivity {
             // === CHỈ TẠI ĐÂY mới cộng điểm / tổng chi tiêu ===
             awardPointsForFinished(orderId, userId);
 
-        }).addOnFailureListener(e -> {
-            toastLong("Lỗi xác nhận: " + e.getMessage());
-        }).addOnCompleteListener(t -> {
+        }).addOnFailureListener(e -> toastLong("Lỗi xác nhận: " + e.getMessage())).addOnCompleteListener(t -> {
             lockActionButtons(false);
             setLoading(false);
         });
@@ -297,37 +376,39 @@ public class AdminOrderDetailActivity extends AppCompatActivity {
                     orderId,
                     reason
             );
-        }).addOnFailureListener(e -> {
-            toastLong("Lỗi huỷ: " + e.getMessage());
-        }).addOnCompleteListener(t -> {
+        }).addOnFailureListener(e -> toastLong("Lỗi huỷ: " + e.getMessage())).addOnCompleteListener(t -> {
             lockActionButtons(false);
             setLoading(false);
         });
     }
 
-    /** Đọc total/finalTotal rồi cộng loyaltyPoints + totalSpent. KHÔNG cộng rewardPoints. */
+    /** Đọc total/finalTotal rồi cộng cả loyaltyPoints (có hết hạn) và rewardPoints (đổi quà) */
     private void awardPointsForFinished(@Nullable String orderId, @Nullable String userId) {
         if (TextUtils.isEmpty(orderId) || TextUtils.isEmpty(userId)) return;
 
-        db.collection("orders").document(orderId).get()
-                .addOnSuccessListener(doc -> {
-                    if (doc == null || !doc.exists()) return;
+        ordersRepository.fetchOrderById(orderId, new OrdersRepository.OnOrderListener() {
+            @Override
+            public void onOrderReceived(@NonNull com.pro.milkteaapp.models.Order order) {
+                long finalTotal = 0L;
+                // getFinalTotal() và getTotal() trả về double (primitive), không thể null
+                if (order.getFinalTotal() > 0) {
+                    finalTotal = (long) order.getFinalTotal();
+                } else if (order.getTotal() > 0) {
+                    finalTotal = (long) order.getTotal();
+                }
+                if (finalTotal <= 0) return;
 
-                    long finalTotal = 0L;
-                    Double ft = doc.getDouble("finalTotal");
-                    if (ft != null && ft > 0) finalTotal = ft.longValue();
-                    if (finalTotal == 0L) {
-                        Double t = doc.getDouble("total");
-                        if (t != null) finalTotal = t.longValue();
-                    }
-                    if (finalTotal <= 0) return;
+                // Tích lũy cả 2 loại điểm: loyalty points (có hết hạn) và reward points (đổi quà)
+                addLoyaltyPointsForTier(userId, finalTotal, orderId);
+                addRewardPoints(userId, finalTotal);
+                updateTotalSpent(userId, finalTotal);
+            }
 
-                    addLoyaltyPointsForTier(userId, finalTotal);
-                    updateTotalSpent(userId, finalTotal);
-                })
-                .addOnFailureListener(e -> {
-                    // log nhẹ, không chặn UI
-                });
+            @Override
+            public void onError(@NonNull Exception error) {
+                // log nhẹ, không chặn UI
+            }
+        });
     }
 
     private void writeInboxForUser(String userId, String type, String message, String orderId, @Nullable String reason) {
@@ -429,35 +510,126 @@ public class AdminOrderDetailActivity extends AppCompatActivity {
         return DateFormat.format("HH:mm dd/MM/yyyy", ts.toDate()).toString();
     }
 
-    /* ==== Chỉ còn cộng loyaltyPoints + totalSpent ==== */
-    private void addLoyaltyPointsForTier(String userId, long totalAmount) {
+    /* ==== Cộng loyaltyPoints (có hết hạn) sử dụng LoyaltyPointsRepository ==== */
+    private void addLoyaltyPointsForTier(String userId, long totalAmount, String orderId) {
+        if (TextUtils.isEmpty(userId) || totalAmount <= 0 || TextUtils.isEmpty(orderId)) return;
+
+        final long pointsToAdd = totalAmount / 10_000L; // 10k = 1 điểm
+        if (pointsToAdd == 0) return;
+
+        // Sử dụng LoyaltyPointsRepository để cộng điểm có thời gian hết hạn
+        com.pro.milkteaapp.repository.LoyaltyPointsRepository loyaltyRepo = 
+                new com.pro.milkteaapp.repository.LoyaltyPointsRepository();
+        
+        loyaltyRepo.addLoyaltyPoints(userId, pointsToAdd, orderId, 
+                new com.pro.milkteaapp.repository.LoyaltyPointsRepository.OnLoyaltyPointsListener() {
+            @Override
+            public void onSuccess(long totalPoints) {
+                // Điểm đã được cộng thành công
+            }
+
+            @Override
+            public void onError(@NonNull Exception error) {
+                // Log error silently, không chặn UI
+                android.util.Log.e("AdminOrderDetail", "Lỗi cộng loyalty points: " + error.getMessage());
+            }
+        });
+    }
+
+    /* ==== Cộng rewardPoints (đổi quà) ==== */
+    private void addRewardPoints(String userId, long totalAmount) {
         if (TextUtils.isEmpty(userId) || totalAmount <= 0) return;
 
         final long pointsToAdd = totalAmount / 10_000L; // 10k = 1 điểm
         if (pointsToAdd == 0) return;
 
-        final DocumentReference userRef = db.collection("users").document(userId);
-        db.runTransaction(tr -> {
-            DocumentSnapshot userDoc = tr.get(userRef);
-            if (!userDoc.exists()) return null;
+        // Sử dụng RewardPointsRepository để cộng điểm đổi quà
+        com.pro.milkteaapp.repository.RewardPointsRepository rewardRepo = 
+                new com.pro.milkteaapp.repository.RewardPointsRepository();
+        
+        rewardRepo.addRewardPoints(userId, pointsToAdd, 
+                new com.pro.milkteaapp.repository.RewardPointsRepository.OnRewardPointsListener() {
+            @Override
+            public void onSuccess(long totalPoints) {
+                // Điểm đổi quà đã được cộng thành công
+            }
 
-            long currentPoints = userDoc.contains("loyaltyPoints") ? userDoc.getLong("loyaltyPoints") : 0L;
-            long newTotalPoints = currentPoints + pointsToAdd;
-
-            String newTier;
-            if (newTotalPoints >= 1000) newTier = "Vàng";
-            else if (newTotalPoints >= 400) newTier = "Bạc";
-            else if (newTotalPoints >= 100) newTier = "Đồng";
-            else newTier = "Chưa xếp hạng";
-
-            tr.update(userRef, "loyaltyPoints", newTotalPoints, "loyaltyTier", newTier);
-            return null;
+            @Override
+            public void onError(@NonNull Exception error) {
+                // Log error silently, không chặn UI
+                android.util.Log.e("AdminOrderDetail", "Lỗi cộng reward points: " + error.getMessage());
+            }
         });
     }
 
     private void updateTotalSpent(String userId, long paidAmount) {
         if (TextUtils.isEmpty(userId) || paidAmount <= 0) return;
-        db.collection("users").document(userId)
-                .update("totalSpent", FieldValue.increment(paidAmount));
+        usersRepository.incrementTotalSpent(userId, paidAmount, new UsersRepository.OnUserUpdateListener() {
+            @Override
+            public void onSuccess() {
+                // Success
+            }
+
+            @Override
+            public void onError(@NonNull Exception error) {
+                // Log error silently
+            }
+        });
+    }
+
+    private String formatPaymentMethod(String method) {
+        if (TextUtils.isEmpty(method)) return "COD";
+        return switch (method.toUpperCase()) {
+            case "COD" -> "Thanh toán khi nhận";
+            case "MOMO" -> "Ví Momo";
+            case "VNPAY" -> "VNPAY";
+            case "CARD" -> "Thẻ ngân hàng";
+            default -> method;
+        };
+    }
+
+    private String formatPaymentStatus(String status) {
+        if (TextUtils.isEmpty(status)) return "—";
+        return switch (status.toUpperCase()) {
+            case "SUCCESS" -> "Đã thanh toán";
+            case "PENDING" -> "Chờ thanh toán";
+            case "FAILED" -> "Thanh toán thất bại";
+            case "CANCELLED" -> "Đã hủy";
+            default -> status;
+        };
+    }
+    
+    private android.widget.TextView customTitleView;
+    
+    private void centerToolbarTitle(com.google.android.material.appbar.MaterialToolbar toolbar, String title) {
+        customTitleView = com.pro.milkteaapp.utils.ToolbarUtils.centerToolbarTitle(
+                toolbar, title, customTitleView, getSupportActionBar());
+    }
+    
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_admin_order_detail, menu);
+        return true;
+    }
+    
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if (item.getItemId() == R.id.action_chat) {
+            openChat();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+    
+    private void openChat() {
+        if (TextUtils.isEmpty(userId)) {
+            toastLong("Không có thông tin người dùng");
+            return;
+        }
+        
+        Intent intent = new Intent(this, ChatActivity.class);
+        intent.putExtra("userId", userId);
+        intent.putExtra("userName", userName != null ? userName : "Người dùng");
+        startActivity(intent);
     }
 }

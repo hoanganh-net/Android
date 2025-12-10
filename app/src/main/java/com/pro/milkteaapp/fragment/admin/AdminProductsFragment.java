@@ -23,17 +23,14 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.textfield.TextInputEditText;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.EventListener;
-import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
-import com.google.firebase.firestore.QuerySnapshot;
 import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.activity.admin.AdminMainActivity;
-import com.pro.milkteaapp.activity.admin.ProductEditorActivity;
+import com.pro.milkteaapp.activity.admin.AdminProductEditorActivity;
 import com.pro.milkteaapp.adapter.admin.AdminProductAdapter;
-import com.pro.milkteaapp.handler.AddActionHandler;
+import com.pro.milkteaapp.interfaces.AddActionHandler;
 import com.pro.milkteaapp.models.Products;
+import com.pro.milkteaapp.repository.ProductsRepository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -64,8 +61,8 @@ public class AdminProductsFragment extends Fragment
     // Quyền
     private boolean isAdminRole = false;
 
-    // Firestore
-    private final FirebaseFirestore db = FirebaseFirestore.getInstance();
+    // Repository
+    private ProductsRepository productsRepository;
     private ListenerRegistration realtimeReg;
 
     // Cờ để biết view đã được inflate chưa
@@ -75,6 +72,7 @@ public class AdminProductsFragment extends Fragment
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         isAdminRole = isAdmin();
+        productsRepository = new ProductsRepository();
     }
 
     @Nullable
@@ -82,7 +80,7 @@ public class AdminProductsFragment extends Fragment
     public View onCreateView(@NonNull LayoutInflater inflater,
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_admin_products, container, false);
+        View view = inflater.inflate(R.layout.admin_fragment_products, container, false);
 
         if (!isAdminRole) {
             Toast.makeText(requireContext(), "Bạn không có quyền truy cập (admin-only).", Toast.LENGTH_SHORT).show();
@@ -162,8 +160,25 @@ public class AdminProductsFragment extends Fragment
     private void startRealtime() {
         stopRealtime();
         showLoading(true);
-        realtimeReg = db.collection("products")
-                .addSnapshotListener(realtimeListener);
+        realtimeReg = productsRepository.listenAllProducts(new ProductsRepository.OnProductsListener() {
+            @Override
+            public void onProductsReceived(@NonNull List<Products> products) {
+                if (swipeRefresh != null && swipeRefresh.isRefreshing()) swipeRefresh.setRefreshing(false);
+                productList.clear();
+                productList.addAll(products);
+                if (adapter != null) {
+                    filterProducts(lastSearch);
+                }
+                showLoading(false);
+            }
+
+            @Override
+            public void onError(@NonNull Exception error) {
+                if (swipeRefresh != null && swipeRefresh.isRefreshing()) swipeRefresh.setRefreshing(false);
+                showLoading(false);
+                toast("Lỗi realtime: " + error.getMessage());
+            }
+        });
     }
 
     private void stopRealtime() {
@@ -173,63 +188,45 @@ public class AdminProductsFragment extends Fragment
         }
     }
 
-    private final EventListener<QuerySnapshot> realtimeListener = (snap, e) -> {
-        if (swipeRefresh != null && swipeRefresh.isRefreshing()) swipeRefresh.setRefreshing(false);
-        if (e != null) {
-            showLoading(false);
-            toast("Lỗi realtime: " + e.getMessage());
-            return;
-        }
-        productList.clear();
-        if (snap != null) {
-            for (DocumentSnapshot d : snap.getDocuments()) {
-                Products p = d.toObject(Products.class);
-                if (p != null) {
-                    if (p.getId() == null || p.getId().trim().isEmpty()) {
-                        p.setId(d.getId());
-                    }
-                    productList.add(p);
-                }
-            }
-        }
-        if (adapter != null) {
-            filterProducts(lastSearch);
-        }
-        showLoading(false);
-    };
-
     // ====== Tải một lần (pull) ======
     private void loadOnce() {
         if (!isAdded()) return;
         showLoading(true);
-        db.collection("products").get()
-                .addOnSuccessListener(snap -> {
-                    productList.clear();
-                    for (DocumentSnapshot d : snap.getDocuments()) {
-                        Products p = d.toObject(Products.class);
-                        if (p != null) {
-                            if (p.getId() == null || p.getId().trim().isEmpty()) {
-                                p.setId(d.getId());
-                            }
-                            productList.add(p);
-                        }
-                    }
-                    if (adapter != null) {
-                        filterProducts(lastSearch);
-                    }
-                })
-                .addOnFailureListener(e -> toast("Lỗi tải dữ liệu: " + e.getMessage()))
-                .addOnCompleteListener(t -> showLoading(false));
+        productsRepository.fetchAllProducts(new ProductsRepository.OnProductsListener() {
+            @Override
+            public void onProductsReceived(@NonNull List<Products> products) {
+                productList.clear();
+                productList.addAll(products);
+                if (adapter != null) {
+                    filterProducts(lastSearch);
+                }
+                showLoading(false);
+            }
+
+            @Override
+            public void onError(@NonNull Exception error) {
+                toast("Lỗi tải dữ liệu: " + error.getMessage());
+                showLoading(false);
+            }
+        });
     }
 
-    // ====== CRUD trực tiếp Firestore ======
+    // ====== CRUD qua Repository ======
     private void deleteProductById(@NonNull String id) {
         showLoading(true);
-        db.collection("products").document(id)
-                .delete()
-                .addOnSuccessListener(r -> toast("Đã xóa sản phẩm."))
-                .addOnFailureListener(e -> toast("Lỗi xóa: " + e.getMessage()))
-                .addOnCompleteListener(t -> showLoading(false));
+        productsRepository.deleteProduct(id, new ProductsRepository.OnProductUpdateListener() {
+            @Override
+            public void onSuccess() {
+                showLoading(false);
+                toast("Đã xóa sản phẩm.");
+            }
+
+            @Override
+            public void onError(@NonNull Exception error) {
+                showLoading(false);
+                toast("Lỗi xóa: " + error.getMessage());
+            }
+        });
     }
 
     // ====== UI helpers ======
@@ -269,15 +266,15 @@ public class AdminProductsFragment extends Fragment
 
     // ====== Callbacks từ Activity/Adapter ======
     private void openAddProduct() {
-        startActivity(new Intent(requireContext(), ProductEditorActivity.class));
+        startActivity(new Intent(requireContext(), AdminProductEditorActivity.class));
     }
 
     @Override public void onAddAction() { openAddProduct(); }
 
     @Override
     public void onEditProduct(Products product) {
-        Intent it = new Intent(requireContext(), ProductEditorActivity.class);
-        it.putExtra(ProductEditorActivity.EXTRA_PRODUCT_ID, product.getId());
+        Intent it = new Intent(requireContext(), AdminProductEditorActivity.class);
+        it.putExtra(AdminProductEditorActivity.EXTRA_PRODUCT_ID, product.getId());
         startActivity(it);
     }
 
@@ -293,6 +290,51 @@ public class AdminProductsFragment extends Fragment
                 .setPositiveButton("Xóa", (d, w) -> deleteProductById(product.getId()))
                 .setNegativeButton("Hủy", null)
                 .show();
+    }
+
+    @Override
+    public void onToggleFeatured(@NonNull Products product, boolean featured) {
+        String productId = safe(product.getId());
+        if (productId.isEmpty()) {
+            toast("Lỗi: Không có ID sản phẩm");
+            return;
+        }
+        
+        // Cập nhật product trong list ngay lập tức (optimistic update)
+        for (int i = 0; i < productList.size(); i++) {
+            if (productList.get(i).getId() != null && productList.get(i).getId().equals(productId)) {
+                productList.get(i).setFeatured(featured);
+                // Notify adapter để cập nhật UI ngay lập tức
+                if (adapter != null) {
+                    adapter.notifyItemChanged(i);
+                }
+                break;
+            }
+        }
+        
+        // Cập nhật Firestore
+        productsRepository.toggleFeatured(productId, featured, new ProductsRepository.OnProductUpdateListener() {
+            @Override
+            public void onSuccess() {
+                // UI đã được cập nhật ở trên, chỉ cần toast
+                toast(featured ? "Đã đánh dấu sản phẩm nổi bật" : "Đã bỏ đánh dấu sản phẩm nổi bật");
+            }
+
+            @Override
+            public void onError(@NonNull Exception error) {
+                // Rollback nếu có lỗi
+                for (int i = 0; i < productList.size(); i++) {
+                    if (productList.get(i).getId() != null && productList.get(i).getId().equals(productId)) {
+                        productList.get(i).setFeatured(!featured);
+                        if (adapter != null) {
+                            adapter.notifyItemChanged(i);
+                        }
+                        break;
+                    }
+                }
+                toast("Lỗi: " + error.getMessage());
+            }
+        });
     }
 
     @Override public void scrollToTop() {

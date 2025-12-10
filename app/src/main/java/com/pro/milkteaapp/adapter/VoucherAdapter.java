@@ -70,20 +70,21 @@ public class VoucherAdapter extends RecyclerView.Adapter<VoucherAdapter.VH> {
         // --- Mã voucher ---
         h.tvCode.setText(nz(v.getCode()));
 
-        // --- Ưu đãi ---
-        h.tvBenefit.setText(buildBenefit(v));
-
-        // --- Hạn sử dụng ---
-        h.tvExpiry.setText(buildExpiry(v.getEndAt()));
+        // --- Ưu đãi (có thể thêm điểm nếu là voucher đổi điểm) ---
+        String benefitText = buildBenefit(v);
+        if (v.getPointsRequired() != null && v.getPointsRequired() > 0) {
+            benefitText += " • " + v.getPointsRequired() + " điểm";
+        }
+        h.tvBenefit.setText(benefitText);
 
         // --- Áp dụng với hóa đơn ---
         h.tvMin.setText(buildMinOrder(v.getMinOrder()));
 
+        // --- Hạn sử dụng ---
+        h.tvExpiry.setText(buildExpiry(v.getEndAt()));
+
         // --- Hình thức thanh toán (chips) ---
         bindChannels(h.chipsChannels, v.getAllowedChannels());
-
-        // --- Số lượng / giới hạn ---
-        h.tvLimit.setText(buildLimit((long) v.getPerUserLimit()));
 
         // --- Active switch ---
         h.swActive.setOnCheckedChangeListener(null);
@@ -166,7 +167,7 @@ public class VoucherAdapter extends RecyclerView.Adapter<VoucherAdapter.VH> {
 
     // ================= ViewHolder =================
     static class VH extends RecyclerView.ViewHolder {
-        TextView tvCode, tvBenefit, tvExpiry, tvMin, tvLimit;
+        TextView tvCode, tvBenefit, tvExpiry, tvMin;
         ChipGroup chipsChannels;
         SwitchMaterial swActive;
         View btnEdit, btnDelete;
@@ -177,7 +178,6 @@ public class VoucherAdapter extends RecyclerView.Adapter<VoucherAdapter.VH> {
             tvBenefit = v.findViewById(R.id.tvBenefit);
             tvExpiry = v.findViewById(R.id.tvExpiry);
             tvMin = v.findViewById(R.id.tvMin);
-            tvLimit = v.findViewById(R.id.tvLimit);
             chipsChannels = v.findViewById(R.id.chipsChannels);
             swActive = v.findViewById(R.id.swActive);
             btnEdit = v.findViewById(R.id.btnEdit);

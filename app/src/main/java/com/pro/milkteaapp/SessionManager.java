@@ -152,6 +152,34 @@ public class SessionManager {
         prefs.edit().clear().apply();
     }
 
+    /* ================== CACHED IDENTITY (from UserLocalStore) ================== */
+
+    /**
+     * Lưu thông tin đăng nhập tối thiểu vào SharedPreferences:
+     * - user_id = documentId (ưu tiên USRxxxxx; fallback: Firebase UID)
+     * - role, fullName (nếu có)
+     * - is_logged_in = true
+     * 
+     * @deprecated Sử dụng saveUserSession() hoặc saveUserFromFirestore() thay thế
+     */
+    @Deprecated
+    public void cacheIdentityOnLogin(@NonNull String userIdDoc,
+                                     @Nullable String displayName,
+                                     @NonNull String role) {
+        saveUserSession(userIdDoc, null, displayName, role);
+    }
+
+    /**
+     * Lấy UID đã cache trong SessionManager (USRxxxxx hoặc legacy FirebaseUID).
+     * 
+     * @deprecated Sử dụng getUid() thay thế
+     */
+    @Deprecated
+    @Nullable
+    public String getCachedUidFromSession() {
+        return getUid();
+    }
+
     /* ================== DEBUG ================== */
 
     @NonNull

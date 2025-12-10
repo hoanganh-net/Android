@@ -7,8 +7,7 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.switchmaterial.SwitchMaterial;
-import com.pro.milkteaapp.databinding.ItemAdminToppingRowBinding;
+import com.pro.milkteaapp.databinding.AdminItemToppingRowBinding;
 import com.pro.milkteaapp.models.Topping;
 import com.pro.milkteaapp.utils.MoneyUtils;
 
@@ -39,7 +38,7 @@ public class AdminToppingAdapter extends RecyclerView.Adapter<AdminToppingAdapte
 
     @NonNull @Override
     public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        return new VH(ItemAdminToppingRowBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false));
+        return new VH(AdminItemToppingRowBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false));
     }
 
     @Override
@@ -64,7 +63,7 @@ public class AdminToppingAdapter extends RecyclerView.Adapter<AdminToppingAdapte
     @Override public int getItemCount() { return data.size(); }
 
     static class VH extends RecyclerView.ViewHolder {
-        final ItemAdminToppingRowBinding b;
-        VH(ItemAdminToppingRowBinding b) { super(b.getRoot()); this.b = b; }
+        final AdminItemToppingRowBinding b;
+        VH(AdminItemToppingRowBinding b) { super(b.getRoot()); this.b = b; }
     }
 }

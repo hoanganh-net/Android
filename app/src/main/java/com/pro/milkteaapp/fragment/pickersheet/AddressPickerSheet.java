@@ -17,7 +17,7 @@ import com.google.android.material.button.MaterialButton;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.adapter.AddressAdapter;
-import com.pro.milkteaapp.fragment.AddEditAddressDialog;
+import com.pro.milkteaapp.fragment.dialog.AddressDialogFragment;
 import com.pro.milkteaapp.models.Address;
 import com.pro.milkteaapp.repository.AddressRepository;
 
@@ -79,7 +79,7 @@ public class AddressPickerSheet extends BottomSheetDialogFragment implements Add
 
         btnAddNew.setOnClickListener(view -> {
             // Mở dialog thêm địa chỉ → lưu Firestore → realtime sẽ tự load lại
-            AddEditAddressDialog.newInstance(null)
+            AddressDialogFragment.newInstance(null)
                     .show(getParentFragmentManager(), "add_address_from_picker");
         });
 

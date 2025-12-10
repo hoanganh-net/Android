@@ -21,19 +21,12 @@ import com.google.android.material.checkbox.MaterialCheckBox;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.textfield.TextInputEditText;
-import com.google.firebase.firestore.CollectionReference;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.EventListener;
-import com.google.firebase.firestore.FieldValue;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.ListenerRegistration;
-import com.google.firebase.firestore.Query;
-import com.google.firebase.firestore.QuerySnapshot;
 import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.adapter.CategoryAdapter;
-import com.pro.milkteaapp.handler.AddActionHandler;
+import com.pro.milkteaapp.interfaces.AddActionHandler;
 import com.pro.milkteaapp.models.Category;
+import com.pro.milkteaapp.repository.CategoriesRepository;
 import com.pro.milkteaapp.utils.ImageLoader;
 
 import java.util.ArrayList;
@@ -59,9 +52,8 @@ public class CategoryManageFragment extends Fragment implements
     private TextInputEditText edtSearch;
     private Button btnAddFirst;
 
-    // Firebase
-    private FirebaseFirestore db;
-    private CollectionReference colCategories;
+    // Repository
+    private CategoriesRepository categoriesRepository;
     private ListenerRegistration reg; // để remove khi onDestroyView
 
     // Adapter + data
@@ -77,11 +69,10 @@ public class CategoryManageFragment extends Fragment implements
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
 
-        View v = inflater.inflate(R.layout.fragment_admin_category, container, false);
+        View v = inflater.inflate(R.layout.admin_fragment_category, container, false);
 
-        // init firebase
-        db = FirebaseFirestore.getInstance();
-        colCategories = db.collection("categories");
+        // init repository
+        categoriesRepository = new CategoriesRepository();
 
         // bind views
         recyclerView = v.findViewById(R.id.recyclerViewCategories);
@@ -134,39 +125,33 @@ public class CategoryManageFragment extends Fragment implements
      */
     private void listenCategoriesRealtime() {
         showLoading(true);
-        reg = colCategories
-                .orderBy("createdAt", Query.Direction.DESCENDING)
-                .addSnapshotListener((snap, e) -> {
-                    if (!isAdded()) return;
+        reg = categoriesRepository.listenAllCategories(new CategoriesRepository.OnCategoriesListener() {
+            @Override
+            public void onCategoriesReceived(@NonNull List<Category> categories) {
+                if (!isAdded()) return;
+                list.clear();
+                list.addAll(categories);
+                showLoading(false);
 
-                    if (e != null) {
-                        showLoading(false);
-                        toast("Lỗi tải danh mục: " + e.getMessage());
-                        return;
-                    }
-                    list.clear();
-                    if (snap != null) {
-                        for (DocumentSnapshot d : snap.getDocuments()) {
-                            Category c = d.toObject(Category.class);
-                            if (c == null) c = new Category();
-                            // đảm bảo id
-                            c.setId(d.getId());
-                            list.add(c);
-                        }
-                    }
-                    showLoading(false);
+                // áp dụng filter nếu đang search
+                String q = edtSearch != null && edtSearch.getText() != null
+                        ? edtSearch.getText().toString().trim().toLowerCase(Locale.ROOT)
+                        : "";
+                if (q.isEmpty()) {
+                    adapter.submit(list);
+                } else {
+                    applyFilter(q);
+                }
+                updateEmptyState();
+            }
 
-                    // áp dụng filter nếu đang search
-                    String q = edtSearch != null && edtSearch.getText() != null
-                            ? edtSearch.getText().toString().trim().toLowerCase(Locale.ROOT)
-                            : "";
-                    if (q.isEmpty()) {
-                        adapter.submit(list);
-                    } else {
-                        applyFilter(q);
-                    }
-                    updateEmptyState();
-                });
+            @Override
+            public void onError(@NonNull Exception error) {
+                if (!isAdded()) return;
+                showLoading(false);
+                toast("Lỗi tải danh mục: " + error.getMessage());
+            }
+        });
     }
 
     private void applyFilter(String q) {
@@ -344,37 +329,50 @@ public class CategoryManageFragment extends Fragment implements
         dialog.show();
     }
 
-    /* ================= CRUD trực tiếp Firestore ================= */
+    /* ================= CRUD qua Repository ================= */
 
     private void addCategory(Map<String, Object> data, AlertDialog dialog) {
-        data.put("createdAt", FieldValue.serverTimestamp());
-        colCategories.add(data)
-                .addOnSuccessListener(doc -> {
-                    toast("Đã thêm danh mục");
-                    dialog.dismiss();
-                })
-                .addOnFailureListener(e ->
-                        toast("Lỗi thêm: " + e.getMessage())
-                );
+        categoriesRepository.createCategory(data, new CategoriesRepository.OnCategoryCreateListener() {
+            @Override
+            public void onSuccess(@NonNull String categoryId) {
+                toast("Đã thêm danh mục");
+                dialog.dismiss();
+            }
+
+            @Override
+            public void onError(@NonNull Exception error) {
+                toast("Lỗi thêm: " + error.getMessage());
+            }
+        });
     }
 
     private void updateCategory(String id, Map<String, Object> data, AlertDialog dialog) {
-        colCategories.document(id)
-                .update(data)
-                .addOnSuccessListener(unused -> {
-                    toast("Đã cập nhật danh mục");
-                    dialog.dismiss();
-                })
-                .addOnFailureListener(e ->
-                        toast("Lỗi cập nhật: " + e.getMessage())
-                );
+        categoriesRepository.updateCategory(id, data, new CategoriesRepository.OnCategoryUpdateListener() {
+            @Override
+            public void onSuccess() {
+                toast("Đã cập nhật danh mục");
+                dialog.dismiss();
+            }
+
+            @Override
+            public void onError(@NonNull Exception error) {
+                toast("Lỗi cập nhật: " + error.getMessage());
+            }
+        });
     }
 
     private void deleteCategory(String id) {
-        colCategories.document(id)
-                .delete()
-                .addOnSuccessListener(unused -> toast("Đã xóa danh mục"))
-                .addOnFailureListener(e -> toast("Lỗi xóa: " + e.getMessage()));
+        categoriesRepository.deleteCategory(id, new CategoriesRepository.OnCategoryUpdateListener() {
+            @Override
+            public void onSuccess() {
+                toast("Đã xóa danh mục");
+            }
+
+            @Override
+            public void onError(@NonNull Exception error) {
+                toast("Lỗi xóa: " + error.getMessage());
+            }
+        });
     }
 
     /* ================= callback từ adapter ================= */

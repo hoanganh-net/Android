@@ -24,6 +24,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import com.google.android.material.chip.Chip;
+import com.google.android.material.chip.ChipGroup;
 import androidx.recyclerview.widget.AsyncListDiffer;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.DividerItemDecoration;
@@ -33,12 +35,11 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
-import com.google.firebase.firestore.Query;
 import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.activity.admin.AdminMainActivity;
 import com.pro.milkteaapp.models.User;
+import com.pro.milkteaapp.repository.UsersRepository;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -59,9 +60,10 @@ public class AdminUsersFragment extends Fragment
     // Data
     private final List<User> fullList = new ArrayList<>();
     private UsersAdapter adapter;
+    private String selectedRole = "Tất cả";
 
-    // Firestore
-    private FirebaseFirestore db;
+    // Repository
+    private UsersRepository usersRepository;
     private ListenerRegistration listener;
 
     // Search state
@@ -74,7 +76,7 @@ public class AdminUsersFragment extends Fragment
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        db = FirebaseFirestore.getInstance();
+        usersRepository = new UsersRepository();
         setHasOptionsMenu(true);
     }
 
@@ -83,7 +85,7 @@ public class AdminUsersFragment extends Fragment
     public View onCreateView(@NonNull LayoutInflater inflater,
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.activity_admin_users, container, false);
+        View v = inflater.inflate(R.layout.admin_activity_users, container, false);
 
         swipe = v.findViewById(R.id.swipeRefresh);
         recycler = v.findViewById(R.id.recycler);
@@ -100,6 +102,9 @@ public class AdminUsersFragment extends Fragment
         swipe.setOnRefreshListener(this::refresh);
 
         if (searchEditText != null) searchEditText.addTextChangedListener(textWatcher);
+        
+        // Thêm filter role vào UI (có thể là Spinner hoặc ChipGroup)
+        setupRoleFilter(v);
 
         showLoading(true);
         toggleEmpty(false);
@@ -131,67 +136,43 @@ public class AdminUsersFragment extends Fragment
         showLoading(true);
         toggleEmpty(false);
 
-        listener = db.collection("users")
-                .orderBy("fullName", Query.Direction.ASCENDING)
-                .addSnapshotListener((snap, err) -> {
-                    if (!isAdded() || !isViewAlive) return;
+        listener = usersRepository.listenAllUsers(new UsersRepository.OnUsersListener() {
+            @Override
+            public void onUsersReceived(@NonNull List<User> users) {
+                if (!isAdded() || !isViewAlive) return;
 
-                    showLoading(false);
-                    if (swipe != null) swipe.setRefreshing(false);
+                showLoading(false);
+                if (swipe != null) swipe.setRefreshing(false);
 
-                    if (err != null) {
-                        adapter.submit(new ArrayList<>());
-                        toggleEmpty(true);
-                        toast("Lỗi tải dữ liệu: " + err.getMessage());
-                        return;
+                fullList.clear();
+                for (User u : users) {
+                    // Đảm bảo các field không null
+                    if (u.getPhone() == null) u.setPhone("");
+                    if (u.getAddress() == null) u.setAddress("");
+                    if (u.getEmail() == null) u.setEmail("");
+                    if (u.getFullName() == null) u.setFullName("");
+                    if (u.getRole() == null || u.getRole().trim().isEmpty()) {
+                        u.setRole("user");
                     }
-                    if (snap == null) {
-                        adapter.submit(new ArrayList<>());
-                        toggleEmpty(true);
-                        toast("Không có dữ liệu.");
-                        return;
-                    }
+                    fullList.add(u);
+                }
 
-                    fullList.clear();
-                    for (DocumentSnapshot d : snap.getDocuments()) {
-                        String docId = d.getId();
+                adapter.submit(new ArrayList<>(fullList));
+                toggleEmpty(fullList.isEmpty());
+                applyFilter(lastSearch);
+            }
 
-                        // Map về User model (an toàn null)
-                        User u = d.toObject(User.class);
-                        if (u == null) u = new User();
-                        if (u.getUid() == null || u.getUid().trim().isEmpty()) {
-                            u.setUid(docId); // đảm bảo có uid
-                        }
+            @Override
+            public void onError(@NonNull Exception error) {
+                if (!isAdded() || !isViewAlive) return;
 
-                        // fallback tên hiển thị cũ
-                        if (u.getFullName() == null || u.getFullName().trim().isEmpty()) {
-                            String legacy = d.getString("displayName");
-                            if (legacy != null && !legacy.trim().isEmpty()) u.setFullName(legacy);
-                        }
-
-                        // role fallback từ isAdmin
-                        String role = u.getRole();
-                        if (role == null || role.trim().isEmpty()) {
-                            Boolean isAdmin = d.getBoolean("isAdmin");
-                            if (Boolean.TRUE.equals(isAdmin)) {
-                                u.setRole("admin");
-                            } else {
-                                u.setRole("user");
-                            }
-                        }
-
-                        // phone/address an toàn null
-                        if (u.getPhone() == null) u.setPhone("");
-                        if (u.getAddress() == null) u.setAddress("");
-                        if (u.getEmail() == null) u.setEmail("");
-
-                        fullList.add(u);
-                    }
-
-                    adapter.submit(new ArrayList<>(fullList));
-                    toggleEmpty(fullList.isEmpty());
-                    applyFilter(lastSearch);
-                });
+                showLoading(false);
+                if (swipe != null) swipe.setRefreshing(false);
+                adapter.submit(new ArrayList<>());
+                toggleEmpty(true);
+                toast("Lỗi tải dữ liệu: " + error.getMessage());
+            }
+        });
     }
 
     private void detachListener() {
@@ -204,23 +185,69 @@ public class AdminUsersFragment extends Fragment
         attachListener();
     }
 
+    private void setupRoleFilter(View rootView) {
+        ChipGroup chipGroup = rootView.findViewById(R.id.chipGroupRoleFilter);
+        if (chipGroup == null) return;
+        
+        // Setup listener cho các chip
+        Chip chipAll = rootView.findViewById(R.id.chipAll);
+        Chip chipUser = rootView.findViewById(R.id.chipUser);
+        Chip chipAdmin = rootView.findViewById(R.id.chipAdmin);
+        
+        if (chipAll != null) {
+            chipAll.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (isChecked) {
+                    selectedRole = "Tất cả";
+                    applyFilter(lastSearch);
+                }
+            });
+        }
+        
+        if (chipUser != null) {
+            chipUser.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (isChecked) {
+                    selectedRole = "User";
+                    applyFilter(lastSearch);
+                }
+            });
+        }
+        
+        if (chipAdmin != null) {
+            chipAdmin.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (isChecked) {
+                    selectedRole = "Admin";
+                    applyFilter(lastSearch);
+                }
+            });
+        }
+    }
+
     private void applyFilter(String q) {
         if (q == null) q = "";
         final String qq = q.trim().toLowerCase(Locale.ROOT);
-        if (qq.isEmpty()) {
-            adapter.submit(new ArrayList<>(fullList));
-            toggleEmpty(fullList.isEmpty());
-            return;
-        }
+        
         List<User> filtered = new ArrayList<>();
         for (User u : fullList) {
-            String name = safe(u.getFullName());
-            String email = safe(u.getEmail());
-            String role = safe(u.getRole());
-            String phone = safe(u.getPhone());
-            String address = safe(u.getAddress());
-            if (name.contains(qq) || email.contains(qq) || role.contains(qq) || phone.contains(qq) || address.contains(qq)) {
+            // Filter by role first
+            if (!"Tất cả".equals(selectedRole)) {
+                String userRole = safe(u.getRole());
+                if (!selectedRole.equalsIgnoreCase(userRole)) {
+                    continue;
+                }
+            }
+            
+            // Then filter by search query
+            if (qq.isEmpty()) {
                 filtered.add(u);
+            } else {
+                String name = safe(u.getFullName());
+                String email = safe(u.getEmail());
+                String role = safe(u.getRole());
+                String phone = safe(u.getPhone());
+                String address = safe(u.getAddress());
+                if (name.contains(qq) || email.contains(qq) || role.contains(qq) || phone.contains(qq) || address.contains(qq)) {
+                    filtered.add(u);
+                }
             }
         }
         adapter.submit(filtered);
@@ -315,16 +342,20 @@ public class AdminUsersFragment extends Fragment
         data.put("address", newAddress);
         data.put("role", newRole);
 
-        db.collection("users").document(userId)
-                .update(data)
-                .addOnSuccessListener(v -> {
-                    showLoading(false);
-                    toast("Đã cập nhật người dùng");
-                })
-                .addOnFailureListener(e -> {
-                    showLoading(false);
-                    toast("Cập nhật thất bại: " + e.getMessage());
-                });
+        showLoading(true);
+        usersRepository.updateUser(userId, data, new UsersRepository.OnUserUpdateListener() {
+            @Override
+            public void onSuccess() {
+                showLoading(false);
+                toast("Đã cập nhật người dùng");
+            }
+
+            @Override
+            public void onError(@NonNull Exception error) {
+                showLoading(false);
+                toast("Cập nhật thất bại: " + error.getMessage());
+            }
+        });
     }
 
     private void confirmDelete(User u) {
@@ -344,16 +375,19 @@ public class AdminUsersFragment extends Fragment
             return;
         }
         showLoading(true);
-        db.collection("users").document(userId)
-                .delete()
-                .addOnSuccessListener(v -> {
-                    showLoading(false);
-                    toast("Đã xoá người dùng");
-                })
-                .addOnFailureListener(e -> {
-                    showLoading(false);
-                    toast("Xoá thất bại: " + e.getMessage());
-                });
+        usersRepository.deleteUser(userId, new UsersRepository.OnUserUpdateListener() {
+            @Override
+            public void onSuccess() {
+                showLoading(false);
+                toast("Đã xoá người dùng");
+            }
+
+            @Override
+            public void onError(@NonNull Exception error) {
+                showLoading(false);
+                toast("Xoá thất bại: " + error.getMessage());
+            }
+        });
         // Lưu ý: Xoá Firestore không xoá tài khoản Authentication.
     }
 

@@ -8,21 +8,22 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FieldValue;
-import com.google.firebase.firestore.FirebaseFirestore;
 import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.adapter.OrderLinesAdapter;
-import com.pro.milkteaapp.databinding.ActivityOrderDetailBinding;
+import com.pro.milkteaapp.databinding.UserActivityOrderDetailBinding;
 import com.pro.milkteaapp.models.Order;
 import com.pro.milkteaapp.models.OrderLine;
+import com.pro.milkteaapp.repository.OrdersRepository;
 import com.pro.milkteaapp.utils.MoneyUtils;
 
 import java.util.ArrayList;
@@ -35,8 +36,8 @@ public class OrderDetailActivity extends AppCompatActivity {
 
     public static final String EXTRA_ORDER_ID = "extra_order_id";
 
-    private ActivityOrderDetailBinding b;
-    private final FirebaseFirestore db = FirebaseFirestore.getInstance();
+    private UserActivityOrderDetailBinding b;
+    private OrdersRepository ordersRepository;
     private final OrderLinesAdapter itemsAdapter = new OrderLinesAdapter();
 
     private String orderId;
@@ -46,18 +47,22 @@ public class OrderDetailActivity extends AppCompatActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        b = ActivityOrderDetailBinding.inflate(getLayoutInflater());
+        b = UserActivityOrderDetailBinding.inflate(getLayoutInflater());
         setContentView(b.getRoot());
 
         // Toolbar + Back
         setSupportActionBar(b.toolbar);
-        Objects.requireNonNull(getSupportActionBar()).setTitle("Chi tiết đơn hàng");
+        Objects.requireNonNull(getSupportActionBar()).setTitle("CHI TIẾT ĐƠN HÀNG");
+        b.toolbar.setTitleTextAppearance(this, R.style.ToolbarTitleStyle);
         b.toolbar.setNavigationIcon(com.google.android.material.R.drawable.ic_arrow_back_black_24);
         b.toolbar.setNavigationOnClickListener(v -> getOnBackPressedDispatcher().onBackPressed());
+        centerToolbarTitle(b.toolbar);
 
         // Items list
         b.rvItems.setLayoutManager(new LinearLayoutManager(this));
         b.rvItems.setAdapter(itemsAdapter);
+
+        ordersRepository = new OrdersRepository();
 
         orderId = getIntent().getStringExtra(EXTRA_ORDER_ID);
         if (TextUtils.isEmpty(orderId)) {
@@ -70,14 +75,43 @@ public class OrderDetailActivity extends AppCompatActivity {
 
         loadOrder(orderId);
     }
+    
+    private android.widget.TextView customTitleView;
+    
+    private void centerToolbarTitle(MaterialToolbar toolbar) {
+        customTitleView = com.pro.milkteaapp.utils.ToolbarUtils.centerToolbarTitle(
+                toolbar, "CHI TIẾT ĐƠN HÀNG", customTitleView, getSupportActionBar());
+    }
 
     private void loadOrder(String orderId) {
         b.progress.setVisibility(View.VISIBLE);
-        db.collection("orders").document(orderId).get()
+        // Vẫn cần fetch document trực tiếp vì cần items và addressObj không có trong Order model
+        // Có thể tạo OrdersRepository.fetchOrderDocument() sau nếu cần
+        ordersRepository.fetchOrderById(orderId, new OrdersRepository.OnOrderListener() {
+            @Override
+            public void onOrderReceived(@NonNull Order order) {
+                // Fetch lại document để có đầy đủ thông tin (items, addressObj)
+                fetchOrderDocument(orderId);
+            }
+
+            @Override
+            public void onError(@NonNull Exception error) {
+                Toast.makeText(OrderDetailActivity.this, "Lỗi tải đơn: " + error.getMessage(), Toast.LENGTH_LONG).show();
+                b.progress.setVisibility(View.GONE);
+                finish();
+            }
+        });
+    }
+
+    private void fetchOrderDocument(String orderId) {
+        // Tạm thời vẫn dùng direct Firestore để lấy document với items và addressObj
+        // TODO: Có thể tạo OrdersRepository.fetchOrderDocument() sau
+        com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                .collection("orders").document(orderId).get()
                 .addOnSuccessListener(this::bindOrder)
                 .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Lỗi tải đơn: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                    finish();
+                    Toast.makeText(this, "Lỗi tải chi tiết đơn: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    b.progress.setVisibility(View.GONE);
                 })
                 .addOnCompleteListener(t -> b.progress.setVisibility(View.GONE));
     }
@@ -90,6 +124,57 @@ public class OrderDetailActivity extends AppCompatActivity {
         b.tvOrderId.setText("#" + d.getId());
         status = s(d.getString("status"));
         b.tvStatus.setText(status);
+
+        // Thông tin đơn hàng
+        Timestamp createdAt = d.getTimestamp("createdAt");
+        if (createdAt != null) {
+            String dateStr = DateFormat.getMediumDateFormat(this).format(createdAt.toDate())
+                    + " " + DateFormat.getTimeFormat(this).format(createdAt.toDate());
+            b.tvCreatedAt.setText(dateStr);
+        } else {
+            b.tvCreatedAt.setText("—");
+        }
+
+        // Phương thức thanh toán
+        String paymentMethod = s(d.getString("paymentMethod"));
+        if (TextUtils.isEmpty(paymentMethod)) paymentMethod = "COD";
+        b.tvPaymentMethod.setText(formatPaymentMethod(paymentMethod));
+
+        // Trạng thái thanh toán
+        String paymentStatus = s(d.getString("paymentStatus"));
+        if (!TextUtils.isEmpty(paymentStatus)) {
+            b.rowPaymentStatus.setVisibility(View.VISIBLE);
+            b.tvPaymentStatus.setText(formatPaymentStatus(paymentStatus));
+        } else {
+            b.rowPaymentStatus.setVisibility(View.GONE);
+        }
+
+        // Transaction ID
+        String transactionId = s(d.getString("transactionId"));
+        if (!TextUtils.isEmpty(transactionId)) {
+            b.rowTransactionId.setVisibility(View.VISIBLE);
+            b.tvTransactionId.setText(transactionId);
+        } else {
+            b.rowTransactionId.setVisibility(View.GONE);
+        }
+
+        // Voucher code
+        String voucherCode = s(d.getString("voucherCode"));
+        if (!TextUtils.isEmpty(voucherCode)) {
+            b.rowVoucher.setVisibility(View.VISIBLE);
+            b.tvVoucherCode.setText(voucherCode);
+        } else {
+            b.rowVoucher.setVisibility(View.GONE);
+        }
+
+        // Shipping label
+        String shippingLabel = s(d.getString("shippingLabel"));
+        if (!TextUtils.isEmpty(shippingLabel)) {
+            b.rowShipping.setVisibility(View.VISIBLE);
+            b.tvShippingLabel.setText(shippingLabel);
+        } else {
+            b.rowShipping.setVisibility(View.GONE);
+        }
 
         b.tvSubtotal.setText(MoneyUtils.formatVnd(nz(d.getDouble("subtotal"))));
         b.tvDiscount.setText(MoneyUtils.formatVnd(nz(d.getDouble("discount"))));
@@ -121,13 +206,23 @@ public class OrderDetailActivity extends AppCompatActivity {
         // Items
         List<OrderLine> lines = new ArrayList<>();
         Object itemsObj = d.get("items");
-        if (itemsObj instanceof List) {
-            for (Object o : (List<?>) itemsObj) {
+        android.util.Log.d("OrderDetail", "Items object type: " + (itemsObj != null ? itemsObj.getClass().getSimpleName() : "null"));
+        if (itemsObj instanceof List<?> itemsList) {
+            android.util.Log.d("OrderDetail", "Items list size: " + itemsList.size());
+            for (int i = 0; i < itemsList.size(); i++) {
+                Object o = itemsList.get(i);
+                android.util.Log.d("OrderDetail", "Item " + i + " type: " + (o != null ? o.getClass().getSimpleName() : "null"));
                 if (o instanceof Map) {
-                    lines.add(OrderLine.fromMap((Map<String, Object>) o));
+                    Map<String, Object> itemMap = (Map<String, Object>) o;
+                    android.util.Log.d("OrderDetail", "Item " + i + " keys: " + itemMap.keySet());
+                    android.util.Log.d("OrderDetail", "Item " + i + " type field: " + itemMap.get("type"));
+                    OrderLine line = OrderLine.fromMap(itemMap);
+                    lines.add(line);
+                    android.util.Log.d("OrderDetail", "Item " + i + " parsed - name: " + line.getName() + ", isCombo: " + line.isCombo());
                 }
             }
         }
+        android.util.Log.d("OrderDetail", "Total lines parsed: " + lines.size());
         itemsAdapter.submit(lines);
 
         // Thông tin hủy (nếu có)
@@ -184,28 +279,26 @@ public class OrderDetailActivity extends AppCompatActivity {
         if (TextUtils.isEmpty(orderId)) return;
 
         b.progress.setVisibility(View.VISIBLE);
-        db.collection("orders").document(orderId)
-                .update(
-                        "status", Order.STATUS_CANCELLED,
-                        "cancelReason", reason,
-                        "canceledAt", FieldValue.serverTimestamp()
-                )
-                .addOnSuccessListener(aVoid -> {
-                    Toast.makeText(this, "Đã hủy đơn hàng", Toast.LENGTH_SHORT).show();
-                    // Cập nhật UI tại chỗ (không phải reload mạng)
-                    status = Order.STATUS_CANCELLED;
-                    b.tvStatus.setText(status);
-                    b.btnCancelOrder.setVisibility(View.GONE);
-                    b.cardCancelInfo.setVisibility(View.VISIBLE);
-                    b.tvCancelReason.setText(reason);
-                    // Thời gian hủy sẽ hiển thị sau lần reload; hoặc bạn có thể fetch lại doc:
-                    db.collection("orders").document(orderId).get()
-                            .addOnSuccessListener(this::bindCancelBlockOnly);
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Hủy đơn thất bại: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                })
-                .addOnCompleteListener(t -> b.progress.setVisibility(View.GONE));
+        ordersRepository.cancelOrder(orderId, reason, new OrdersRepository.OnOrderUpdateListener() {
+            @Override
+            public void onSuccess() {
+                Toast.makeText(OrderDetailActivity.this, "Đã hủy đơn hàng", Toast.LENGTH_SHORT).show();
+                // Cập nhật UI tại chỗ (không phải reload mạng)
+                status = Order.STATUS_CANCELLED;
+                b.tvStatus.setText(status);
+                b.btnCancelOrder.setVisibility(View.GONE);
+                b.cardCancelInfo.setVisibility(View.VISIBLE);
+                b.tvCancelReason.setText(reason);
+                // Thời gian hủy sẽ hiển thị sau lần reload
+                fetchOrderDocument(orderId);
+            }
+
+            @Override
+            public void onError(@NonNull Exception error) {
+                Toast.makeText(OrderDetailActivity.this, "Hủy đơn thất bại: " + error.getMessage(), Toast.LENGTH_LONG).show();
+                b.progress.setVisibility(View.GONE);
+            }
+        });
     }
 
     private void bindCancelBlockOnly(DocumentSnapshot d) {
@@ -234,5 +327,27 @@ public class OrderDetailActivity extends AppCompatActivity {
             sb.append(p);
         }
         return sb.toString();
+    }
+
+    private String formatPaymentMethod(String method) {
+        if (TextUtils.isEmpty(method)) return "COD";
+        return switch (method.toUpperCase(Locale.getDefault())) {
+            case "COD" -> "Thanh toán khi nhận";
+            case "MOMO" -> "Ví Momo";
+            case "VNPAY" -> "VNPAY";
+            case "CARD" -> "Thẻ ngân hàng";
+            default -> method;
+        };
+    }
+
+    private String formatPaymentStatus(String status) {
+        if (TextUtils.isEmpty(status)) return "—";
+        return switch (status.toUpperCase(Locale.getDefault())) {
+            case "SUCCESS" -> "Đã thanh toán";
+            case "PENDING" -> "Chờ thanh toán";
+            case "FAILED" -> "Thanh toán thất bại";
+            case "CANCELLED" -> "Đã hủy";
+            default -> status;
+        };
     }
 }

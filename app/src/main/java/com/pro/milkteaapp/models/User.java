@@ -1,5 +1,7 @@
 package com.pro.milkteaapp.models;
 
+import com.google.firebase.Timestamp;
+
 import java.io.Serializable;
 
 public class User implements Serializable {
@@ -20,6 +22,10 @@ public class User implements Serializable {
 
     // tổng tiền đã thanh toán
     private long totalSpent;
+
+    // Timestamps
+    private Timestamp createdAt;
+    private Timestamp updatedAt;
 
     public User() {}
 
@@ -52,6 +58,9 @@ public class User implements Serializable {
     public String getFullName() { return fullName; }
     public void setFullName(String fullName) { this.fullName = fullName; }
 
+    // Alias for getFullName() for backward compatibility
+    public String getDisplayName() { return fullName; }
+
     public String getRole() { return role != null ? role : "user"; }
     public void setRole(String role) { this.role = role; }
 
@@ -75,4 +84,11 @@ public class User implements Serializable {
 
     public long getTotalSpent() { return totalSpent; }
     public void setTotalSpent(long totalSpent) { this.totalSpent = totalSpent; }
+
+    // Timestamp getters/setters
+    public Timestamp getCreatedAt() { return createdAt; }
+    public void setCreatedAt(Timestamp createdAt) { this.createdAt = createdAt; }
+
+    public Timestamp getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(Timestamp updatedAt) { this.updatedAt = updatedAt; }
 }

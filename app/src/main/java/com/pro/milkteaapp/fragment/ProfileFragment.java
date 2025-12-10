@@ -10,7 +10,10 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
+import com.google.android.material.navigation.NavigationView;
 
 import com.airbnb.lottie.LottieAnimationView;
 import com.airbnb.lottie.LottieDrawable;
@@ -20,6 +23,8 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.android.material.card.MaterialCardView;
+import com.pro.milkteaapp.models.User;
+import com.pro.milkteaapp.repository.UsersRepository;
 
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -35,14 +40,14 @@ import com.pro.milkteaapp.activity.admin.AdminMainActivity;
 import com.pro.milkteaapp.activity.LoyaltyStatusActivity;
 import com.pro.milkteaapp.databinding.ActivityProfileBinding;
 import com.pro.milkteaapp.utils.ImageLoader;
-import com.pro.milkteaapp.utils.TierStyleUtil;
+import com.pro.milkteaapp.utils.TierStyleUtils;
 import com.pro.milkteaapp.utils.LoyaltyPolicy;
 
 public class ProfileFragment extends Fragment {
 
     private ActivityProfileBinding binding;
     private FirebaseAuth auth;
-    private FirebaseFirestore db;
+    private UsersRepository usersRepository;
     private SessionManager session;
     private ListenerRegistration profileListener;
 
@@ -53,16 +58,12 @@ public class ProfileFragment extends Fragment {
                              @Nullable Bundle savedInstanceState) {
         binding = ActivityProfileBinding.inflate(inflater, container, false);
 
-        binding.toolbar.setNavigationOnClickListener(v -> {
-            if (isAdded() && requireActivity() instanceof com.pro.milkteaapp.activity.MainActivity) {
-                ((com.pro.milkteaapp.activity.MainActivity) requireActivity()).openHomeTab();
-            } else if (isAdded()) {
-                requireActivity().getOnBackPressedDispatcher().onBackPressed();
-            }
-        });
+        // Xóa nút back - không cần navigation icon
 
         auth = FirebaseAuth.getInstance();
-        db = FirebaseFirestore.getInstance();
+        // Vẫn cần cho realtime listener
+        FirebaseFirestore db = FirebaseFirestore.getInstance(); // Vẫn cần cho realtime listener
+        usersRepository = new UsersRepository();
         session = new SessionManager(requireContext());
 
         if (auth.getCurrentUser() == null) {
@@ -80,9 +81,6 @@ public class ProfileFragment extends Fragment {
         binding.btnManageAddress.setOnClickListener(
                 v -> startActivity(new Intent(requireContext(), AddressActivity.class)));
 
-        View.OnClickListener openEdit = vv -> startActivity(new Intent(requireContext(), EditProfileActivity.class));
-        binding.btnChangeAvatar.setOnClickListener(openEdit);
-        binding.imgAvatar.setOnClickListener(openEdit);
 
         binding.btnAdminPanel.setOnClickListener(
                 v -> startActivity(new Intent(requireContext(), AdminMainActivity.class)));
@@ -94,20 +92,78 @@ public class ProfileFragment extends Fragment {
             gotoLogin();
         });
 
-        // ✅ Chỉ giữ click cho nút XEM
-        binding.btnViewMember.setOnClickListener(
-                v -> startActivity(new Intent(requireContext(), LoyaltyStatusActivity.class)));
+        // ✅ Toàn bộ card loyalty có thể click được
+        View.OnClickListener openLoyaltyStatus = v -> 
+                startActivity(new Intent(requireContext(), LoyaltyStatusActivity.class));
+        
+        binding.cardLoyalty.setOnClickListener(openLoyaltyStatus);
+        binding.btnViewMember.setOnClickListener(openLoyaltyStatus);
 
-        // ❌ Bỏ click cho badge, crown và lottie
+        // ❌ Bỏ click cho badge và lottie để tránh conflict
         View vBadge = binding.getRoot().findViewById(R.id.tvTierBadge);
-        if (vBadge != null) vBadge.setClickable(false);
-        View vCrown = binding.getRoot().findViewById(R.id.imgTierCrown);
-        if (vCrown != null) vCrown.setClickable(false);
+        if (vBadge != null) {
+            vBadge.setClickable(false);
+            vBadge.setFocusable(false);
+        }
         View vLottie = binding.getRoot().findViewById(R.id.lottieCrown);
-        if (vLottie != null) vLottie.setClickable(false);
+        if (vLottie != null) {
+            vLottie.setClickable(false);
+            vLottie.setFocusable(false);
+        }
 
+        setupToolbar();
+        setupDrawer();
         startProfileRealtime();
         return binding.getRoot();
+    }
+    
+    private void setupToolbar() {
+        if (getActivity() == null || binding == null) return;
+        ((androidx.appcompat.app.AppCompatActivity) getActivity()).setSupportActionBar(binding.toolbar);
+        
+        // Setup drawer button click
+        View btnDrawer = binding.getRoot().findViewById(R.id.btnDrawer);
+        if (btnDrawer != null) {
+            btnDrawer.setOnClickListener(v -> {
+                if (binding.drawerLayout != null) {
+                    binding.drawerLayout.openDrawer(GravityCompat.END);
+                }
+            });
+        }
+    }
+    
+    private void setupDrawer() {
+        if (binding == null) return;
+        
+        // Setup drawer menu click
+        if (binding.navigationView != null) {
+            binding.navigationView.setNavigationItemSelectedListener(item -> {
+                int itemId = item.getItemId();
+                
+                if (itemId == R.id.menu_profile_info) {
+                    // Scroll to profile info section
+                    if (binding.scroll != null) {
+                        binding.scroll.post(() -> {
+                            View contentGroup = binding.getRoot().findViewById(R.id.contentGroup);
+                            if (contentGroup != null) {
+                                binding.scroll.smoothScrollTo(0, contentGroup.getTop());
+                            }
+                        });
+                    }
+                } else if (itemId == R.id.menu_order_history) {
+                    startActivity(new Intent(requireContext(), OrderHistoryActivity.class));
+                } else if (itemId == R.id.menu_address) {
+                    startActivity(new Intent(requireContext(), AddressActivity.class));
+                } else if (itemId == R.id.menu_loyalty) {
+                    startActivity(new Intent(requireContext(), LoyaltyStatusActivity.class));
+                }
+                
+                if (binding.drawerLayout != null) {
+                    binding.drawerLayout.closeDrawer(GravityCompat.END);
+                }
+                return true;
+            });
+        }
     }
 
     private void startProfileRealtime() {
@@ -125,47 +181,49 @@ public class ProfileFragment extends Fragment {
 
         String email = fUser.getEmail();
         if (!TextUtils.isEmpty(email)) {
-            db.collection("users")
-                    .whereEqualTo("email", email)
-                    .limit(1)
-                    .get()
-                    .addOnSuccessListener(qs -> {
-                        showLoading(false);
-                        if (!qs.isEmpty()) {
-                            DocumentSnapshot doc = qs.getDocuments().get(0);
-                            session.saveUserFromFirestore(
-                                    doc.getId(),
-                                    doc.getString("email"),
-                                    doc.getString("fullName"),
-                                    doc.getString("role"),
-                                    doc.getString("avatar")
-                            );
-                            bindProfile(doc);
-                            profileListener = listenUserDoc(doc.getId());
-                        } else {
-                            Toast.makeText(requireContext(), "Chưa có hồ sơ người dùng.", Toast.LENGTH_SHORT).show();
-                        }
-                    })
-                    .addOnFailureListener(e -> {
-                        showLoading(false);
-                        Toast.makeText(requireContext(), "Lỗi tải hồ sơ: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    });
+            usersRepository.fetchUserByEmail(email, new UsersRepository.OnUserListener() {
+                @Override
+                public void onUserReceived(@NonNull com.pro.milkteaapp.models.User user) {
+                    showLoading(false);
+                    session.saveUserFromFirestore(
+                            user.getUid(),
+                            user.getEmail(),
+                            user.getFullName(),
+                            user.getRole(),
+                            user.getAvatar()
+                    );
+                    bindProfileFromUser(user);
+                    profileListener = listenUserDoc(user.getUid());
+                }
+
+                @Override
+                public void onError(@NonNull Exception error) {
+                    showLoading(false);
+                    Toast.makeText(requireContext(), "Lỗi tải hồ sơ: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
         } else {
             profileListener = listenUserDoc(fUser.getUid());
         }
     }
 
     private ListenerRegistration listenUserDoc(@NonNull String docId) {
-        return db.collection("users").document(docId)
-                .addSnapshotListener((snap, e) -> {
-                    if (!isAdded()) return;
-                    showLoading(false);
-                    if (e != null) {
-                        Toast.makeText(requireContext(), "Lỗi tải hồ sơ: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-                    bindProfile(snap);
-                });
+        // Sử dụng UsersRepository để lắng nghe realtime user updates
+        return usersRepository.listenUserById(docId, new UsersRepository.OnUserListener() {
+            @Override
+            public void onUserReceived(@NonNull User user) {
+                if (!isAdded()) return;
+                showLoading(false);
+                bindProfileFromUser(user);
+            }
+
+            @Override
+            public void onError(@NonNull Exception error) {
+                if (!isAdded()) return;
+                showLoading(false);
+                Toast.makeText(requireContext(), "Lỗi tải hồ sơ: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void stopProfileRealtime() {
@@ -173,6 +231,51 @@ public class ProfileFragment extends Fragment {
             profileListener.remove();
             profileListener = null;
         }
+    }
+
+    private void bindProfileFromUser(@NonNull com.pro.milkteaapp.models.User user) {
+        String fullName = user.getFullName() != null ? user.getFullName() : "";
+        String email = user.getEmail() != null ? user.getEmail() : "";
+        String role = user.getRole() != null ? user.getRole() : session.getRole();
+        String phone = user.getPhone() != null ? user.getPhone() : "";
+        String address = user.getAddress() != null ? user.getAddress() : "";
+        String avatar = user.getAvatar();
+
+        long loyaltyPoints = user.getLoyaltyPoints();
+        String loyaltyTier = user.getLoyaltyTier();
+        if (TextUtils.isEmpty(loyaltyTier)) {
+            loyaltyTier = LoyaltyPolicy.tierForPoints(loyaltyPoints);
+        }
+
+        String userDocId = user.getUid();
+        reconcileTierIfNeeded(userDocId, loyaltyPoints, loyaltyTier);
+
+        binding.tvName.setText(TextUtils.isEmpty(fullName) ? getString(R.string.unknown) : fullName);
+        binding.tvEmail.setText(TextUtils.isEmpty(email) ? getString(R.string.unknown) : email);
+        binding.tvRole.setText(TextUtils.isEmpty(role) ? "user" : role);
+        binding.tvPhone.setText(TextUtils.isEmpty(phone) ? getString(R.string.unknown) : phone);
+        binding.tvAddress.setText(TextUtils.isEmpty(address) ? getString(R.string.unknown) : address);
+
+        TextView tvBadge = binding.getRoot().findViewById(R.id.tvTierBadge);
+        if (tvBadge != null) tvBadge.setText(loyaltyTier);
+        binding.tvLoyaltyPoints.setText(String.valueOf(loyaltyPoints));
+        
+        // Hiển thị điểm đổi quà
+        long rewardPoints = user.getRewardPoints();
+        TextView tvRewardPoints = binding.getRoot().findViewById(R.id.tvRewardPoints);
+        if (tvRewardPoints != null) {
+            tvRewardPoints.setText(String.valueOf(rewardPoints));
+        }
+        
+        // Setup nút đổi voucher
+        setupRedeemButton();
+
+        ImageLoader.load(binding.imgAvatar, avatar, R.drawable.ic_avatar_default);
+
+        boolean isAdmin = "admin".equalsIgnoreCase(role);
+        binding.btnAdminPanel.setVisibility(isAdmin ? View.VISIBLE : View.GONE);
+
+        applyTierVisual(loyaltyTier);
     }
 
     private void bindProfile(@Nullable DocumentSnapshot snap) {
@@ -224,6 +327,20 @@ public class ProfileFragment extends Fragment {
         TextView tvBadge = binding.getRoot().findViewById(R.id.tvTierBadge);
         if (tvBadge != null) tvBadge.setText(loyaltyTier);
         binding.tvLoyaltyPoints.setText(String.valueOf(loyaltyPoints));
+        
+        // Hiển thị điểm đổi quà
+        long rewardPoints = 0L;
+        if (snap != null && snap.contains("rewardPoints")) {
+            Long rp = snap.getLong("rewardPoints");
+            if (rp != null) rewardPoints = rp;
+        }
+        TextView tvRewardPoints = binding.getRoot().findViewById(R.id.tvRewardPoints);
+        if (tvRewardPoints != null) {
+            tvRewardPoints.setText(String.valueOf(rewardPoints));
+        }
+        
+        // Setup nút đổi voucher
+        setupRedeemButton();
 
         ImageLoader.load(binding.imgAvatar, avatar, R.drawable.ic_avatar_default);
 
@@ -232,24 +349,58 @@ public class ProfileFragment extends Fragment {
 
         applyTierVisual(loyaltyTier);
     }
+    
+    private void setupRedeemButton() {
+        com.google.android.material.button.MaterialButton btnRedeem = 
+                binding.getRoot().findViewById(R.id.btnRedeemVoucher);
+        if (btnRedeem != null) {
+            btnRedeem.setOnClickListener(v -> {
+                // Mở màn hình đổi voucher
+                startActivity(new Intent(requireContext(), 
+                        com.pro.milkteaapp.activity.RedeemVoucherActivity.class));
+            });
+        }
+    }
 
     private void reconcileTierIfNeeded(@Nullable String userDocId, long points, @Nullable String currentTier) {
         if (TextUtils.isEmpty(userDocId)) return;
         String expected = LoyaltyPolicy.tierForPoints(points);
-        String cur = (currentTier == null) ? "" : currentTier.trim();
-        if (!expected.equalsIgnoreCase(cur)) {
-            FirebaseFirestore.getInstance()
-                    .collection("users").document(userDocId)
-                    .update("loyaltyTier", expected);
+        String cur = (currentTier == null || currentTier.isEmpty()) ? "" : currentTier.trim();
+        // So sánh không phân biệt hoa thường và chuẩn hóa
+        String normalizedExpected = expected != null ? expected.trim() : "";
+        String normalizedCur = cur != null ? cur.trim() : "";
+        if (!normalizedExpected.equalsIgnoreCase(normalizedCur)) {
+            // Cập nhật tier ngay lập tức trong UI
+            TextView tvBadge = binding.getRoot().findViewById(R.id.tvTierBadge);
+            if (tvBadge != null) {
+                tvBadge.setText(expected);
+            }
+            applyTierVisual(expected);
+            
+            // Sử dụng UsersRepository để đồng bộ tier trong Firestore
+            if (usersRepository == null) {
+                usersRepository = new UsersRepository();
+            }
+            usersRepository.syncLoyaltyTier(userDocId, new UsersRepository.OnUserUpdateListener() {
+                @Override
+                public void onSuccess() {
+                    // Tier đã được đồng bộ thành công
+                }
+
+                @Override
+                public void onError(@NonNull Exception error) {
+                    // Log silently, không chặn UI
+                    android.util.Log.w("ProfileFragment", "Lỗi đồng bộ tier: " + error.getMessage());
+                }
+            });
         }
     }
 
     private void applyTierVisual(@NonNull String tier) {
         MaterialCardView card = binding.cardLoyalty;
-        ImageView imgCrown = binding.getRoot().findViewById(R.id.imgTierCrown);
         TextView tvBadge = binding.getRoot().findViewById(R.id.tvTierBadge);
 
-        TierStyleUtil.apply(requireContext(), tier, card, imgCrown, tvBadge, tvBadge);
+        TierStyleUtils.apply(requireContext(), tier, card, null, tvBadge, tvBadge);
 
         // Lottie chỉ để trang trí
         View vLottie = binding.getRoot().findViewById(R.id.lottieCrown);
@@ -268,10 +419,13 @@ public class ProfileFragment extends Fragment {
     }
 
     private int getCrownResForTier(@NonNull String tier) {
+        if ("Kim Cương".equals(tier)) {
+            return R.raw.crown_diamond;
+        }
         String t = tier.trim().toLowerCase();
         return switch (t) {
             case "vàng", "gold" -> R.raw.crown_gold;
-            case "bạc", "silver" -> R.raw.crown_silver;
+            case "bạc", "silver" -> R.raw.crown_diamond;
             case "đồng", "dong", "bronze" -> R.raw.crown_bronze;
             default -> 0;
         };
