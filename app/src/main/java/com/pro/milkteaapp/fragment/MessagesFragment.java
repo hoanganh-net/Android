@@ -83,6 +83,13 @@ public class MessagesFragment extends Fragment {
         
         // Setup drawer menu click
         if (binding.navigationView != null) {
+            // Set default selection là ALL (sau khi menu đã được inflate)
+            binding.navigationView.post(() -> {
+                if (binding.navigationView != null && isAdded()) {
+                    binding.navigationView.setCheckedItem(R.id.menu_all);
+                }
+            });
+            
             binding.navigationView.setNavigationItemSelectedListener(item -> {
                 int itemId = item.getItemId();
                 String filter = "Tất cả";
@@ -94,6 +101,9 @@ public class MessagesFragment extends Fragment {
                 } else if (itemId == R.id.menu_chat) {
                     filter = "Chat với Admin";
                 }
+                
+                // Cập nhật checked state
+                binding.navigationView.setCheckedItem(item.getItemId());
                 
                 selectedFilter = filter;
                 filterMessages();

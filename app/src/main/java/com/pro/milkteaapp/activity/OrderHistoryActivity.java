@@ -22,9 +22,22 @@ public class OrderHistoryActivity extends AppCompatActivity {
         centerToolbarTitle(b.toolbar, getString(R.string.order_history));
 
         if (savedInstanceState == null) {
+            OrdersFragment fragment = OrdersFragment.newInstance("ALL", false);
             getSupportFragmentManager().beginTransaction()
-                    .replace(b.container.getId(), OrdersFragment.newInstance("ALL", false))
+                    .replace(b.container.getId(), fragment)
                     .commit();
+            
+            // Setup nút filter trong toolbar để mở drawer của fragment
+            if (b.btnFilter != null) {
+                b.btnFilter.setOnClickListener(v -> {
+                    // Tìm fragment và gọi method mở drawer
+                    OrdersFragment ordersFragment = (OrdersFragment) getSupportFragmentManager()
+                            .findFragmentById(b.container.getId());
+                    if (ordersFragment != null) {
+                        ordersFragment.openFilterDrawer();
+                    }
+                });
+            }
         }
     }
     

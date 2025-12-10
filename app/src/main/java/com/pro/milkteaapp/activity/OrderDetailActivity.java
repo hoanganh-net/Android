@@ -85,6 +85,9 @@ public class OrderDetailActivity extends AppCompatActivity {
 
     private void loadOrder(String orderId) {
         b.progress.setVisibility(View.VISIBLE);
+        // Ẩn nút hủy đơn hàng trong lúc đang load để tránh user click nhầm
+        b.btnCancelOrder.setVisibility(View.GONE);
+        b.btnCancelOrder.setEnabled(false);
         // Vẫn cần fetch document trực tiếp vì cần items và addressObj không có trong Order model
         // Có thể tạo OrdersRepository.fetchOrderDocument() sau nếu cần
         ordersRepository.fetchOrderById(orderId, new OrdersRepository.OnOrderListener() {
@@ -98,6 +101,8 @@ public class OrderDetailActivity extends AppCompatActivity {
             public void onError(@NonNull Exception error) {
                 Toast.makeText(OrderDetailActivity.this, "Lỗi tải đơn: " + error.getMessage(), Toast.LENGTH_LONG).show();
                 b.progress.setVisibility(View.GONE);
+                b.btnCancelOrder.setVisibility(View.GONE);
+                b.btnCancelOrder.setEnabled(false);
                 finish();
             }
         });
@@ -114,6 +119,8 @@ public class OrderDetailActivity extends AppCompatActivity {
             public void onError(@NonNull Exception error) {
                 Toast.makeText(OrderDetailActivity.this, "Lỗi tải chi tiết đơn: " + error.getMessage(), Toast.LENGTH_LONG).show();
                 b.progress.setVisibility(View.GONE);
+                b.btnCancelOrder.setVisibility(View.GONE);
+                b.btnCancelOrder.setEnabled(false);
             }
         });
     }
@@ -250,6 +257,10 @@ public class OrderDetailActivity extends AppCompatActivity {
                 Order.STATUS_PENDING.equals(status);
         // Ẩn nếu đã hủy/hoàn tất/đang giao/đang xử lý
         b.btnCancelOrder.setVisibility(cancelable ? View.VISIBLE : View.GONE);
+        b.btnCancelOrder.setEnabled(cancelable);
+        
+        // Tắt loading sau khi bind xong
+        b.progress.setVisibility(View.GONE);
     }
 
     @SuppressLint({"CutPasteId", "MissingInflatedId"})

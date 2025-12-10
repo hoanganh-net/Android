@@ -7,11 +7,15 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.tabs.TabLayout;
 import com.google.firebase.firestore.ListenerRegistration;
+import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.SessionManager;
 import com.pro.milkteaapp.adapter.OrdersAdapter;
 import com.pro.milkteaapp.databinding.UserFragmentOrdersBinding;
@@ -73,11 +77,91 @@ public class OrdersFragment extends Fragment implements OrdersAdapter.Listener {
 
         if (showTabs) {
             setupTabsAndSelectCurrent();
+            // Hiển thị toolbar khi có tabs (dùng trong MainActivity hoặc standalone)
+            if (b.toolbar != null) {
+                b.toolbar.setVisibility(View.VISIBLE);
+            }
         } else {
             b.tabs.setVisibility(View.GONE);
+            // Ẩn toolbar khi không có tabs (dùng trong OrderHistoryActivity - đã có toolbar riêng)
+            if (b.toolbar != null) {
+                b.toolbar.setVisibility(View.GONE);
+            }
         }
 
+        setupDrawer();
+        
+        // Set default selection là ALL (sau khi menu đã được inflate)
+        if (b.navigationView != null) {
+            b.navigationView.post(() -> {
+                if (b.navigationView != null && isAdded()) {
+                    b.navigationView.setCheckedItem(R.id.menu_all_orders);
+                }
+            });
+        }
+        
         subscribeOrdersRealtime();
+    }
+
+    /**
+     * Mở drawer filter (được gọi từ activity khi cần)
+     */
+    public void openFilterDrawer() {
+        if (b != null && isAdded()) {
+            b.drawerLayout.openDrawer(GravityCompat.END);
+        }
+    }
+
+    private void setupDrawer() {
+        if (b == null || !isAdded()) return;
+
+        // Setup nút filter để mở drawer
+        b.btnFilter.setOnClickListener(v -> openFilterDrawer());
+
+        // Setup drawer menu click
+        if (b.navigationView != null) {
+            b.navigationView.setNavigationItemSelectedListener(item -> {
+                int itemId = item.getItemId();
+                String filter = "ALL";
+
+                if (itemId == R.id.menu_all_orders) {
+                    filter = "ALL";
+                } else if (itemId == R.id.menu_pending_orders) {
+                    filter = Order.STATUS_PENDING;
+                } else if (itemId == R.id.menu_finished_orders) {
+                    filter = Order.STATUS_FINISHED;
+                } else if (itemId == R.id.menu_cancelled_orders) {
+                    filter = Order.STATUS_CANCELLED;
+                }
+
+                // Cập nhật filter
+                currentFilter = filter;
+
+                // Cập nhật checked state
+                b.navigationView.setCheckedItem(item.getItemId());
+
+                // Cập nhật tab selection nếu tabs đang hiển thị
+                if (showTabs && b.tabs != null) {
+                    for (int i = 0; i < b.tabs.getTabCount(); i++) {
+                        TabLayout.Tab t = b.tabs.getTabAt(i);
+                        if (t != null && String.valueOf(t.getTag()).equals(filter)) {
+                            t.select();
+                            break;
+                        }
+                    }
+                }
+
+                // Áp dụng filter
+                applyFilterAndRender();
+
+                // Đóng drawer
+                if (b.drawerLayout != null) {
+                    b.drawerLayout.closeDrawer(GravityCompat.END);
+                }
+
+                return true;
+            });
+        }
     }
 
     private void setupTabsAndSelectCurrent() {

@@ -1,13 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <item
-        android:id="@+id/menu_all"
-        android:title="Tất cả" />
-    <item
-        android:id="@+id/menu_products"
-        android:title="Sản phẩm" />
-    <item
-        android:id="@+id/menu_combo"
-        android:title="Combo" />
+    
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/menu_all"
+            android:title="Tất cả"
+            android:checked="true" />
+        <item
+            android:id="@+id/menu_products"
+            android:title="Sản phẩm" />
+        <item
+            android:id="@+id/menu_combo"
+            android:title="Combo" />
+    </group>
+    
 </menu>
 

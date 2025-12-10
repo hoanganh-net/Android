@@ -137,6 +137,13 @@ public class CartFragment extends Fragment
         
         // Setup drawer menu click
         if (binding.navigationView != null) {
+            // Set default selection là ALL (sau khi menu đã được inflate)
+            binding.navigationView.post(() -> {
+                if (binding.navigationView != null && isAdded()) {
+                    binding.navigationView.setCheckedItem(R.id.menu_all);
+                }
+            });
+            
             binding.navigationView.setNavigationItemSelectedListener(item -> {
                 int itemId = item.getItemId();
                 String filter = getString(R.string.filter_all);
@@ -148,6 +155,9 @@ public class CartFragment extends Fragment
                 } else if (itemId == R.id.menu_combo) {
                     filter = getString(R.string.filter_combo);
                 }
+                
+                // Cập nhật checked state
+                binding.navigationView.setCheckedItem(item.getItemId());
                 
                 filterCartItems(filter);
                 

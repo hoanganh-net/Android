@@ -19,7 +19,41 @@
             app:navigationIcon="@drawable/ic_arrow_back"
             app:navigationIconTint="@android:color/white"
             android:background="?attr/colorPrimary"
-            app:titleTextColor="@android:color/white" />
+            app:titleTextColor="@android:color/white"
+            app:contentInsetStart="0dp"
+            app:contentInsetEnd="0dp"
+            app:contentInsetStartWithNavigation="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/order_history"
+                    android:textColor="@android:color/white"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:paddingStart="0dp" />
+
+                <ImageButton
+                    android:id="@+id/btnFilter"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:src="@drawable/ic_menu"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Lọc đơn hàng"
+                    app:tint="@android:color/white"
+                    android:padding="12dp" />
+            </LinearLayout>
+        </com.google.android.material.appbar.MaterialToolbar>
 
     </com.google.android.material.appbar.AppBarLayout>
 

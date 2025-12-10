@@ -88,6 +88,10 @@ public class AdminOrderDetailActivity extends AppCompatActivity {
 
     private void loadOrder(String orderId) {
         setLoading(true);
+        // Ẩn và disable các nút action trong lúc đang load để tránh user click nhầm
+        lockActionButtons(true);
+        setVisible(b.btnAdminConfirm, false);
+        setVisible(b.btnAdminCancel, false);
         // Vẫn cần fetch document trực tiếp vì cần items và addressObj không có trong Order model
         // TODO: Có thể tạo OrdersRepository.fetchOrderDocument() sau nếu cần
         ordersRepository.fetchOrderById(orderId, new OrdersRepository.OnOrderListener() {
@@ -101,6 +105,9 @@ public class AdminOrderDetailActivity extends AppCompatActivity {
             public void onError(@NonNull Exception error) {
                 toastLong("Lỗi tải đơn: " + error.getMessage());
                 setLoading(false);
+                lockActionButtons(false);
+                setVisible(b.btnAdminConfirm, false);
+                setVisible(b.btnAdminCancel, false);
                 finish();
             }
         });
@@ -117,6 +124,9 @@ public class AdminOrderDetailActivity extends AppCompatActivity {
             public void onError(@NonNull Exception error) {
                 toastLong("Lỗi tải chi tiết đơn: " + error.getMessage());
                 setLoading(false);
+                lockActionButtons(false);
+                setVisible(b.btnAdminConfirm, false);
+                setVisible(b.btnAdminCancel, false);
             }
         });
     }
@@ -263,6 +273,11 @@ public class AdminOrderDetailActivity extends AppCompatActivity {
 
         // nút theo trạng thái
         updateButtonsByStatus();
+        // Enable các nút sau khi đã xác định trạng thái
+        lockActionButtons(false);
+        
+        // Tắt loading sau khi bind xong (thông tin user sẽ load async và cập nhật sau)
+        setLoading(false);
     }
 
     private void updateButtonsByStatus() {

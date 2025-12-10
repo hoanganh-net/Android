@@ -9,12 +9,14 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
-import com.google.android.material.tabs.TabLayout;
+import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
@@ -29,7 +31,8 @@ import java.util.List;
 
 public class AdminOrdersFragment extends Fragment {
 
-    private TabLayout tabAdmin;
+    private DrawerLayout drawerLayout;
+    private NavigationView navigationView;
     private RecyclerView recyclerView;
     private View emptyState, loadingState;
     private SwipeRefreshLayout swipeRefresh;
@@ -47,7 +50,8 @@ public class AdminOrdersFragment extends Fragment {
 
         View v = inflater.inflate(R.layout.admin_activity_orders, container, false);
 
-        tabAdmin     = v.findViewById(R.id.tabAdmin);
+        drawerLayout = v.findViewById(R.id.drawerLayout);
+        navigationView = v.findViewById(R.id.navigationView);
         swipeRefresh = v.findViewById(R.id.swipeRefresh);
         recyclerView = v.findViewById(R.id.recycler);
         emptyState   = v.findViewById(R.id.emptyState);
@@ -55,7 +59,7 @@ public class AdminOrdersFragment extends Fragment {
 
         ordersRepository = new OrdersRepository();
         
-        setupTabs();
+        setupDrawer();
         setupRecyclerView();
 
         swipeRefresh.setOnRefreshListener(this::loadData);
@@ -64,28 +68,61 @@ public class AdminOrdersFragment extends Fragment {
         return v;
     }
 
-    private void setupTabs() {
-        if (tabAdmin.getTabCount() == 0) {
-            tabAdmin.addTab(tabAdmin.newTab().setText("Pending"));
-            tabAdmin.addTab(tabAdmin.newTab().setText("Finished"));
-            tabAdmin.addTab(tabAdmin.newTab().setText("Cancelled"));
+    /**
+     * Mở drawer filter (được gọi từ AdminMainActivity)
+     */
+    public void openDrawer() {
+        if (drawerLayout != null && isAdded()) {
+            drawerLayout.openDrawer(GravityCompat.START);
         }
+    }
 
-        tabAdmin.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
-            @Override
-            public void onTabSelected(TabLayout.Tab tab) {
-                int pos = tab.getPosition();
-                currentStatus = (pos == 0) ? "PENDING" : (pos == 1) ? "FINISHED" : "CANCELLED";
+    private void setupDrawer() {
+        if (drawerLayout == null || navigationView == null || !isAdded()) return;
 
-                recyclerView.setVisibility(View.INVISIBLE);
-                adapter.submitList(new ArrayList<>());
+        // Drawer sẽ được mở từ toolbar của AdminMainActivity
+        // (AdminMainActivity đã setup icon menu để mở drawer)
 
-                showLoading(true);
-                loadData();
+        // Setup drawer menu click
+        navigationView.setNavigationItemSelectedListener(item -> {
+            int itemId = item.getItemId();
+            String status = "PENDING";
+
+            if (itemId == R.id.menu_pending_orders) {
+                status = "PENDING";
+            } else if (itemId == R.id.menu_finished_orders) {
+                status = "FINISHED";
+            } else if (itemId == R.id.menu_cancelled_orders) {
+                status = "CANCELLED";
             }
 
-            @Override public void onTabUnselected(TabLayout.Tab tab) {}
-            @Override public void onTabReselected(TabLayout.Tab tab) { loadData(); }
+            // Cập nhật status
+            currentStatus = status;
+
+            // Cập nhật checked state
+            navigationView.setCheckedItem(item.getItemId());
+
+            // Reset UI
+            recyclerView.setVisibility(View.INVISIBLE);
+            adapter.submitList(new ArrayList<>());
+
+            // Load data với status mới
+            showLoading(true);
+            loadData();
+
+            // Đóng drawer
+            if (drawerLayout != null) {
+                drawerLayout.closeDrawer(GravityCompat.START);
+            }
+
+            return true;
+        });
+
+        // Set default selection là PENDING (sau khi menu đã được inflate)
+        navigationView.post(() -> {
+            if (navigationView != null && isAdded()) {
+                navigationView.setCheckedItem(R.id.menu_pending_orders);
+            }
         });
     }
 

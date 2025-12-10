@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/menu_all_orders"
+            android:title="Tất cả"
+            android:checked="true" />
+        <item
+            android:id="@+id/menu_pending_orders"
+            android:title="Chờ xác nhận" />
+        <item
+            android:id="@+id/menu_finished_orders"
+            android:title="Hoàn tất" />
+        <item
+            android:id="@+id/menu_cancelled_orders"
+            android:title="Đã hủy" />
+    </group>
+    
+</menu>
+

@@ -222,6 +222,8 @@ public class AdminMainActivity extends AppCompatActivity {
             ((AdminChatFragment) current).openDrawer();
         } else if (current instanceof AdminStatisticsFragment) {
             ((AdminStatisticsFragment) current).openDrawer();
+        } else if (current instanceof AdminOrdersFragment) {
+            ((AdminOrdersFragment) current).openDrawer();
         }
     }
     
