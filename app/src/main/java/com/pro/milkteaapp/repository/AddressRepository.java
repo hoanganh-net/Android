@@ -17,6 +17,7 @@ import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.firestore.WriteBatch;
 import com.pro.milkteaapp.SessionManager;
+import com.pro.milkteaapp.constants.FirestoreConstants;
 import com.pro.milkteaapp.models.Address;
 
 import java.util.ArrayList;
@@ -61,7 +62,9 @@ public class AddressRepository {
                 if (!TextUtils.isEmpty(customId)) {
                     return customId;
                 }
-            } catch (Throwable ignored) {}
+            } catch (Throwable e) {
+                android.util.Log.w("AddressRepository", "Failed to get UID from SessionManager: " + e.getMessage());
+            }
         }
 
         // Fallback: dùng UID thật của FirebaseAuth (sẽ KHÔNG trùng với USRxxxxx).
@@ -71,9 +74,9 @@ public class AddressRepository {
     }
 
     private CollectionReference colRef() {
-        return db.collection("users")
+        return db.collection(FirestoreConstants.COLLECTION_USERS)
                 .document(requireUid())
-                .collection("addresses");
+                .collection(FirestoreConstants.COLLECTION_ADDRESSES);
     }
 
     public void fetchAll(@NonNull OnAddresses cb, @Nullable OnError err) {

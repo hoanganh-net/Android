@@ -13,7 +13,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.models.ComboProductOption;
-import com.pro.milkteaapp.models.Products;
+import com.pro.milkteaapp.models.Product;
 import com.pro.milkteaapp.models.SelectedTopping;
 import com.pro.milkteaapp.models.Topping;
 import com.pro.milkteaapp.repository.ToppingsRepository;
@@ -27,19 +27,19 @@ public class ComboProductOptionAdapter extends RecyclerView.Adapter<ComboProduct
         void onToppingChanged();
     }
 
-    private final List<Products> products = new ArrayList<>();
+    private final List<Product> products = new ArrayList<>();
     private final List<ComboProductOption> productOptions = new ArrayList<>();
     private final ToppingsRepository toppingsRepository = new ToppingsRepository();
     private OnToppingChangeListener onToppingChangeListener;
 
-    public void submitProducts(@NonNull List<Products> productsList) {
+    public void submitProduct(@NonNull List<Product> productsList) {
         products.clear();
         products.addAll(productsList);
         
         // Khởi tạo productOptions nếu chưa có
         if (productOptions.size() != products.size()) {
             productOptions.clear();
-            for (Products p : products) {
+            for (Product p : products) {
                 ComboProductOption option = new ComboProductOption(
                     p.getId(),
                     p.getName()
@@ -71,7 +71,7 @@ public class ComboProductOptionAdapter extends RecyclerView.Adapter<ComboProduct
     public void onBindViewHolder(@NonNull VH h, int position) {
         if (position < 0 || position >= products.size()) return;
         
-        Products product = products.get(position);
+        Product product = products.get(position);
         ComboProductOption option = position < productOptions.size() 
             ? productOptions.get(position) 
             : new ComboProductOption(product.getId(), product.getName());
@@ -146,7 +146,7 @@ public class ComboProductOptionAdapter extends RecyclerView.Adapter<ComboProduct
             rvToppings.setAdapter(toppingAdapter);
         }
 
-        void bind(@NonNull Products product, @NonNull ComboProductOption option, int position) {
+        void bind(@NonNull Product product, @NonNull ComboProductOption option, int position) {
             savedPosition = position;
             tvProductName.setText(product.getName());
             
@@ -241,7 +241,7 @@ public class ComboProductOptionAdapter extends RecyclerView.Adapter<ComboProduct
         }
 
 
-        private void loadToppingsForProduct(@NonNull Products product) {
+        private void loadToppingsForProduct(@NonNull Product product) {
             String category = product.getCategory();
             if (!TextUtils.isEmpty(category)) {
                 toppingsRepository.fetchToppingsByCategory(category, new ToppingsRepository.OnToppingsListener() {

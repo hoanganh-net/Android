@@ -7,7 +7,13 @@ import com.google.firebase.firestore.PropertyName;
 import java.io.Serializable;
 import java.util.Date;
 
-public class Products implements Serializable {
+/**
+ * Model class đại diện cho một sản phẩm.
+ * 
+ * <p>Class này đã được đổi tên từ {@code Products} (số nhiều) thành {@code Product} (số ít)
+ * để tuân thủ Java naming convention.</p>
+ */
+public class Product implements Serializable {
     private String id;
     private String name;
     private Double price;          // nullable
@@ -21,9 +27,9 @@ public class Products implements Serializable {
     private Date updatedAt;
     private Boolean featured;  // Sản phẩm nổi bật
 
-    public Products() {}
+    public Product() {}
 
-    public Products(String id, String name, Double price, String category,
+    public Product(String id, String name, Double price, String category,
                     String imageUrl, String description, String status,
                     String searchableName, String createdByUid) {
         this.id = id;
@@ -81,3 +87,4 @@ public class Products implements Serializable {
     @PropertyName("categoryName")
     public void setCategoryName(String v) { this.category = v; }
 }
+

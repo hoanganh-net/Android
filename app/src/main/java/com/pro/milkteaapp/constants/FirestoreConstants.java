@@ -18,6 +18,8 @@ public class FirestoreConstants {
     public static final String COLLECTION_MESSAGES = "messages";
     public static final String COLLECTION_META = "meta";
     public static final String COLLECTION_ADDRESSES = "addresses"; // subcollection của users
+    public static final String COLLECTION_VOUCHER_USAGES = "voucher_usages"; // subcollection của users
+    public static final String COLLECTION_INBOX = "inbox"; // subcollection của users
 
     // ===== DOCUMENTS =====
     public static final String DOC_COUNTERS = "counters";

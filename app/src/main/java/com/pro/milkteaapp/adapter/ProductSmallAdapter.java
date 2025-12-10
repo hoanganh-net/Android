@@ -18,7 +18,7 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.databinding.ItemProductSmallBinding;
-import com.pro.milkteaapp.models.Products;
+import com.pro.milkteaapp.models.Product;
 import com.pro.milkteaapp.utils.MoneyUtils;
 
 import java.util.HashMap;
@@ -30,25 +30,25 @@ import java.util.Objects;
  * Thẻ sản phẩm cỡ nhỏ — phù hợp danh sách ngang (featured / top price).
  * Dùng ViewBinding: ItemMilkTeaSmallBinding (layout item_milk_tea_small.xml).
  */
-public class ProductsSmallAdapter extends ListAdapter<Products, ProductsSmallAdapter.VH> {
+public class ProductSmallAdapter extends ListAdapter<Product, ProductSmallAdapter.VH> {
 
-    public interface OnItemClickListener { void onItemClick(Products p); }
+    public interface OnItemClickListener { void onItemClick(Product p); }
 
     private final OnItemClickListener listener;
     private static final long CLICK_DEBOUNCE_MS = 300L;
     private long lastClick = 0L;
 
-    public ProductsSmallAdapter(@NonNull Context context, OnItemClickListener listener) {
+    public ProductSmallAdapter(@NonNull Context context, OnItemClickListener listener) {
         super(DIFF_CALLBACK);
         this.listener = listener;
         setHasStableIds(true);
     }
 
     // ===== DiffUtil =====
-    private static final DiffUtil.ItemCallback<Products> DIFF_CALLBACK =
+    private static final DiffUtil.ItemCallback<Product> DIFF_CALLBACK =
             new DiffUtil.ItemCallback<>() {
                 @Override
-                public boolean areItemsTheSame(@NonNull Products oldItem, @NonNull Products newItem) {
+                public boolean areItemsTheSame(@NonNull Product oldItem, @NonNull Product newItem) {
                     String oldId = oldItem.getId();
                     String newId = newItem.getId();
                     if (!TextUtils.isEmpty(oldId) && !TextUtils.isEmpty(newId)) {
@@ -61,7 +61,7 @@ public class ProductsSmallAdapter extends ListAdapter<Products, ProductsSmallAda
 
                 @SuppressLint("DiffUtilEquals")
                 @Override
-                public boolean areContentsTheSame(@NonNull Products o, @NonNull Products n) {
+                public boolean areContentsTheSame(@NonNull Product o, @NonNull Product n) {
                     return Objects.equals(o.getName(), n.getName())
                             && o.getPrice() == n.getPrice()
                             && Objects.equals(o.getImageUrl(), n.getImageUrl())
@@ -72,7 +72,7 @@ public class ProductsSmallAdapter extends ListAdapter<Products, ProductsSmallAda
 
     @Override
     public long getItemId(int position) {
-        Products p = getItem(position);
+        Product p = getItem(position);
         if (p == null) return RecyclerView.NO_ID;
         String key = !TextUtils.isEmpty(p.getId())
                 ? p.getId()
@@ -89,7 +89,7 @@ public class ProductsSmallAdapter extends ListAdapter<Products, ProductsSmallAda
     }
     @Override
     public void onBindViewHolder(@NonNull VH h, int position) {
-        Products p = getItem(position);
+        Product p = getItem(position);
         if (p == null) return;
 
         String name = TextUtils.isEmpty(p.getName())

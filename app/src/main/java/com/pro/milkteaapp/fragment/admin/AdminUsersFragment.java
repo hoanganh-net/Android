@@ -274,7 +274,7 @@ public class AdminUsersFragment extends Fragment
     private void showEditDialog(User u) {
         if (!isAdded()) return;
 
-        View content = LayoutInflater.from(getContext()).inflate(R.layout._dialog_edit_user, null, false);
+        View content = LayoutInflater.from(requireContext()).inflate(R.layout._dialog_edit_user, null, false);
         EditText etName    = content.findViewById(R.id.etName);
         EditText etEmail   = content.findViewById(R.id.etEmail);
         EditText etPhone   = content.findViewById(R.id.etPhone);
@@ -299,7 +299,7 @@ public class AdminUsersFragment extends Fragment
         if (idx < 0) idx = roles.indexOf("user");
         spRole.setSelection(idx);
 
-        new AlertDialog.Builder(getContext())
+        new AlertDialog.Builder(requireContext())
                 .setTitle("Sửa người dùng")
                 .setView(content)
                 .setPositiveButton("Lưu", (d, which) -> {
@@ -361,7 +361,7 @@ public class AdminUsersFragment extends Fragment
     private void confirmDelete(User u) {
         if (!isAdded()) return;
         String nameOrEmail = !safeShow(u.getFullName()).isEmpty() ? u.getFullName() : safeShow(u.getEmail());
-        new AlertDialog.Builder(getContext())
+        new AlertDialog.Builder(requireContext())
                 .setTitle("Xoá người dùng")
                 .setMessage("Bạn có chắc muốn xoá \"" + nameOrEmail + "\"?")
                 .setPositiveButton("Xoá", (d, w) -> deleteUser(u.getUid()))
@@ -392,7 +392,9 @@ public class AdminUsersFragment extends Fragment
     }
 
     private void toast(String m) {
-        if (getContext() != null) Toast.makeText(getContext(), m, Toast.LENGTH_SHORT).show();
+        if (isAdded() && getContext() != null) {
+            Toast.makeText(getContext(), m, Toast.LENGTH_SHORT).show();
+        }
     }
 
     private String safe(String s) { return (s == null ? "" : s).trim().toLowerCase(Locale.ROOT); }

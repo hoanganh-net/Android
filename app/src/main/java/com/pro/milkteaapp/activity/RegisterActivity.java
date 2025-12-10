@@ -268,7 +268,9 @@ public class RegisterActivity extends AppCompatActivity {
         // Tạm thời set userId vào SessionManager trước khi tạo địa chỉ
         try {
             new SessionManager(this).setUid(userId);
-        } catch (Throwable ignored) {}
+        } catch (Throwable e) {
+            Log.w("Register", "Failed to set UID in SessionManager: " + e.getMessage());
+        }
         
         repo.addOrUpdate(address, saved -> {
             // Địa chỉ đã được tạo thành công
@@ -283,7 +285,9 @@ public class RegisterActivity extends AppCompatActivity {
     private void handleRegistrationSuccess(String userId) {
         try {
             new SessionManager(this).setUid(userId);
-        } catch (Throwable ignored) {}
+        } catch (Throwable e) {
+            Log.w("Register", "Failed to set UID in SessionManager: " + e.getMessage());
+        }
 
         safeSignOutAndClear();
         setLoading(false);
@@ -311,7 +315,11 @@ public class RegisterActivity extends AppCompatActivity {
     }
 
     private void safeSignOutAndClear() {
-        try { FirebaseAuth.getInstance().signOut(); } catch (Exception ignore) {}
+        try { 
+            FirebaseAuth.getInstance().signOut(); 
+        } catch (Exception e) {
+            Log.w("Register", "Failed to sign out: " + e.getMessage());
+        }
         try { new SessionManager(this).clear(); } catch (Throwable t) {
             Log.w("Session", "clear failed: " + t.getMessage());
         }

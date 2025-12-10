@@ -95,5 +95,10 @@
     <string name="avatar">Ảnh đại diện</string>
     <string name="no_ratings_yet">Chưa có đánh giá nào !</string>
     <string name="email_not_found_or_invalid">Không tìm thấy địa chỉ email !</string>
+    <string name="app_logo">Logo ứng dụng</string>
+    <string name="filter_all">Tất cả</string>
+    <string name="filter_products">Sản phẩm</string>
+    <string name="filter_combo">Combo</string>
+    <string name="payment_order_title">Thanh toán đơn hàng #%1$s</string>
 
 </resources>

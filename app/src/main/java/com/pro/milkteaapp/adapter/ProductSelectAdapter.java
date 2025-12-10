@@ -15,7 +15,7 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.databinding.ItemProductSelectBinding;
-import com.pro.milkteaapp.models.Products;
+import com.pro.milkteaapp.models.Product;
 import com.pro.milkteaapp.utils.MoneyUtils;
 
 import java.util.HashSet;
@@ -24,13 +24,13 @@ import java.util.Set;
 /**
  * Adapter để hiển thị sản phẩm với checkbox để chọn nhiều
  */
-public class ProductSelectAdapter extends ListAdapter<Products, ProductSelectAdapter.ViewHolder> {
+public class ProductSelectAdapter extends ListAdapter<Product, ProductSelectAdapter.ViewHolder> {
 
     private final Set<String> selectedProductIds = new HashSet<>();
     private OnProductToggleListener toggleListener;
 
     public interface OnProductToggleListener {
-        void onProductToggled(Products product, boolean isSelected);
+        void onProductToggled(Product product, boolean isSelected);
     }
 
     public ProductSelectAdapter(@NonNull Context context) {
@@ -51,15 +51,15 @@ public class ProductSelectAdapter extends ListAdapter<Products, ProductSelectAda
         return new HashSet<>(selectedProductIds);
     }
 
-    private static final DiffUtil.ItemCallback<Products> DIFF_CALLBACK =
-            new DiffUtil.ItemCallback<Products>() {
+    private static final DiffUtil.ItemCallback<Product> DIFF_CALLBACK =
+            new DiffUtil.ItemCallback<Product>() {
                 @Override
-                public boolean areItemsTheSame(@NonNull Products oldItem, @NonNull Products newItem) {
+                public boolean areItemsTheSame(@NonNull Product oldItem, @NonNull Product newItem) {
                     return TextUtils.equals(oldItem.getId(), newItem.getId());
                 }
 
                 @Override
-                public boolean areContentsTheSame(@NonNull Products oldItem, @NonNull Products newItem) {
+                public boolean areContentsTheSame(@NonNull Product oldItem, @NonNull Product newItem) {
                     return TextUtils.equals(oldItem.getName(), newItem.getName())
                             && oldItem.getPrice() == newItem.getPrice();
                 }
@@ -76,7 +76,7 @@ public class ProductSelectAdapter extends ListAdapter<Products, ProductSelectAda
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        Products product = getItem(position);
+        Product product = getItem(position);
         if (product == null) return;
 
         String productId = product.getId();

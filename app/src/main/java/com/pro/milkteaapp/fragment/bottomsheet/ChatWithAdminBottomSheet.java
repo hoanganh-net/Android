@@ -169,7 +169,9 @@ public class ChatWithAdminBottomSheet extends BottomSheetDialogFragment {
             if (customId != null && !customId.trim().isEmpty()) {
                 return customId.trim();
             }
-        } catch (Throwable ignored) {}
+        } catch (Throwable e) {
+            android.util.Log.w("ChatWithAdmin", "Failed to get UID from SessionManager: " + e.getMessage());
+        }
         
         if (com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser() == null) {
             return null;

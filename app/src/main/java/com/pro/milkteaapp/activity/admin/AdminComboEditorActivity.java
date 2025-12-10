@@ -21,7 +21,7 @@ import com.pro.milkteaapp.SessionManager;
 import com.pro.milkteaapp.activity.MainActivity;
 import com.pro.milkteaapp.fragment.pickersheet.ComboProductPickerSheet;
 import com.pro.milkteaapp.generator.ComboIDGenerator;
-import com.pro.milkteaapp.models.Products;
+import com.pro.milkteaapp.models.Product;
 import com.pro.milkteaapp.repository.ComboRepository;
 import com.pro.milkteaapp.utils.MoneyUtils;
 
@@ -44,13 +44,13 @@ public class AdminComboEditorActivity extends AppCompatActivity {
     private Button btnSave, btnReset;
     private ProgressBar progress;
     private MaterialToolbar toolbar;
-    private View tvSelectedProducts, tvTotalPrice, tvComboPrice;
-    private Button btnSelectProducts;
+    private View tvSelectedProduct, tvTotalPrice, tvComboPrice;
+    private Button btnSelectProduct;
 
     private boolean isEditMode = false;
     private String comboId;
 
-    private final List<Products> selectedProducts = new ArrayList<>();
+    private final List<Product> selectedProduct = new ArrayList<>();
     private ComboRepository comboRepository;
 
     private FirebaseAuth auth;
@@ -78,7 +78,7 @@ public class AdminComboEditorActivity extends AppCompatActivity {
         auth = FirebaseAuth.getInstance();
         comboRepository = new ComboRepository();
 
-        btnSelectProducts.setOnClickListener(v -> openProductPicker());
+        btnSelectProduct.setOnClickListener(v -> openProductPicker());
         btnSave.setOnClickListener(v -> onSave());
         btnReset.setOnClickListener(v -> resetForm());
 
@@ -103,10 +103,10 @@ public class AdminComboEditorActivity extends AppCompatActivity {
         btnSave = findViewById(R.id.buttonAddCombo);
         btnReset = findViewById(R.id.buttonReset);
         progress = findViewById(R.id.progressBar);
-        tvSelectedProducts = findViewById(R.id.tvSelectedProducts);
+        tvSelectedProduct = findViewById(R.id.tvSelectedProducts);
         tvTotalPrice = findViewById(R.id.tvTotalPrice);
         tvComboPrice = findViewById(R.id.tvComboPrice);
-        btnSelectProducts = findViewById(R.id.btnSelectProducts);
+        btnSelectProduct = findViewById(R.id.btnSelectProducts);
         
         // Thêm listener để tự động tính lại giá khi % giảm giá thay đổi
         if (etDiscountPercent != null) {
@@ -131,9 +131,9 @@ public class AdminComboEditorActivity extends AppCompatActivity {
         ComboProductPickerSheet sheet = new ComboProductPickerSheet();
         
         // Set sản phẩm đã chọn (nếu edit)
-        if (!selectedProducts.isEmpty()) {
+        if (!selectedProduct.isEmpty()) {
             List<String> productIds = new ArrayList<>();
-            for (Products p : selectedProducts) {
+            for (Product p : selectedProduct) {
                 if (p.getId() != null) {
                     productIds.add(p.getId());
                 }
@@ -142,16 +142,16 @@ public class AdminComboEditorActivity extends AppCompatActivity {
         }
         
         sheet.setListener(products -> {
-            selectedProducts.clear();
-            selectedProducts.addAll(products);
+            selectedProduct.clear();
+            selectedProduct.addAll(products);
             updateProductInfo();
         });
         sheet.show(getSupportFragmentManager(), "ComboProductPicker");
     }
 
     private void updateProductInfo() {
-        if (selectedProducts.isEmpty()) {
-            ((android.widget.TextView) tvSelectedProducts).setText("Chưa chọn sản phẩm");
+        if (selectedProduct.isEmpty()) {
+            ((android.widget.TextView) tvSelectedProduct).setText("Chưa chọn sản phẩm");
             ((android.widget.TextView) tvTotalPrice).setText("Tổng giá: 0đ");
             ((android.widget.TextView) tvComboPrice).setText("Giá combo: 0đ");
             return;
@@ -159,15 +159,15 @@ public class AdminComboEditorActivity extends AppCompatActivity {
 
         // Hiển thị danh sách sản phẩm
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < selectedProducts.size(); i++) {
+        for (int i = 0; i < selectedProduct.size(); i++) {
             if (i > 0) sb.append(", ");
-            sb.append(selectedProducts.get(i).getName());
+            sb.append(selectedProduct.get(i).getName());
         }
-        ((android.widget.TextView) tvSelectedProducts).setText(sb.toString());
+        ((android.widget.TextView) tvSelectedProduct).setText(sb.toString());
 
         // Tính tổng giá
         double totalPrice = 0.0;
-        for (Products product : selectedProducts) {
+        for (Product product : selectedProduct) {
             Double price = product.getPrice();
             if (price != null) {
                 totalPrice += price;
@@ -221,7 +221,7 @@ public class AdminComboEditorActivity extends AppCompatActivity {
 
                 // Load sản phẩm từ productIds
                 if (combo.getProductIds() != null && !combo.getProductIds().isEmpty()) {
-                    loadProductsByIds(combo.getProductIds());
+                    loadProductByIds(combo.getProductIds());
                 }
             }
 
@@ -234,23 +234,23 @@ public class AdminComboEditorActivity extends AppCompatActivity {
         });
     }
 
-    private void loadProductsByIds(List<String> productIds) {
+    private void loadProductByIds(List<String> productIds) {
         // Load từng sản phẩm theo ID
-        selectedProducts.clear();
+        selectedProduct.clear();
         if (productIds == null || productIds.isEmpty()) {
             updateProductInfo();
             return;
         }
         
-        com.pro.milkteaapp.repository.ProductsRepository productsRepo = new com.pro.milkteaapp.repository.ProductsRepository();
+        com.pro.milkteaapp.repository.ProductRepository productsRepo = new com.pro.milkteaapp.repository.ProductRepository();
         final int[] loadedCount = {0};
         final int totalCount = productIds.size();
         
         for (String productId : productIds) {
-            productsRepo.fetchProductById(productId, new com.pro.milkteaapp.repository.ProductsRepository.OnProductListener() {
+            productsRepo.fetchProductById(productId, new com.pro.milkteaapp.repository.ProductRepository.OnSingleProductListener() {
                 @Override
-                public void onProductReceived(@NonNull Products product) {
-                    selectedProducts.add(product);
+                public void onProductReceived(@NonNull Product product) {
+                    selectedProduct.add(product);
                     loadedCount[0]++;
                     if (loadedCount[0] == totalCount) {
                         updateProductInfo();
@@ -281,7 +281,7 @@ public class AdminComboEditorActivity extends AppCompatActivity {
             return;
         }
 
-        if (selectedProducts.isEmpty()) {
+        if (selectedProduct.isEmpty()) {
             Toast.makeText(this, "Vui lòng chọn ít nhất một sản phẩm!", Toast.LENGTH_SHORT).show();
             if (btnSave != null) btnSave.setEnabled(true);
             return;
@@ -290,7 +290,7 @@ public class AdminComboEditorActivity extends AppCompatActivity {
         // Tính giá
         double totalPrice = 0.0;
         List<String> productIds = new ArrayList<>();
-        for (Products product : selectedProducts) {
+        for (Product product : selectedProduct) {
             Double price = product.getPrice();
             if (price != null) {
                 totalPrice += price;
@@ -400,7 +400,7 @@ public class AdminComboEditorActivity extends AppCompatActivity {
         if (etDiscountPercent != null) {
             etDiscountPercent.setText("10"); // Reset về 10%
         }
-        selectedProducts.clear();
+        selectedProduct.clear();
         updateProductInfo();
     }
 

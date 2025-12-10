@@ -17,7 +17,7 @@
             android:layout_width="192dp"
             android:layout_height="192dp"
             android:scaleType="fitCenter"
-            android:contentDescription="TODO"
+            android:contentDescription="@string/app_logo"
             android:src="@mipmap/ic_launcher_round"
             android:layout_marginBottom="32dp" />
 

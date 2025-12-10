@@ -104,16 +104,18 @@ public class OrderDetailActivity extends AppCompatActivity {
     }
 
     private void fetchOrderDocument(String orderId) {
-        // Tạm thời vẫn dùng direct Firestore để lấy document với items và addressObj
-        // TODO: Có thể tạo OrdersRepository.fetchOrderDocument() sau
-        com.google.firebase.firestore.FirebaseFirestore.getInstance()
-                .collection("orders").document(orderId).get()
-                .addOnSuccessListener(this::bindOrder)
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Lỗi tải chi tiết đơn: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                    b.progress.setVisibility(View.GONE);
-                })
-                .addOnCompleteListener(t -> b.progress.setVisibility(View.GONE));
+        ordersRepository.fetchOrderDocument(orderId, new OrdersRepository.OnOrderDocumentListener() {
+            @Override
+            public void onOrderDocumentReceived(@NonNull com.google.firebase.firestore.DocumentSnapshot document) {
+                bindOrder(document);
+            }
+
+            @Override
+            public void onError(@NonNull Exception error) {
+                Toast.makeText(OrderDetailActivity.this, "Lỗi tải chi tiết đơn: " + error.getMessage(), Toast.LENGTH_LONG).show();
+                b.progress.setVisibility(View.GONE);
+            }
+        });
     }
 
     @SuppressLint("SetTextI18n")

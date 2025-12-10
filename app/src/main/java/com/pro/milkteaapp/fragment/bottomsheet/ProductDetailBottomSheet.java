@@ -22,7 +22,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.android.material.button.MaterialButton;
 import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.adapter.ToppingSelectAdapter;
-import com.pro.milkteaapp.models.Products;
+import com.pro.milkteaapp.models.Product;
 import com.pro.milkteaapp.models.SelectedTopping;
 import com.pro.milkteaapp.models.Topping;
 import com.pro.milkteaapp.repository.ToppingsRepository;
@@ -39,11 +39,11 @@ public class ProductDetailBottomSheet extends BottomSheetDialogFragment {
     private static final String ARG_IMAGE_URL = "ARG_IMAGE_URL";
 
     public interface Listener {
-        void onAddToCart(Products product, int qty, String size, String sugar, String ice, String note, java.util.List<SelectedTopping> toppings);
+        void onAddToCart(Product product, int qty, String size, String sugar, String ice, String note, java.util.List<SelectedTopping> toppings);
     }
 
     private Listener listener;
-    private Products product;
+    private Product product;
 
     private ImageView milkTeaImage;
     private TextView nameTextView, priceTextView, descriptionTextView, quantityTextView, totalPriceTextView;
@@ -63,7 +63,7 @@ public class ProductDetailBottomSheet extends BottomSheetDialogFragment {
 
     private int quantity = 1;
 
-    public static ProductDetailBottomSheet newInstance(@NonNull Products p) {
+    public static ProductDetailBottomSheet newInstance(@NonNull Product p) {
         Bundle b = new Bundle();
         b.putSerializable(ARG_PRODUCT, p);
         String url = !TextUtils.isEmpty(p.getImageUrl()) ? p.getImageUrl() : null;
@@ -121,7 +121,7 @@ public class ProductDetailBottomSheet extends BottomSheetDialogFragment {
         // Product
         if (getArguments() != null) {
             Object o = getArguments().getSerializable(ARG_PRODUCT);
-            if (o instanceof Products) product = (Products) o;
+            if (o instanceof Product) product = (Product) o;
         }
         if (product == null) { dismiss(); return; }
 

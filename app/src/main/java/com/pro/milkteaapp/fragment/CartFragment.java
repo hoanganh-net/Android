@@ -33,6 +33,7 @@ import com.pro.milkteaapp.SessionManager;
 import com.pro.milkteaapp.activity.MainActivity;
 import com.pro.milkteaapp.adapter.CartAdapter;
 import com.pro.milkteaapp.adapter.ComboCartAdapter;
+import com.pro.milkteaapp.constants.FirestoreConstants;
 import com.pro.milkteaapp.generator.OrdersIDGenerator;
 import com.pro.milkteaapp.databinding.FragmentCartBinding;
 import com.pro.milkteaapp.fragment.bottomsheet.CheckoutBottomSheet;
@@ -40,7 +41,10 @@ import com.pro.milkteaapp.models.Address;
 import com.pro.milkteaapp.models.CartItem;
 import com.pro.milkteaapp.models.CheckoutInfo;
 import com.pro.milkteaapp.repository.VouchersRepository;
+import com.pro.milkteaapp.utils.CartManager;
+import com.pro.milkteaapp.utils.CartFilterHelper;
 import com.pro.milkteaapp.utils.MoneyUtils;
+import com.pro.milkteaapp.utils.OrderPayloadBuilder;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -57,8 +61,8 @@ public class CartFragment extends Fragment
     private FragmentCartBinding binding;
     private CartAdapter adapter;
     private ComboCartAdapter comboAdapter;
-    public static List<CartItem> cartItems = new ArrayList<>();
-    public static List<com.pro.milkteaapp.models.ComboCartItem> comboCartItems = new ArrayList<>();
+    private com.pro.milkteaapp.utils.CartManager cartManager;
+    private CartFilterHelper filterHelper;
 
     private FirebaseFirestore db;
     private FirebaseAuth auth;
@@ -96,6 +100,7 @@ public class CartFragment extends Fragment
         super.onViewCreated(view, savedInstanceState);
         auth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
+        cartManager = CartManager.getInstance();
 
         setupRecyclerView();
         setupClickListeners();
@@ -103,6 +108,12 @@ public class CartFragment extends Fragment
         setupToolbar();
         setupDrawer();
         updateTotal();
+    }
+    
+    private void initializeFilterHelper() {
+        if (getContext() != null && adapter != null && comboAdapter != null) {
+            filterHelper = new CartFilterHelper(getContext(), adapter, comboAdapter);
+        }
     }
     
     private void setupToolbar() {
@@ -121,27 +132,24 @@ public class CartFragment extends Fragment
         }
     }
     
-    private String selectedFilter = "Tất cả";
-    
     private void setupDrawer() {
-        if (binding == null) return;
+        if (binding == null || getContext() == null) return;
         
         // Setup drawer menu click
         if (binding.navigationView != null) {
             binding.navigationView.setNavigationItemSelectedListener(item -> {
                 int itemId = item.getItemId();
-                String filter = "Tất cả";
+                String filter = getString(R.string.filter_all);
                 
                 if (itemId == R.id.menu_all) {
-                    filter = "Tất cả";
+                    filter = getString(R.string.filter_all);
                 } else if (itemId == R.id.menu_products) {
-                    filter = "Sản phẩm";
+                    filter = getString(R.string.filter_products);
                 } else if (itemId == R.id.menu_combo) {
-                    filter = "Combo";
+                    filter = getString(R.string.filter_combo);
                 }
                 
-                selectedFilter = filter;
-                filterCartItems();
+                filterCartItems(filter);
                 
                 if (binding.drawerLayout != null) {
                     binding.drawerLayout.closeDrawer(GravityCompat.END);
@@ -151,27 +159,9 @@ public class CartFragment extends Fragment
         }
     }
     
-    private void filterCartItems() {
-        updateRecyclerViewAdapter();
-    }
-    
-    private void updateRecyclerViewAdapter() {
-        if (binding == null || adapter == null || comboAdapter == null) return;
-        
-        androidx.recyclerview.widget.ConcatAdapter concatAdapter;
-        
-        if ("Sản phẩm".equals(selectedFilter)) {
-            // Chỉ hiển thị sản phẩm thường
-            concatAdapter = new androidx.recyclerview.widget.ConcatAdapter(adapter);
-        } else if ("Combo".equals(selectedFilter)) {
-            // Chỉ hiển thị combo
-            concatAdapter = new androidx.recyclerview.widget.ConcatAdapter(comboAdapter);
-        } else {
-            // Hiển thị tất cả
-            concatAdapter = new androidx.recyclerview.widget.ConcatAdapter(adapter, comboAdapter);
-        }
-        
-        binding.cartRecyclerView.setAdapter(concatAdapter);
+    private void filterCartItems(@NonNull String filter) {
+        if (filterHelper == null || binding == null) return;
+        binding.cartRecyclerView.setAdapter(filterHelper.getFilteredAdapter(filter));
         updateTotal();
     }
 
@@ -186,7 +176,7 @@ public class CartFragment extends Fragment
         binding.cartRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         
         // Tạo adapter cho sản phẩm thường
-        adapter = new CartAdapter(getContext(), cartItems, new CartAdapter.OnItemActionClickListener() {
+        adapter = new CartAdapter(getContext(), cartManager.getCartItems(), new CartAdapter.OnItemActionClickListener() {
             @Override
             public void onItemRemoved(int position) {
                 CartFragment.this.onItemRemoved(position);
@@ -204,7 +194,7 @@ public class CartFragment extends Fragment
         });
         
         // Tạo adapter cho combo
-        comboAdapter = new ComboCartAdapter(getContext(), comboCartItems, new ComboCartAdapter.OnItemActionClickListener() {
+        comboAdapter = new ComboCartAdapter(getContext(), cartManager.getComboCartItems(), new ComboCartAdapter.OnItemActionClickListener() {
             @Override
             public void onItemRemoved(int position) {
                 CartFragment.this.onComboItemRemoved(position);
@@ -221,8 +211,13 @@ public class CartFragment extends Fragment
             }
         });
         
+        // Initialize filter helper
+        initializeFilterHelper();
+        
         // Sử dụng ConcatAdapter để hiển thị cả hai loại
-        updateRecyclerViewAdapter();
+        if (filterHelper != null) {
+            binding.cartRecyclerView.setAdapter(filterHelper.getFilteredAdapter(filterHelper.getSelectedFilter()));
+        }
 
         // Giảm nháy: tắt change animations & cố định kích thước
         RecyclerView rv = binding.cartRecyclerView;
@@ -237,22 +232,22 @@ public class CartFragment extends Fragment
     private void setupClickListeners() {
         binding.checkoutButton.setOnClickListener(v -> {
             if (!binding.checkoutButton.isEnabled()) return;
-            if (getContext() == null) return;
+            if (!isAdded() || getContext() == null) return;
 
-            if (cartItems.isEmpty() && comboCartItems.isEmpty()) {
-                Toast.makeText(getContext(), R.string.empty_cart, Toast.LENGTH_SHORT).show();
+            if (cartManager.isEmpty()) {
+                Toast.makeText(requireContext(), R.string.empty_cart, Toast.LENGTH_SHORT).show();
                 return;
             }
 
             FirebaseUser user = auth.getCurrentUser();
             if (user == null) {
-                Toast.makeText(getContext(), "Vui lòng đăng nhập trước khi đặt hàng", Toast.LENGTH_SHORT).show();
+                Toast.makeText(requireContext(), "Vui lòng đăng nhập trước khi đặt hàng", Toast.LENGTH_SHORT).show();
                 return;
             }
 
             // Tạo danh sách kết hợp cho checkout
-            java.util.ArrayList<com.pro.milkteaapp.models.CartItem> allItems = new java.util.ArrayList<>(cartItems);
-            CheckoutBottomSheet sheet = CheckoutBottomSheet.newInstance(allItems, new java.util.ArrayList<>(comboCartItems));
+            java.util.ArrayList<com.pro.milkteaapp.models.CartItem> allItems = new java.util.ArrayList<>(cartManager.getCartItems());
+            CheckoutBottomSheet sheet = CheckoutBottomSheet.newInstance(allItems, new java.util.ArrayList<>(cartManager.getComboCartItems()));
             sheet.setOnCheckoutConfirmListener(this);
             sheet.show(getParentFragmentManager(), "CheckoutSheet");
         });
@@ -272,8 +267,12 @@ public class CartFragment extends Fragment
         if (getActivity() == null) return;
         if (getParentFragmentManager().popBackStackImmediate()) return;
         if (getActivity() instanceof MainActivity) {
-            try { ((MainActivity) getActivity()).selectBottomNav(R.id.navigation_home); return; }
-            catch (Throwable ignored) {}
+            try { 
+                ((MainActivity) getActivity()).selectBottomNav(R.id.navigation_home); 
+                return; 
+            } catch (Throwable e) {
+                Log.w(TAG, "Failed to select bottom nav: " + e.getMessage());
+            }
         }
         getActivity().finish();
     }
@@ -281,10 +280,10 @@ public class CartFragment extends Fragment
     private void updateTotal() {
         if (binding == null) return;
         double total = 0;
-        for (CartItem item : cartItems) total += item.getTotalPrice();
-        for (com.pro.milkteaapp.models.ComboCartItem comboItem : comboCartItems) total += comboItem.getTotalPrice();
+        for (CartItem item : cartManager.getCartItems()) total += item.getTotalPrice();
+        for (com.pro.milkteaapp.models.ComboCartItem comboItem : cartManager.getComboCartItems()) total += comboItem.getTotalPrice();
         binding.totalTextView.setText(MoneyUtils.formatVnd(total));
-        binding.checkoutButton.setEnabled(!cartItems.isEmpty() || !comboCartItems.isEmpty());
+        binding.checkoutButton.setEnabled(!cartManager.isEmpty());
     }
 
     @Override public void onResume() {
@@ -299,32 +298,36 @@ public class CartFragment extends Fragment
     @Override
     public void onItemRemoved(int position) {
         if (getActivity() == null || isDetached()) return;
-        if (position < 0 || position >= cartItems.size()) return;
+        if (position < 0 || position >= cartManager.getCartItemsCount()) return;
 
         new AlertDialog.Builder(requireContext())
                 .setTitle("Xác nhận xóa")
                 .setMessage("Bạn có chắc chắn muốn xóa sản phẩm này khỏi giỏ hàng không?")
                 .setPositiveButton("Xóa", (dialog, which) -> {
-                    cartItems.remove(position);
+                    cartManager.removeCartItem(position);
                     if (adapter != null) adapter.notifyItemRemoved(position);
                     updateTotal();
-                    Toast.makeText(getContext(), "Đã xóa sản phẩm", Toast.LENGTH_SHORT).show();
+                    if (isAdded() && getContext() != null) {
+                        Toast.makeText(getContext(), "Đã xóa sản phẩm", Toast.LENGTH_SHORT).show();
+                    }
                 })
                 .setNegativeButton("Hủy", null)
                 .show();
     }
 
     @Override public void onQuantityIncreased(int position) {
-        if (position >= 0 && position < cartItems.size()) {
-            cartItems.get(position).increaseQuantity();
+        List<CartItem> items = cartManager.getCartItems();
+        if (position >= 0 && position < items.size()) {
+            items.get(position).increaseQuantity();
             if (adapter != null) adapter.notifyItemChanged(position, "QTY_TOTAL");
             updateTotal();
         }
     }
 
     @Override public void onQuantityDecreased(int position) {
-        if (position >= 0 && position < cartItems.size()) {
-            CartItem item = cartItems.get(position);
+        List<CartItem> items = cartManager.getCartItems();
+        if (position >= 0 && position < items.size()) {
+            CartItem item = items.get(position);
             if (item.getQuantity() > 1) {
                 item.decreaseQuantity();
                 if (adapter != null) adapter.notifyItemChanged(position, "QTY_TOTAL");
@@ -336,32 +339,36 @@ public class CartFragment extends Fragment
     // ===== Combo Cart Actions =====
     public void onComboItemRemoved(int position) {
         if (getActivity() == null || isDetached()) return;
-        if (position < 0 || position >= comboCartItems.size()) return;
+        if (position < 0 || position >= cartManager.getComboCartItemsCount()) return;
 
         new AlertDialog.Builder(requireContext())
                 .setTitle("Xác nhận xóa")
                 .setMessage("Bạn có chắc chắn muốn xóa combo này khỏi giỏ hàng không?")
                 .setPositiveButton("Xóa", (dialog, which) -> {
-                    comboCartItems.remove(position);
+                    cartManager.removeComboCartItem(position);
                     if (comboAdapter != null) comboAdapter.notifyItemRemoved(position);
                     updateTotal();
-                    Toast.makeText(getContext(), "Đã xóa combo", Toast.LENGTH_SHORT).show();
+                    if (isAdded() && getContext() != null) {
+                        Toast.makeText(getContext(), "Đã xóa combo", Toast.LENGTH_SHORT).show();
+                    }
                 })
                 .setNegativeButton("Hủy", null)
                 .show();
     }
 
     public void onComboQuantityIncreased(int position) {
-        if (position >= 0 && position < comboCartItems.size()) {
-            comboCartItems.get(position).increaseQuantity();
+        List<com.pro.milkteaapp.models.ComboCartItem> items = cartManager.getComboCartItems();
+        if (position >= 0 && position < items.size()) {
+            items.get(position).increaseQuantity();
             if (comboAdapter != null) comboAdapter.notifyItemChanged(position, "QTY_TOTAL");
             updateTotal();
         }
     }
 
     public void onComboQuantityDecreased(int position) {
-        if (position >= 0 && position < comboCartItems.size()) {
-            com.pro.milkteaapp.models.ComboCartItem item = comboCartItems.get(position);
+        List<com.pro.milkteaapp.models.ComboCartItem> items = cartManager.getComboCartItems();
+        if (position >= 0 && position < items.size()) {
+            com.pro.milkteaapp.models.ComboCartItem item = items.get(position);
             if (item.getQuantity() > 1) {
                 item.decreaseQuantity();
                 if (comboAdapter != null) comboAdapter.notifyItemChanged(position, "QTY_TOTAL");
@@ -381,7 +388,7 @@ public class CartFragment extends Fragment
     private void placeOrder(@NonNull CheckoutInfo info) {
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user == null) {
-            if (getContext() != null) {
+            if (isAdded() && getContext() != null) {
                 Toast.makeText(getContext(), "Vui lòng đăng nhập trước khi đặt hàng", Toast.LENGTH_SHORT).show();
             }
             return;
@@ -392,23 +399,30 @@ public class CartFragment extends Fragment
 
         // ✅ Dùng custom userId (USRxxxxx) nếu có, fallback Firebase UID khi chưa có
         String customUid = null;
-        try { customUid = new SessionManager(app).getUid(); } catch (Throwable ignored) {}
+        try { 
+            customUid = new SessionManager(app).getUid(); 
+        } catch (Throwable e) {
+            Log.w(TAG, "Failed to get UID from SessionManager: " + e.getMessage());
+        }
         String effectiveUserId = (customUid != null && !customUid.isEmpty())
                 ? customUid : user.getUid();
 
-        Map<String, Object> payload = buildOrderPayload(effectiveUserId, cartItems, info);
+        Map<String, Object> payload = OrderPayloadBuilder.buildOrderPayload(
+                effectiveUserId, 
+                cartManager.getCartItems(), 
+                cartManager.getComboCartItems(), 
+                info);
 
         // === DÙNG ID TÙY BIẾN CHO ORDERS ===
         OrdersIDGenerator gen = new OrdersIDGenerator();
         gen.nextOrderId()
                 .addOnSuccessListener(orderId ->
-                        FirebaseFirestore.getInstance().collection("orders").document(orderId).set(payload)
+                        FirebaseFirestore.getInstance().collection(FirestoreConstants.COLLECTION_ORDERS).document(orderId).set(payload)
                                 .addOnSuccessListener(aVoid -> recordVoucherUsageIfNeeded(
                                         effectiveUserId, // ✅ đồng bộ với users/{USRxxxxx}
                                         info.voucherCode,
                                         () -> {
-                                            cartItems.clear();
-                                            comboCartItems.clear();
+                                            cartManager.clearAll();
                                             Toast.makeText(app, app.getString(R.string.order_placed_successfully), Toast.LENGTH_SHORT).show();
 
                                             runOnUiSafe(() -> {
@@ -426,8 +440,7 @@ public class CartFragment extends Fragment
                                         e -> {
                                             Toast.makeText(app, "Đơn đã tạo, nhưng cập nhật lượt voucher lỗi: " + e.getMessage(), Toast.LENGTH_LONG).show();
 
-                                            cartItems.clear();
-                                            comboCartItems.clear();
+                                            cartManager.clearAll();
                                             runOnUiSafe(() -> {
                                                 if (adapter != null) adapter.notifyDataSetChanged();
                                                 if (comboAdapter != null) comboAdapter.notifyDataSetChanged();
@@ -454,60 +467,6 @@ public class CartFragment extends Fragment
                 });
     }
 
-    /** Build payload đơn hàng theo CheckoutInfo (đã có giảm giá/ship/tổng) */
-    private Map<String, Object> buildOrderPayload(String userId, List<CartItem> items, CheckoutInfo info) {
-        List<Map<String, Object>> itemMaps = new ArrayList<>();
-        // Thêm CartItem vào items array
-        for (CartItem ci : items) {
-            itemMaps.add(ci.toOrderItemMap());
-        }
-        // Thêm ComboCartItem vào items array
-        Log.d(TAG, "Adding combo items to order payload, comboCartItems size: " + comboCartItems.size());
-        for (com.pro.milkteaapp.models.ComboCartItem comboItem : comboCartItems) {
-            Map<String, Object> comboMap = comboItem.toOrderItemMap();
-            Log.d(TAG, "Combo item map: " + comboMap);
-            Log.d(TAG, "Combo item type field: " + comboMap.get("type"));
-            itemMaps.add(comboMap);
-        }
-        Log.d(TAG, "Total items in payload: " + itemMaps.size());
-
-        Map<String, Object> order = new HashMap<>();
-        order.put("userId", userId);
-        order.put("status", "PENDING");
-        order.put("items", itemMaps);
-
-        order.put("subtotal", info.subtotal);
-        order.put("discount", info.discount);
-        order.put("shippingFee", info.shippingFee);
-        order.put("finalTotal", info.grandTotal);
-
-        final String shippingAddr = info.address.trim();
-        order.put("address", shippingAddr);
-        order.put("shippingAddress", shippingAddr);
-
-        Map<String, Object> addressObj = new HashMap<>();
-        if (info.addressObj != null) {
-            Address a = info.addressObj;
-            addressObj.put("fullName", a.getFullName());
-            addressObj.put("phone", a.getPhone());
-            addressObj.put("line1", a.getLine1());
-            addressObj.put("line2", a.getLine2());
-            addressObj.put("city", a.getCity());
-            addressObj.put("province", a.getProvince());
-            addressObj.put("postalCode", a.getPostalCode());
-            addressObj.put("display", a.displayLine());
-        } else {
-            addressObj.put("display", shippingAddr);
-        }
-        order.put("addressObj", addressObj);
-
-        order.put("paymentMethod", info.paymentMethod);
-        order.put("voucherCode", info.voucherCode);
-        order.put("shippingLabel", info.shippingLabel);
-
-        order.put("createdAt", FieldValue.serverTimestamp());
-        return order;
-    }
 
     /** Ghi nhận users/{uid}/voucher_usages/{voucherId}.count += 1 nếu có code */
     private void recordVoucherUsageIfNeeded(@NonNull String uid,
@@ -528,15 +487,15 @@ public class CartFragment extends Fragment
                 }
 
                 // Update voucher_usages subcollection (vẫn dùng direct Firestore vì là subcollection)
-                db.collection("users").document(uid)
-                        .collection("voucher_usages").document(voucherId)
+                db.collection(FirestoreConstants.COLLECTION_USERS).document(uid)
+                        .collection(FirestoreConstants.COLLECTION_VOUCHER_USAGES).document(voucherId)
                         .update("count", com.google.firebase.firestore.FieldValue.increment(1))
                         .addOnSuccessListener(x -> onDone.run())
                         .addOnFailureListener(e -> {
                             Map<String,Object> seed = new HashMap<>();
                             seed.put("count", 1L);
-                            db.collection("users").document(uid)
-                                    .collection("voucher_usages").document(voucherId)
+                            db.collection(FirestoreConstants.COLLECTION_USERS).document(uid)
+                                    .collection(FirestoreConstants.COLLECTION_VOUCHER_USAGES).document(voucherId)
                                     .set(seed)
                                     .addOnSuccessListener(x -> onDone.run())
                                     .addOnFailureListener(onError::accept);

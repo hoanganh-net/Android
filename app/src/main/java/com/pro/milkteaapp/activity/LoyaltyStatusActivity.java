@@ -60,7 +60,9 @@ public class LoyaltyStatusActivity extends AppCompatActivity {
         String docId = null;
         try {
             docId = new SessionManager(getApplicationContext()).getUid();
-        } catch (Throwable ignored) {}
+        } catch (Throwable e) {
+            android.util.Log.w("LoyaltyStatus", "Failed to get UID from SessionManager: " + e.getMessage());
+        }
 
         if (TextUtils.isEmpty(docId)) {
             Toast.makeText(this, "Bạn chưa đăng nhập", Toast.LENGTH_SHORT).show();

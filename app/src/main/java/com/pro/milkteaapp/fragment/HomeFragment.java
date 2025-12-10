@@ -19,17 +19,18 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.adapter.ComboAdapter;
-import com.pro.milkteaapp.adapter.ProductsSectionAdapter;
-import com.pro.milkteaapp.adapter.ProductsSmallAdapter;
+import com.pro.milkteaapp.adapter.ProductSectionAdapter;
+import com.pro.milkteaapp.adapter.ProductSmallAdapter;
 import com.pro.milkteaapp.adapter.ReviewAdapter;
 import com.pro.milkteaapp.SessionManager;
+import com.pro.milkteaapp.constants.FirestoreConstants;
 import com.pro.milkteaapp.fragment.bottomsheet.ComboDetailBottomSheet;
 import com.pro.milkteaapp.models.Combo;
 import com.pro.milkteaapp.models.ComboCartItem;
-import com.pro.milkteaapp.models.Products;
+import com.pro.milkteaapp.models.Product;
 import com.pro.milkteaapp.models.Review;
 import com.pro.milkteaapp.repository.ComboRepository;
-import com.pro.milkteaapp.repository.ProductsRepository;
+import com.pro.milkteaapp.repository.ProductRepository;
 import com.pro.milkteaapp.repository.UsersRepository;
 import com.pro.milkteaapp.utils.ImageLoader;
 
@@ -45,15 +46,15 @@ public class HomeFragment extends Fragment {
     private de.hdodenhof.circleimageview.CircleImageView profileIcon;
     private android.view.View comboSection;
 
-    private ProductsSectionAdapter topPriceAdapter;
+    private ProductSectionAdapter topPriceAdapter;
     private ReviewAdapter reviewAdapter;
     private ComboAdapter comboAdapter;
 
-    private final List<Products> topProducts = new ArrayList<>();
+    private final List<Product> topProduct = new ArrayList<>();
     private final List<Review> reviews = new ArrayList<>();
     private final List<Combo> combos = new ArrayList<>();
 
-    private ProductsRepository productsRepository;
+    private ProductRepository productsRepository;
     private ComboRepository comboRepository;
     private UsersRepository usersRepository;
     private FirebaseFirestore db; // Vẫn cần cho query orders có rating
@@ -73,13 +74,13 @@ public class HomeFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View v, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(v, savedInstanceState);
-        productsRepository = new ProductsRepository();
+        productsRepository = new ProductRepository();
         comboRepository = new ComboRepository();
         usersRepository = new UsersRepository();
         db = FirebaseFirestore.getInstance(); // Vẫn cần cho query orders có rating
         
         initViews(v);
-        setupTopProducts();
+        setupTopProduct();
         setupComboSection();
         setupReviewList();
         setupSeeMoreButton();   // bấm mũi tên đỏ → qua trang sản phẩm
@@ -96,7 +97,7 @@ public class HomeFragment extends Fragment {
         }
         // Reload featured products khi fragment start (giống AdminOrdersFragment)
         if (topPriceAdapter != null) {
-            loadFeaturedProducts();
+            loadFeaturedProduct();
         }
         // Combo đã được load trong setupComboSection(), không cần reload ở đây
     }
@@ -136,17 +137,12 @@ public class HomeFragment extends Fragment {
                     ComboCartItem newItem = new ComboCartItem(c, qty, productOptions);
                     
                     // Kiểm tra xem combo đã có trong giỏ chưa (theo comboId và size)
-                    boolean found = false;
-                    for (int i = 0; i < com.pro.milkteaapp.fragment.CartFragment.comboCartItems.size(); i++) {
-                        ComboCartItem existing = com.pro.milkteaapp.fragment.CartFragment.comboCartItems.get(i);
-                        if (existing.equals(newItem)) {
-                            existing.increaseQuantity(qty);
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (!found) {
-                        com.pro.milkteaapp.fragment.CartFragment.comboCartItems.add(newItem);
+                    com.pro.milkteaapp.utils.CartManager cartManager = com.pro.milkteaapp.utils.CartManager.getInstance();
+                    int found = cartManager.findComboCartItem(newItem);
+                    if (found >= 0) {
+                        cartManager.getComboCartItems().get(found).increaseQuantity(qty);
+                    } else {
+                        cartManager.addComboCartItem(newItem);
                     }
                     
                     android.widget.Toast.makeText(requireContext(),
@@ -230,7 +226,7 @@ public class HomeFragment extends Fragment {
     }
 
     // ===== Sản phẩm nổi bật =====
-    private void setupTopProducts() {
+    private void setupTopProduct() {
         // Sử dụng GridLayoutManager 2 cột giống ProductFragment
         GridLayoutManager glm = new GridLayoutManager(requireContext(), 2);
         glm.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
@@ -244,9 +240,9 @@ public class HomeFragment extends Fragment {
         rvTopPrice.setHasFixedSize(true);
         rvTopPrice.setNestedScrollingEnabled(false);
 
-        topPriceAdapter = new ProductsSectionAdapter(new ProductsSectionAdapter.OnProductClick() {
+        topPriceAdapter = new ProductSectionAdapter(new ProductSectionAdapter.OnProductClick() {
             @Override
-            public void onClick(Products milkTea) {
+            public void onClick(Product milkTea) {
                 if (milkTea == null || !isAdded()) return;
                 // Mở ProductDetailBottomSheet để đặt hàng
                 com.pro.milkteaapp.fragment.bottomsheet.ProductDetailBottomSheet bottomSheet =
@@ -256,17 +252,12 @@ public class HomeFragment extends Fragment {
                     com.pro.milkteaapp.models.CartItem newItem = 
                             new com.pro.milkteaapp.models.CartItem(product, qty, size, sugar, ice, note, toppings);
                     
-                    int existed = -1;
-                    for (int i = 0; i < com.pro.milkteaapp.fragment.CartFragment.cartItems.size(); i++) {
-                        if (newItem.equals(com.pro.milkteaapp.fragment.CartFragment.cartItems.get(i))) {
-                            existed = i;
-                            break;
-                        }
-                    }
+                    com.pro.milkteaapp.utils.CartManager cartManager = com.pro.milkteaapp.utils.CartManager.getInstance();
+                    int existed = cartManager.findCartItem(newItem);
                     if (existed >= 0) {
-                        com.pro.milkteaapp.fragment.CartFragment.cartItems.get(existed).increaseQuantity(qty);
+                        cartManager.getCartItems().get(existed).increaseQuantity(qty);
                     } else {
-                        com.pro.milkteaapp.fragment.CartFragment.cartItems.add(newItem);
+                        cartManager.addCartItem(newItem);
                     }
                     
                     String label = newItem.getToppingsLabel();
@@ -281,28 +272,28 @@ public class HomeFragment extends Fragment {
         rvTopPrice.setAdapter(topPriceAdapter);
 
         // Load featured products từ Firestore
-        loadFeaturedProducts();
+        loadFeaturedProduct();
     }
 
-    private void loadFeaturedProducts() {
-        productsRepository.fetchFeaturedProducts(10, new ProductsRepository.OnProductsListener() {
+    private void loadFeaturedProduct() {
+        productsRepository.fetchFeaturedProduct(10, new ProductRepository.OnProductListener() {
             @Override
-            public void onProductsReceived(@NonNull List<Products> products) {
+            public void onProductReceived(@NonNull List<Product> products) {
                 android.util.Log.d("HomeFragment", "Loaded " + products.size() + " featured products");
-                topProducts.clear();
-                topProducts.addAll(products);
+                topProduct.clear();
+                topProduct.addAll(products);
                 
-                // Chuyển đổi sang format của ProductsSectionAdapter (list of Rows)
-                List<ProductsSectionAdapter.Row> rows = new ArrayList<>();
-                for (Products p : topProducts) {
-                    rows.add(ProductsSectionAdapter.Row.product(p));
+                // Chuyển đổi sang format của ProductSectionAdapter (list of Rows)
+                List<ProductSectionAdapter.Row> rows = new ArrayList<>();
+                for (Product p : topProduct) {
+                    rows.add(ProductSectionAdapter.Row.product(p));
                 }
                 topPriceAdapter.submitRows(rows);
                 
                 // Nếu không có sản phẩm nổi bật, hiển thị demo data
                 if (products.isEmpty()) {
                     android.util.Log.w("HomeFragment", "No featured products found, showing demo data");
-                    loadDemoProducts();
+                    loadDemoProduct();
                 }
             }
 
@@ -310,14 +301,14 @@ public class HomeFragment extends Fragment {
             public void onError(@NonNull Exception error) {
                 android.util.Log.e("HomeFragment", "Error loading featured products: " + error.getMessage(), error);
                 // Fallback: sử dụng demo data nếu load thất bại
-                loadDemoProducts();
+                loadDemoProduct();
             }
         });
     }
 
-    private void loadDemoProducts() {
-        topProducts.clear();
-        topProducts.add(new Products() {{
+    private void loadDemoProduct() {
+        topProduct.clear();
+        topProduct.add(new Product() {{
             setId("demo-5");
             setName("Trà Sữa Olong");
             setPrice(65000.0);
@@ -326,7 +317,7 @@ public class HomeFragment extends Fragment {
             setDescription("Olong béo, hậu ngọt.");
             setSearchableName("tra sua oolong");
         }});
-        topProducts.add(new Products() {{
+        topProduct.add(new Product() {{
             setId("demo-1");
             setName("Trà Sữa Trân Châu");
             setPrice(50000.0);
@@ -335,7 +326,7 @@ public class HomeFragment extends Fragment {
             setDescription("Truyền thống, đậm vị.");
             setSearchableName("tra sua tran chau");
         }});
-        topProducts.add(new Products() {{
+        topProduct.add(new Product() {{
             setId("demo-2");
             setName("Trà Sữa Matcha");
             setPrice(46000.0);
@@ -344,7 +335,7 @@ public class HomeFragment extends Fragment {
             setDescription("Matcha thơm nhẹ, không ngấy.");
             setSearchableName("tra sua matcha");
         }});
-        topProducts.add(new Products() {{
+        topProduct.add(new Product() {{
             setId("demo-3");
             setName("Trà Sữa Caramel");
             setPrice(48000.0);
@@ -353,7 +344,7 @@ public class HomeFragment extends Fragment {
             setDescription("Thơm caramel béo ngậy.");
             setSearchableName("tra sua caramel");
         }});
-        topProducts.add(new Products() {{
+        topProduct.add(new Product() {{
             setId("demo-4");
             setName("Trà Sữa Socola");
             setPrice(42000.0);
@@ -363,10 +354,10 @@ public class HomeFragment extends Fragment {
             setSearchableName("tra sua socola");
         }});
         
-        // Chuyển đổi sang format của ProductsSectionAdapter
-        List<ProductsSectionAdapter.Row> rows = new ArrayList<>();
-        for (Products p : topProducts) {
-            rows.add(ProductsSectionAdapter.Row.product(p));
+        // Chuyển đổi sang format của ProductSectionAdapter
+        List<ProductSectionAdapter.Row> rows = new ArrayList<>();
+        for (Product p : topProduct) {
+            rows.add(ProductSectionAdapter.Row.product(p));
         }
         topPriceAdapter.submitRows(rows);
     }
@@ -390,7 +381,7 @@ public class HomeFragment extends Fragment {
 
         // Note: Vẫn giữ query trực tiếp vì cần DocumentSnapshot để enrich user info
         // Có thể refactor sau để OrdersRepository trả về Order objects đã được enrich
-        Query q = db.collection("orders")
+        Query q = db.collection(FirestoreConstants.COLLECTION_ORDERS)
                 .whereGreaterThan("rating", 0)
                 .orderBy("rating", Query.Direction.DESCENDING)
                 .orderBy("ratedAt", Query.Direction.DESCENDING)

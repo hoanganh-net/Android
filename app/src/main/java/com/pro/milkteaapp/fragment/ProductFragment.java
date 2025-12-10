@@ -26,13 +26,14 @@ import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.pro.milkteaapp.R;
-import com.pro.milkteaapp.adapter.ProductsSectionAdapter;
+import com.pro.milkteaapp.adapter.ProductSectionAdapter;
 import com.pro.milkteaapp.databinding.FragmentProductBinding;
 import com.pro.milkteaapp.fragment.bottomsheet.ProductDetailBottomSheet;
 import com.pro.milkteaapp.models.CartItem;
-import com.pro.milkteaapp.models.Products;
+import com.pro.milkteaapp.models.Product;
 import com.pro.milkteaapp.repository.CategoriesRepository;
-import com.pro.milkteaapp.repository.ProductsRepository;
+import com.pro.milkteaapp.repository.ProductRepository;
+import com.pro.milkteaapp.utils.ProductSearchHelper;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -41,20 +42,20 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-public class ProductFragment extends Fragment implements ProductsSectionAdapter.OnProductClick {
+public class ProductFragment extends Fragment implements ProductSectionAdapter.OnProductClick {
 
     private static final String ALL = "Tất cả";
 
     private FragmentProductBinding binding;
-    private ProductsSectionAdapter adapter;
+    private ProductSectionAdapter adapter;
 
-    private final List<Products> allProducts = new ArrayList<>();
+    private final List<Product> allProduct = new ArrayList<>();
     private final List<String> categories = new ArrayList<>();
     private final Map<String, Integer> headerPositions = new HashMap<>();
 
-    private ProductsRepository productsRepository;
+    private ProductRepository productsRepository;
     private CategoriesRepository categoriesRepository;
-    private ListenerRegistration subProducts;
+    private ListenerRegistration subProduct;
 
     private AppBarLayout appBar;
 
@@ -70,15 +71,15 @@ public class ProductFragment extends Fragment implements ProductsSectionAdapter.
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        productsRepository = new ProductsRepository();
+        productsRepository = new ProductRepository();
         categoriesRepository = new CategoriesRepository();
-        adapter = new ProductsSectionAdapter(this);
+        adapter = new ProductSectionAdapter(this);
 
-        GridLayoutManager glm = new GridLayoutManager(getContext(), 2);
+        GridLayoutManager glm = new GridLayoutManager(requireContext(), 2);
         glm.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
             @Override public int getSpanSize(int position) {
                 int viewType = adapter.getItemViewType(position);
-                return (viewType == ProductsSectionAdapter.TYPE_HEADER) ? 2 : 1;
+                return (viewType == ProductSectionAdapter.TYPE_HEADER) ? 2 : 1;
             }
         });
         binding.recyclerView.setLayoutManager(glm);
@@ -91,7 +92,7 @@ public class ProductFragment extends Fragment implements ProductsSectionAdapter.
         setupSearchListener();
         setupDrawer();
 
-        loadCategoriesThenListenProducts();
+        loadCategoriesThenListenProduct();
     }
 
     private void scrollToCategorySmooth(@NonNull String category, int topOffsetPx) {
@@ -114,7 +115,7 @@ public class ProductFragment extends Fragment implements ProductsSectionAdapter.
     }
     private int dpToPx() { return Math.round(8 * getResources().getDisplayMetrics().density); }
 
-    private void loadCategoriesThenListenProducts() {
+    private void loadCategoriesThenListenProduct() {
         setLoading(true);
         categories.clear();
         categoriesRepository.fetchActiveCategories(new CategoriesRepository.OnCategoriesListener() {
@@ -125,27 +126,27 @@ public class ProductFragment extends Fragment implements ProductsSectionAdapter.
                     if (!TextUtils.isEmpty(name)) categories.add(name.trim());
                 }
                 updateDrawerMenu();
-                listenProductsRealtime();
+                listenProductRealtime();
             }
 
             @Override
             public void onError(@NonNull Exception error) {
                 Log.w("Firestore", "Load categories failed: " + error.getMessage());
-                listenProductsRealtime();
+                listenProductRealtime();
             }
         });
     }
 
-    private void listenProductsRealtime() {
-        if (subProducts != null) { subProducts.remove(); subProducts = null; }
+    private void listenProductRealtime() {
+        if (subProduct != null) { subProduct.remove(); subProduct = null; }
         setLoading(true); setEmpty(false);
-        subProducts = productsRepository.listenAllProducts(new ProductsRepository.OnProductsListener() {
+        subProduct = productsRepository.listenAllProduct(new ProductRepository.OnProductListener() {
             @Override
-            public void onProductsReceived(@NonNull List<Products> products) {
+            public void onProductReceived(@NonNull List<Product> products) {
                 if (!isAdded() || binding == null) return;
                 setLoading(false);
-                allProducts.clear();
-                allProducts.addAll(products);
+                allProduct.clear();
+                allProduct.addAll(products);
                 ensureCategoriesIfEmpty();
                 updateDrawerMenu();
                 
@@ -171,14 +172,14 @@ public class ProductFragment extends Fragment implements ProductsSectionAdapter.
     // Method này không còn cần thiết vì Repository đã parse sẵn
     // Giữ lại để tương thích nếu có code khác gọi
     @Deprecated
-    private void fillProductsFromSnapshot(@Nullable Object snapshot) {
+    private void fillProductFromSnapshot(@Nullable Object snapshot) {
         // Không còn sử dụng, logic đã được chuyển vào Repository
     }
 
     private void ensureCategoriesIfEmpty() {
         if (!categories.isEmpty()) return;
         LinkedHashMap<String, Boolean> seen = new LinkedHashMap<>();
-        for (Products p : allProducts) {
+        for (Product p : allProduct) {
             String cat = norm(safe(p.getCategory()));
             if (!cat.isEmpty() && !seen.containsKey(cat)) seen.put(cat, true);
         }
@@ -186,52 +187,14 @@ public class ProductFragment extends Fragment implements ProductsSectionAdapter.
     }
 
     private void rebuildSectionsAndShow(@Nullable String filterQuery) {
-        String q = filterQuery == null ? "" : filterQuery.trim().toLowerCase(Locale.getDefault());
-        List<ProductsSectionAdapter.Row> rows = new ArrayList<>();
-        headerPositions.clear();
-
-        List<String> orderedCats = orderCategories(categories);
-
-        for (String cat : orderedCats) {
-            String catKey = norm(cat);
-            List<Products> underCat = new ArrayList<>();
-            for (Products p : allProducts) {
-                String pCatKey = norm(p.getCategory());
-                if (pCatKey.equals(catKey)) {
-                    if (q.isEmpty() || matchesQuery(p, q)) underCat.add(p);
-                }
-            }
-            if (underCat.isEmpty()) continue;
-            headerPositions.put(cat, rows.size());
-            rows.add(ProductsSectionAdapter.Row.header(cat));
-            for (Products p : underCat) rows.add(ProductsSectionAdapter.Row.product(p));
-        }
+        List<ProductSectionAdapter.Row> rows = ProductSearchHelper.rebuildSections(
+                allProduct,
+                categories,
+                filterQuery,
+                headerPositions
+        );
         adapter.submitRows(rows);
         setEmpty(rows.isEmpty());
-    }
-
-    private boolean matchesQuery(Products p, String q) {
-        String name = safe(p.getName()).toLowerCase(Locale.getDefault());
-        String cat  = safe(p.getCategory()).toLowerCase(Locale.getDefault());
-        String sname= safe(p.getSearchableName()).toLowerCase(Locale.getDefault());
-        return name.contains(q) || cat.contains(q) || sname.contains(q);
-    }
-
-    private List<String> orderCategories(List<String> src) {
-        List<String> preferred = java.util.List.of("Trà sữa", "Trà", "Trái cây tươi", "Cà Phê");
-        List<String> result = new ArrayList<>();
-        result.add(ALL);
-        if (src != null) {
-            for (String p : preferred)
-                for (String s : src)
-                    if (norm(s).equals(norm(p))) { result.add(s); break; }
-            for (String s : src) {
-                boolean already = false;
-                for (String r : result) if (norm(r).equals(norm(s))) { already = true; break; }
-                if (!already) result.add(s);
-            }
-        }
-        return result;
     }
 
 
@@ -257,16 +220,8 @@ public class ProductFragment extends Fragment implements ProductsSectionAdapter.
             return;
         }
         
-        String catKey = norm(category);
-        List<Products> filtered = new ArrayList<>();
-        for (Products p : allProducts) {
-            String pCatKey = norm(p.getCategory());
-            if (pCatKey.equals(catKey)) {
-                filtered.add(p);
-            }
-        }
-        
-        rebuildSectionsWithProducts(filtered, query);
+        List<Product> filtered = ProductSearchHelper.filterByCategory(allProduct, category);
+        rebuildSectionsWithProduct(filtered, query);
     }
 
     private void setLoading(boolean show) { if (binding != null) binding.loadingOverlay.setVisibility(show ? View.VISIBLE : View.GONE); }
@@ -331,8 +286,8 @@ public class ProductFragment extends Fragment implements ProductsSectionAdapter.
             .setCheckable(true)
             .setChecked(selectedCategory.equals(ALL));
         
-        // Add categories
-        List<String> orderedCats = orderCategories(categories);
+        // Add categories (use helper to order categories)
+        List<String> orderedCats = getOrderedCategories();
         for (int i = 0; i < orderedCats.size(); i++) {
             String cat = orderedCats.get(i);
             if (cat.equals(ALL)) continue; // Skip "Tất cả" as it's already added
@@ -344,6 +299,34 @@ public class ProductFragment extends Fragment implements ProductsSectionAdapter.
         }
     }
     
+    @NonNull
+    private List<String> getOrderedCategories() {
+        List<String> preferred = java.util.List.of("Trà sữa", "Trà", "Trái cây tươi", "Cà Phê");
+        List<String> result = new ArrayList<>();
+        result.add(ALL);
+        if (categories != null) {
+            for (String p : preferred) {
+                for (String s : categories) {
+                    if (norm(s).equals(norm(p))) {
+                        result.add(s);
+                        break;
+                    }
+                }
+            }
+            for (String s : categories) {
+                boolean already = false;
+                for (String r : result) {
+                    if (norm(r).equals(norm(s))) {
+                        already = true;
+                        break;
+                    }
+                }
+                if (!already) result.add(s);
+            }
+        }
+        return result;
+    }
+    
     private void filterByCategory(@NonNull String category) {
         if (category.equals(ALL)) {
             rebuildSectionsAndShow(null);
@@ -351,92 +334,44 @@ public class ProductFragment extends Fragment implements ProductsSectionAdapter.
         }
         
         // Filter products by category
-        String catKey = norm(category);
-        List<Products> filtered = new ArrayList<>();
-        for (Products p : allProducts) {
-            String pCatKey = norm(p.getCategory());
-            if (pCatKey.equals(catKey)) {
-                filtered.add(p);
-            }
-        }
+        List<Product> filtered = ProductSearchHelper.filterByCategory(allProduct, category);
         
         // Rebuild sections with filtered products
-        rebuildSectionsWithProducts(filtered, null);
+        rebuildSectionsWithProduct(filtered, null);
     }
     
-    private void rebuildSectionsWithProducts(@NonNull List<Products> productsToShow, @Nullable String filterQuery) {
-        String q = filterQuery == null ? "" : filterQuery.trim().toLowerCase(Locale.getDefault());
-        List<ProductsSectionAdapter.Row> rows = new ArrayList<>();
-        headerPositions.clear();
-        
-        // Group by category (use normalized key for matching, but original name for display)
-        Map<String, List<Products>> categoryMap = new LinkedHashMap<>();
-        Map<String, String> normalizedToOriginal = new HashMap<>();
-        
-        // Build mapping from normalized to original category names
-        for (String originalCat : categories) {
-            String normalized = norm(originalCat);
-            normalizedToOriginal.put(normalized, originalCat);
-        }
-        
-        for (Products p : productsToShow) {
-            String catNormalized = norm(safe(p.getCategory()));
-            if (catNormalized.isEmpty()) catNormalized = "khác";
-            
-            // Get original category name (with proper casing)
-            String catOriginal = normalizedToOriginal.get(catNormalized);
-            if (catOriginal == null) {
-                // If not found in categories list, use the product's category as-is or "Khác"
-                catOriginal = safe(p.getCategory());
-                if (catOriginal.isEmpty()) catOriginal = "Khác";
-            }
-            
-            if (q.isEmpty() || matchesQuery(p, q)) {
-                categoryMap.putIfAbsent(catOriginal, new ArrayList<>());
-                categoryMap.get(catOriginal).add(p);
-            }
-        }
-        
-        // Build rows using original category names
-        for (Map.Entry<String, List<Products>> entry : categoryMap.entrySet()) {
-            String cat = entry.getKey();
-            List<Products> products = entry.getValue();
-            if (products.isEmpty()) continue;
-            
-            headerPositions.put(cat, rows.size());
-            rows.add(ProductsSectionAdapter.Row.header(cat));
-            for (Products p : products) {
-                rows.add(ProductsSectionAdapter.Row.product(p));
-            }
-        }
-        
+    private void rebuildSectionsWithProduct(@NonNull List<Product> productsToShow, @Nullable String filterQuery) {
+        List<ProductSectionAdapter.Row> rows = ProductSearchHelper.rebuildSectionsWithProducts(
+                productsToShow,
+                categories,
+                filterQuery,
+                headerPositions
+        );
         adapter.submitRows(rows);
         setEmpty(rows.isEmpty());
     }
 
     @Override
     public void onDestroyView() {
-        if (subProducts != null) { subProducts.remove(); subProducts = null; }
+        if (subProduct != null) { subProduct.remove(); subProduct = null; }
         binding = null;
         super.onDestroyView();
     }
 
     @Override
-    public void onClick(Products milkTea) {
+    public void onClick(Product milkTea) {
         if (!isAdded() || milkTea == null || TextUtils.isEmpty(milkTea.getId())) return;
 
         ProductDetailBottomSheet sheet = ProductDetailBottomSheet.newInstance(milkTea);
         sheet.setListener((p, qty, size, sugar, ice, note, toppings) -> {
             CartItem newItem = new CartItem(p, qty, size, sugar, ice, note, toppings);
 
-            int existed = -1;
-            for (int i = 0; i < CartFragment.cartItems.size(); i++) {
-                if (newItem.equals(CartFragment.cartItems.get(i))) { existed = i; break; }
-            }
+            com.pro.milkteaapp.utils.CartManager cartManager = com.pro.milkteaapp.utils.CartManager.getInstance();
+            int existed = cartManager.findCartItem(newItem);
             if (existed >= 0) {
-                CartFragment.cartItems.get(existed).increaseQuantity(qty);
+                cartManager.getCartItems().get(existed).increaseQuantity(qty);
             } else {
-                CartFragment.cartItems.add(newItem);
+                cartManager.addCartItem(newItem);
             }
 
             String label = newItem.getToppingsLabel();

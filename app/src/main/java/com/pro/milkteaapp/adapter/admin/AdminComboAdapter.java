@@ -15,8 +15,8 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.models.Combo;
-import com.pro.milkteaapp.models.Products;
-import com.pro.milkteaapp.repository.ProductsRepository;
+import com.pro.milkteaapp.models.Product;
+import com.pro.milkteaapp.repository.ProductRepository;
 import com.pro.milkteaapp.utils.MoneyUtils;
 
 import java.util.ArrayList;
@@ -34,7 +34,7 @@ public class AdminComboAdapter extends RecyclerView.Adapter<AdminComboAdapter.Co
 
     private final OnComboActionListener listener;
     private List<Combo> comboList;
-    private final ProductsRepository productsRepository = new ProductsRepository();
+    private final ProductRepository productsRepository = new ProductRepository();
     private final Map<String, String> productNameCache = new HashMap<>(); // Cache tên sản phẩm theo ID
 
     public AdminComboAdapter(@NonNull List<Combo> initialList,
@@ -191,20 +191,20 @@ public class AdminComboAdapter extends RecyclerView.Adapter<AdminComboAdapter.Co
 
         // Load các sản phẩm còn thiếu
         if (!missingIds.isEmpty()) {
-            loadMissingProducts(holder, combo.getId(), missingIds, cachedNames, productIds.size(), statusText);
+            loadMissingProduct(holder, combo.getId(), missingIds, cachedNames, productIds.size(), statusText);
         }
     }
 
-    private void loadMissingProducts(@NonNull ComboViewHolder holder, String comboId, 
+    private void loadMissingProduct(@NonNull ComboViewHolder holder, String comboId, 
                                     List<String> missingIds, List<String> existingNames, int totalCount, String statusText) {
         final int[] loadedCount = {0};
         final int totalToLoad = missingIds.size();
         final List<String> loadedNames = new ArrayList<>(existingNames);
 
         for (String productId : missingIds) {
-            productsRepository.fetchProductById(productId, new ProductsRepository.OnProductListener() {
+            productsRepository.fetchProductById(productId, new ProductRepository.OnSingleProductListener() {
                 @Override
-                public void onProductReceived(@NonNull Products product) {
+                public void onProductReceived(@NonNull Product product) {
                     String productName = product.getName();
                     if (!TextUtils.isEmpty(productName)) {
                         productNameCache.put(productId, productName);

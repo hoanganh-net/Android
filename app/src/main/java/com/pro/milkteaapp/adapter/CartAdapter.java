@@ -14,7 +14,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.models.CartItem;
-import com.pro.milkteaapp.models.Products;
+import com.pro.milkteaapp.models.Product;
 import com.pro.milkteaapp.utils.ImageLoader;
 import com.pro.milkteaapp.utils.MoneyUtils;
 
@@ -86,7 +86,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
     @Override
     public void onBindViewHolder(@NonNull ViewHolder h, int position) {
         CartItem item = cartItems.get(position);
-        Products p = item.getMilkTea(); // giữ tương thích code cũ
+        Product p = item.getMilkTea(); // giữ tương thích code cũ
 
         // ===== ẢNH =====
         String imageSource = item.getImageUrl();  // có thể là url, "drawable:name" hoặc "name"

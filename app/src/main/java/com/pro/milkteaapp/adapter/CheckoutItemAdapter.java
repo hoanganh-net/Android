@@ -13,7 +13,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.pro.milkteaapp.databinding.ItemCheckoutRowBinding;
 import com.pro.milkteaapp.models.CartItem;
 import com.pro.milkteaapp.models.ComboCartItem;
-import com.pro.milkteaapp.models.Products;
+import com.pro.milkteaapp.models.Product;
 import com.pro.milkteaapp.models.SelectedTopping;
 import com.pro.milkteaapp.utils.ImageLoader;
 import com.pro.milkteaapp.utils.ImageUtils;
@@ -89,7 +89,7 @@ public class CheckoutItemAdapter extends RecyclerView.Adapter<CheckoutItemAdapte
     }
 
     private void bindProductItem(@NonNull VH h, CartItem ci) {
-        Products p = ci.getMilkTea();
+        Product p = ci.getMilkTea();
 
         // Tên
         h.b.tvName.setText(p.getName());

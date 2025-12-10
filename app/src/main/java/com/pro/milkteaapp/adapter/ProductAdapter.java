@@ -20,19 +20,19 @@ import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.target.Target;
 import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.databinding.ItemProductBinding;
-import com.pro.milkteaapp.models.Products;
+import com.pro.milkteaapp.models.Product;
 import com.pro.milkteaapp.utils.MoneyUtils;
 
 import java.util.Locale;
 import java.util.Objects;
 
-public class ProductsAdapter extends ListAdapter<Products, ProductsAdapter.ViewHolder> {
+public class ProductAdapter extends ListAdapter<Product, ProductAdapter.ViewHolder> {
 
     public interface OnItemClickListener {
-        void onItemClick(Products product);
+        void onItemClick(Product product);
     }
 
-    private static final String TAG = "ProductsAdapter";
+    private static final String TAG = "ProductAdapter";
 
     private final OnItemClickListener listener;
     private static final long CLICK_DEBOUNCE_MS = 300L;
@@ -40,11 +40,11 @@ public class ProductsAdapter extends ListAdapter<Products, ProductsAdapter.ViewH
 
     private final boolean isAdmin;
 
-    public ProductsAdapter(@NonNull Context context, OnItemClickListener listener) {
+    public ProductAdapter(@NonNull Context context, OnItemClickListener listener) {
         this(context, listener, inferIsAdmin(context));
     }
 
-    public ProductsAdapter(@NonNull Context context, OnItemClickListener listener, boolean isAdmin) {
+    public ProductAdapter(@NonNull Context context, OnItemClickListener listener, boolean isAdmin) {
         super(DIFF_CALLBACK);
         this.listener = listener;
         this.isAdmin = isAdmin;
@@ -52,7 +52,7 @@ public class ProductsAdapter extends ListAdapter<Products, ProductsAdapter.ViewH
     }
 
     @Deprecated
-    public ProductsAdapter(OnItemClickListener listener) {
+    public ProductAdapter(OnItemClickListener listener) {
         super(DIFF_CALLBACK);
         this.listener = listener;
         this.isAdmin = false;
@@ -65,10 +65,10 @@ public class ProductsAdapter extends ListAdapter<Products, ProductsAdapter.ViewH
         return "admin".equalsIgnoreCase(role);
     }
 
-    private static final DiffUtil.ItemCallback<Products> DIFF_CALLBACK =
+    private static final DiffUtil.ItemCallback<Product> DIFF_CALLBACK =
             new DiffUtil.ItemCallback<>() {
                 @Override
-                public boolean areItemsTheSame(@NonNull Products oldItem, @NonNull Products newItem) {
+                public boolean areItemsTheSame(@NonNull Product oldItem, @NonNull Product newItem) {
                     String oldId = oldItem.getId();
                     String newId = newItem.getId();
                     if (!TextUtils.isEmpty(oldId) && !TextUtils.isEmpty(newId)) {
@@ -80,7 +80,7 @@ public class ProductsAdapter extends ListAdapter<Products, ProductsAdapter.ViewH
                 }
 
                 @Override
-                public boolean areContentsTheSame(@NonNull Products oldItem, @NonNull Products newItem) {
+                public boolean areContentsTheSame(@NonNull Product oldItem, @NonNull Product newItem) {
                     return Objects.equals(oldItem.getName(), newItem.getName())
                             && oldItem.getPrice() == newItem.getPrice()
                             && Objects.equals(oldItem.getImageUrl(), newItem.getImageUrl())
@@ -91,7 +91,7 @@ public class ProductsAdapter extends ListAdapter<Products, ProductsAdapter.ViewH
 
     @Override
     public long getItemId(int position) {
-        Products p = getItem(position);
+        Product p = getItem(position);
         if (p == null) return RecyclerView.NO_ID;
         String key = !TextUtils.isEmpty(p.getId())
                 ? p.getId()
@@ -110,7 +110,7 @@ public class ProductsAdapter extends ListAdapter<Products, ProductsAdapter.ViewH
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        Products product = getItem(position);
+        Product product = getItem(position);
         if (product == null) return;
 
         // Tên
@@ -120,7 +120,7 @@ public class ProductsAdapter extends ListAdapter<Products, ProductsAdapter.ViewH
         }
         holder.binding.milkTeaName.setText(displayName);
 
-        // Giá (Products.price có thể là double hoặc Double; MoneyUtils đã xử lý)
+        // Giá (Product.price có thể là double hoặc Double; MoneyUtils đã xử lý)
         holder.binding.milkTeaPrice.setText(MoneyUtils.formatVnd(product.getPrice()));
 
         // A11y

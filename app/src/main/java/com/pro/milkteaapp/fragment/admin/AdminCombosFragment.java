@@ -125,7 +125,7 @@ public class AdminCombosFragment extends Fragment
                 AdminCombosFragment.this.onDeleteCombo(combo);
             }
         });
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
         recyclerView.setHasFixedSize(true);
         recyclerView.setAdapter(adapter);
     }

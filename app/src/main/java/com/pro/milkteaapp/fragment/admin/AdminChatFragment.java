@@ -257,7 +257,9 @@ public class AdminChatFragment extends Fragment
                 allUsers.clear();
                 adapter.submit(new ArrayList<>());
                 toggleEmpty(true);
-                Toast.makeText(getContext(), "Lỗi tải dữ liệu: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                if (isAdded() && getContext() != null) {
+                    Toast.makeText(getContext(), "Lỗi tải dữ liệu: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                }
             }
         });
     }

@@ -16,7 +16,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.pro.milkteaapp.R;
-import com.pro.milkteaapp.models.Products;
+import com.pro.milkteaapp.models.Product;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -25,9 +25,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-public class ProductsSectionAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+public class ProductSectionAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
-    private static final String TAG = "ProductsSectionAdapter";
+    private static final String TAG = "ProductSectionAdapter";
 
     @IntDef({TYPE_HEADER, TYPE_PRODUCT})
     @Retention(RetentionPolicy.SOURCE)
@@ -39,23 +39,23 @@ public class ProductsSectionAdapter extends RecyclerView.Adapter<RecyclerView.Vi
     public static class Row {
         @RowType public int type;
         public String header;     // khi type = HEADER
-        public Products product;  // khi type = PRODUCT
+        public Product product;  // khi type = PRODUCT
 
         public static Row header(String title){
             Row r = new Row(); r.type = TYPE_HEADER; r.header = title; return r;
         }
-        public static Row product(Products p){
+        public static Row product(Product p){
             Row r = new Row(); r.type = TYPE_PRODUCT; r.product = p; return r;
         }
     }
 
     /** Callback click sản phẩm */
-    public interface OnProductClick { void onClick(Products p); }
+    public interface OnProductClick { void onClick(Product p); }
 
     private final List<Row> rows = new ArrayList<>();
     private final OnProductClick listener;
 
-    public ProductsSectionAdapter(OnProductClick l){ this.listener = l; }
+    public ProductSectionAdapter(OnProductClick l){ this.listener = l; }
 
     @SuppressLint("NotifyDataSetChanged")
     public void submitRows(List<Row> newRows){
@@ -116,7 +116,7 @@ public class ProductsSectionAdapter extends RecyclerView.Adapter<RecyclerView.Vi
         }
 
         @SuppressLint("SetTextI18n")
-        void bind(Products p, OnProductClick l) {
+        void bind(Product p, OnProductClick l) {
             Context ctx = itemView.getContext();
 
             // ===== Tên & Giá =====
@@ -130,7 +130,7 @@ public class ProductsSectionAdapter extends RecyclerView.Adapter<RecyclerView.Vi
             } catch (Throwable t) {
                 // nếu model trả về primitive double thì dòng trên vẫn OK;
                 // bắt mọi trường hợp lạ để tránh crash
-                try { price = (double) Products.class.getMethod("getPrice").invoke(p); }
+                try { price = (double) Product.class.getMethod("getPrice").invoke(p); }
                 catch (Throwable ignore) { price = 0d; }
             }
             NumberFormat nf = NumberFormat.getNumberInstance(new Locale("vi", "VN"));
@@ -164,7 +164,7 @@ public class ProductsSectionAdapter extends RecyclerView.Adapter<RecyclerView.Vi
         }
 
         /** Ưu tiên imageUrl; fallback sang legacy "image" nếu có; nếu cả hai rỗng → null */
-        private static String pickBestImageUrl(Products p) {
+        private static String pickBestImageUrl(Product p) {
             try {
                 // 1) imageUrl (mới)
                 if (!TextUtils.isEmpty(p.getImageUrl())) return p.getImageUrl();
@@ -173,7 +173,7 @@ public class ProductsSectionAdapter extends RecyclerView.Adapter<RecyclerView.Vi
             try {
                 // 2) legacy field "image" (code cũ)
                 //    dùng reflection để không phụ thuộc compile-time
-                Object legacy = Products.class.getMethod("getImage").invoke(p);
+                Object legacy = Product.class.getMethod("getImage").invoke(p);
                 if (legacy instanceof String && !TextUtils.isEmpty((String) legacy)) {
                     return (String) legacy;
                 }

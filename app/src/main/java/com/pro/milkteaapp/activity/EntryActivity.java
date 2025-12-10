@@ -6,12 +6,14 @@ import android.os.Handler;
 import android.os.Looper;
 
 import androidx.activity.ComponentActivity;
+import androidx.annotation.NonNull;
 import androidx.core.splashscreen.SplashScreen;
 
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.FirebaseFirestore;
 import com.pro.milkteaapp.SessionManager;
 import com.pro.milkteaapp.activity.admin.AdminMainActivity;
+import com.pro.milkteaapp.constants.FirestoreConstants;
+import com.pro.milkteaapp.repository.UsersRepository;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -92,56 +94,57 @@ public class EntryActivity extends ComponentActivity {
             h.postDelayed(fallback, MAX_WAIT_MS);
 
             String uid = auth.getCurrentUser().getUid();
-            FirebaseFirestore.getInstance()
-                    .collection("users")
-                    .document(uid)
-                    .get()
-                    .addOnSuccessListener(snap -> {
-                        try {
-                            String role = "user";
-                            if (snap != null && snap.exists()) {
-                                String r = snap.getString("role");
-                                if (r != null && !r.trim().isEmpty()) role = r.trim();
-                            }
-                            sm.setUid(uid);
-                            sm.setRole(role);
+            UsersRepository usersRepository = new UsersRepository();
+            usersRepository.fetchUserByAuthUid(uid, new UsersRepository.OnUserListener() {
+                @Override
+                public void onUserReceived(@NonNull com.pro.milkteaapp.models.User user) {
+                    try {
+                        String role = user.getRole();
+                        if (role == null || role.trim().isEmpty()) {
+                            role = FirestoreConstants.ROLE_USER;
+                        }
+                        sm.setUid(user.getUid() != null ? user.getUid() : uid);
+                        sm.setRole(role);
 
-                            if (decided.compareAndSet(false, true)) {
-                                ready = true;
-                                h.removeCallbacks(fallback);
-                                goOnce(new Intent(
-                                        this,
-                                        "admin".equalsIgnoreCase(role) ? AdminMainActivity.class : MainActivity.class
-                                ));
-                            }
-                        } catch (Exception e) {
-                            // Lỗi xử lý -> fallback về MainActivity
-                            if (decided.compareAndSet(false, true)) {
-                                ready = true;
-                                h.removeCallbacks(fallback);
-                                goOnce(new Intent(this, MainActivity.class));
-                            }
+                        if (decided.compareAndSet(false, true)) {
+                            ready = true;
+                            h.removeCallbacks(fallback);
+                            goOnce(new Intent(
+                                    EntryActivity.this,
+                                    FirestoreConstants.ROLE_ADMIN.equalsIgnoreCase(role) ? AdminMainActivity.class : MainActivity.class
+                            ));
                         }
-                    })
-                    .addOnFailureListener(e -> {
-                        // Lỗi mạng/Firestore -> mặc định role=user
-                        try {
-                            sm.setUid(uid);
-                            sm.setRole("user");
-                            if (decided.compareAndSet(false, true)) {
-                                ready = true;
-                                h.removeCallbacks(fallback);
-                                goOnce(new Intent(this, MainActivity.class));
-                            }
-                        } catch (Exception ex) {
-                            // Lỗi cuối cùng -> vẫn phải điều hướng
-                            if (decided.compareAndSet(false, true)) {
-                                ready = true;
-                                h.removeCallbacks(fallback);
-                                goOnce(new Intent(this, MainActivity.class));
-                            }
+                    } catch (Exception e) {
+                        // Lỗi xử lý -> fallback về MainActivity
+                        if (decided.compareAndSet(false, true)) {
+                            ready = true;
+                            h.removeCallbacks(fallback);
+                            goOnce(new Intent(EntryActivity.this, MainActivity.class));
                         }
-                    });
+                    }
+                }
+
+                @Override
+                public void onError(@NonNull Exception error) {
+                    // Lỗi mạng/Firestore -> mặc định role=user
+                    try {
+                        sm.setUid(uid);
+                        sm.setRole(FirestoreConstants.ROLE_USER);
+                        if (decided.compareAndSet(false, true)) {
+                            ready = true;
+                            h.removeCallbacks(fallback);
+                            goOnce(new Intent(EntryActivity.this, MainActivity.class));
+                        }
+                    } catch (Exception ex) {
+                        // Lỗi cuối cùng -> vẫn phải điều hướng
+                        if (decided.compareAndSet(false, true)) {
+                            ready = true;
+                            h.removeCallbacks(fallback);
+                            goOnce(new Intent(EntryActivity.this, MainActivity.class));
+                        }
+                    }
+                }
+            });
         } catch (Exception e) {
             // Lỗi nghiêm trọng -> fallback về LoginActivity
             ready = true;

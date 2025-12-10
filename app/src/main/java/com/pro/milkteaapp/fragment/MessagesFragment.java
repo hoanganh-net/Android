@@ -20,6 +20,7 @@ import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.SessionManager;
+import com.pro.milkteaapp.constants.FirestoreConstants;
 import com.pro.milkteaapp.activity.MainActivity;
 import com.pro.milkteaapp.adapter.MessagesAdapter;
 import com.pro.milkteaapp.databinding.FragmentMessagesBinding;
@@ -118,8 +119,8 @@ public class MessagesFragment extends Fragment {
         if (uid == null) return;
 
         Query q = FirebaseFirestore.getInstance()
-                .collection("users").document(uid)
-                .collection("inbox")
+                .collection(FirestoreConstants.COLLECTION_USERS).document(uid)
+                .collection(FirestoreConstants.COLLECTION_INBOX)
                 .orderBy("createdAt", Query.Direction.DESCENDING);
 
         if (registration != null) { registration.remove(); registration = null; }
@@ -128,7 +129,9 @@ public class MessagesFragment extends Fragment {
             binding.swipeRefresh.setRefreshing(false);
             showLoading(false);
             if (err != null) {
-                Toast.makeText(getContext(), err.getMessage(), Toast.LENGTH_LONG).show();
+                if (isAdded() && getContext() != null) {
+                    Toast.makeText(getContext(), err.getMessage(), Toast.LENGTH_LONG).show();
+                }
                 return;
             }
 
@@ -151,8 +154,8 @@ public class MessagesFragment extends Fragment {
         if (uid == null) return;
 
         FirebaseFirestore.getInstance()
-                .collection("users").document(uid)
-                .collection("inbox")
+                .collection(FirestoreConstants.COLLECTION_USERS).document(uid)
+                .collection(FirestoreConstants.COLLECTION_INBOX)
                 .orderBy("createdAt", Query.Direction.DESCENDING)
                 .get()
                 .addOnCompleteListener(t -> {
@@ -160,7 +163,9 @@ public class MessagesFragment extends Fragment {
                     binding.swipeRefresh.setRefreshing(false);
                     if (!t.isSuccessful()) {
                         Exception e = t.getException();
-                        if (e != null) Toast.makeText(getContext(), e.getMessage(), Toast.LENGTH_LONG).show();
+                        if (e != null && isAdded() && getContext() != null) {
+                            Toast.makeText(getContext(), e.getMessage(), Toast.LENGTH_LONG).show();
+                        }
                         return;
                     }
                     List<Message> data = new ArrayList<>();
@@ -215,7 +220,9 @@ public class MessagesFragment extends Fragment {
         String customId = null;
         try {
             customId = new SessionManager(requireContext()).getUid();
-        } catch (Throwable ignored) {}
+        } catch (Throwable e) {
+            android.util.Log.w("MessagesFragment", "Failed to get UID from SessionManager: " + e.getMessage());
+        }
 
         if (customId != null && !customId.trim().isEmpty()) {
             return customId.trim();
@@ -223,7 +230,9 @@ public class MessagesFragment extends Fragment {
 
         // Fallback sang Firebase UID (không khuyến nghị, nhưng an toàn)
         if (FirebaseAuth.getInstance().getCurrentUser() == null) {
-            Toast.makeText(getContext(), "Bạn chưa đăng nhập", Toast.LENGTH_LONG).show();
+            if (isAdded() && getContext() != null) {
+                Toast.makeText(getContext(), "Bạn chưa đăng nhập", Toast.LENGTH_LONG).show();
+            }
             return null;
         }
         return FirebaseAuth.getInstance().getCurrentUser().getUid();

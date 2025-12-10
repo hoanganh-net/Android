@@ -107,15 +107,18 @@ public class AdminOrderDetailActivity extends AppCompatActivity {
     }
 
     private void fetchOrderDocument(String orderId) {
-        // Tạm thời vẫn dùng direct Firestore để lấy document với items và addressObj
-        // TODO: Có thể tạo OrdersRepository.fetchOrderDocument() sau
-        db.collection("orders").document(orderId).get()
-                .addOnSuccessListener(this::bindOrder)
-                .addOnFailureListener(e -> {
-                    toastLong("Lỗi tải chi tiết đơn: " + e.getMessage());
-                    setLoading(false);
-                })
-                .addOnCompleteListener(t -> setLoading(false));
+        ordersRepository.fetchOrderDocument(orderId, new OrdersRepository.OnOrderDocumentListener() {
+            @Override
+            public void onOrderDocumentReceived(@NonNull DocumentSnapshot document) {
+                bindOrder(document);
+            }
+
+            @Override
+            public void onError(@NonNull Exception error) {
+                toastLong("Lỗi tải chi tiết đơn: " + error.getMessage());
+                setLoading(false);
+            }
+        });
     }
 
     @SuppressLint("SetTextI18n")

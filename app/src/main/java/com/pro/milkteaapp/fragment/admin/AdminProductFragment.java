@@ -29,8 +29,8 @@ import com.pro.milkteaapp.activity.admin.AdminMainActivity;
 import com.pro.milkteaapp.activity.admin.AdminProductEditorActivity;
 import com.pro.milkteaapp.adapter.admin.AdminProductAdapter;
 import com.pro.milkteaapp.interfaces.AddActionHandler;
-import com.pro.milkteaapp.models.Products;
-import com.pro.milkteaapp.repository.ProductsRepository;
+import com.pro.milkteaapp.models.Product;
+import com.pro.milkteaapp.repository.ProductRepository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,7 +40,7 @@ import java.util.Locale;
  * Fragment quản trị sản phẩm: KHÔNG dùng ViewModel/Repository, gọi Firestore trực tiếp.
  * Bản này KHÔNG inflate menu riêng để tránh trùng với menu của AdminMainActivity.
  */
-public class AdminProductsFragment extends Fragment
+public class AdminProductFragment extends Fragment
         implements AdminProductAdapter.OnProductActionListener,
         AdminMainActivity.ScrollToTop,
         AdminMainActivity.SupportsRefresh,
@@ -54,7 +54,7 @@ public class AdminProductsFragment extends Fragment
     private SwipeRefreshLayout swipeRefresh;
 
     // Dữ liệu & adapter
-    private final List<Products> productList = new ArrayList<>();
+    private final List<Product> productList = new ArrayList<>();
     private AdminProductAdapter adapter;
     private String lastSearch = "";
 
@@ -62,7 +62,7 @@ public class AdminProductsFragment extends Fragment
     private boolean isAdminRole = false;
 
     // Repository
-    private ProductsRepository productsRepository;
+    private ProductRepository productsRepository;
     private ListenerRegistration realtimeReg;
 
     // Cờ để biết view đã được inflate chưa
@@ -72,7 +72,7 @@ public class AdminProductsFragment extends Fragment
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         isAdminRole = isAdmin();
-        productsRepository = new ProductsRepository();
+        productsRepository = new ProductRepository();
     }
 
     @Nullable
@@ -117,7 +117,7 @@ public class AdminProductsFragment extends Fragment
 
     private void setupRecyclerView() {
         adapter = new AdminProductAdapter(productList, this);
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
         recyclerView.setHasFixedSize(true);
         recyclerView.setAdapter(adapter);
     }
@@ -130,7 +130,7 @@ public class AdminProductsFragment extends Fragment
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 lastSearch = s == null ? "" : s.toString();
-                filterProducts(lastSearch);
+                filterProduct(lastSearch);
             }
         });
     }
@@ -160,14 +160,14 @@ public class AdminProductsFragment extends Fragment
     private void startRealtime() {
         stopRealtime();
         showLoading(true);
-        realtimeReg = productsRepository.listenAllProducts(new ProductsRepository.OnProductsListener() {
+        realtimeReg = productsRepository.listenAllProduct(new ProductRepository.OnProductListener() {
             @Override
-            public void onProductsReceived(@NonNull List<Products> products) {
+            public void onProductReceived(@NonNull List<Product> products) {
                 if (swipeRefresh != null && swipeRefresh.isRefreshing()) swipeRefresh.setRefreshing(false);
                 productList.clear();
                 productList.addAll(products);
                 if (adapter != null) {
-                    filterProducts(lastSearch);
+                    filterProduct(lastSearch);
                 }
                 showLoading(false);
             }
@@ -192,13 +192,13 @@ public class AdminProductsFragment extends Fragment
     private void loadOnce() {
         if (!isAdded()) return;
         showLoading(true);
-        productsRepository.fetchAllProducts(new ProductsRepository.OnProductsListener() {
+        productsRepository.fetchAllProduct(new ProductRepository.OnProductListener() {
             @Override
-            public void onProductsReceived(@NonNull List<Products> products) {
+            public void onProductReceived(@NonNull List<Product> products) {
                 productList.clear();
                 productList.addAll(products);
                 if (adapter != null) {
-                    filterProducts(lastSearch);
+                    filterProduct(lastSearch);
                 }
                 showLoading(false);
             }
@@ -214,7 +214,7 @@ public class AdminProductsFragment extends Fragment
     // ====== CRUD qua Repository ======
     private void deleteProductById(@NonNull String id) {
         showLoading(true);
-        productsRepository.deleteProduct(id, new ProductsRepository.OnProductUpdateListener() {
+        productsRepository.deleteProduct(id, new ProductRepository.OnProductUpdateListener() {
             @Override
             public void onSuccess() {
                 showLoading(false);
@@ -230,7 +230,7 @@ public class AdminProductsFragment extends Fragment
     }
 
     // ====== UI helpers ======
-    private void filterProducts(String query) {
+    private void filterProduct(String query) {
         if (adapter == null) return;
         String q = query == null ? "" : query.trim().toLowerCase(Locale.ROOT);
         if (q.isEmpty()) {
@@ -238,8 +238,8 @@ public class AdminProductsFragment extends Fragment
             checkEmptyState();
             return;
         }
-        List<Products> filtered = new ArrayList<>();
-        for (Products p : productList) {
+        List<Product> filtered = new ArrayList<>();
+        for (Product p : productList) {
             String name = safe(p.getName()).toLowerCase(Locale.ROOT);
             String cat  = safe(p.getCategory()).toLowerCase(Locale.ROOT);
             if (name.contains(q) || cat.contains(q)) {
@@ -272,14 +272,14 @@ public class AdminProductsFragment extends Fragment
     @Override public void onAddAction() { openAddProduct(); }
 
     @Override
-    public void onEditProduct(Products product) {
+    public void onEditProduct(Product product) {
         Intent it = new Intent(requireContext(), AdminProductEditorActivity.class);
         it.putExtra(AdminProductEditorActivity.EXTRA_PRODUCT_ID, product.getId());
         startActivity(it);
     }
 
     @Override
-    public void onDeleteProduct(Products product) {
+    public void onDeleteProduct(Product product) {
         if (product == null || safe(product.getId()).isEmpty()) {
             toast("Không xác định được ID sản phẩm.");
             return;
@@ -293,7 +293,7 @@ public class AdminProductsFragment extends Fragment
     }
 
     @Override
-    public void onToggleFeatured(@NonNull Products product, boolean featured) {
+    public void onToggleFeatured(@NonNull Product product, boolean featured) {
         String productId = safe(product.getId());
         if (productId.isEmpty()) {
             toast("Lỗi: Không có ID sản phẩm");
@@ -313,7 +313,7 @@ public class AdminProductsFragment extends Fragment
         }
         
         // Cập nhật Firestore
-        productsRepository.toggleFeatured(productId, featured, new ProductsRepository.OnProductUpdateListener() {
+        productsRepository.toggleFeatured(productId, featured, new ProductRepository.OnProductUpdateListener() {
             @Override
             public void onSuccess() {
                 // UI đã được cập nhật ở trên, chỉ cần toast

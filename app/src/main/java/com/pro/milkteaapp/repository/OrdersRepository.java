@@ -260,6 +260,24 @@ public class OrdersRepository {
     }
 
     /**
+     * Lấy order document với đầy đủ thông tin (items, addressObj, etc.)
+     * Dùng khi cần truy cập các field không có trong Order model
+     */
+    public void fetchOrderDocument(@NonNull String orderId, @NonNull OnOrderDocumentListener listener) {
+        db.collection(FirestoreConstants.COLLECTION_ORDERS)
+                .document(orderId)
+                .get()
+                .addOnSuccessListener(document -> {
+                    if (document != null && document.exists()) {
+                        listener.onOrderDocumentReceived(document);
+                    } else {
+                        listener.onError(new Exception("Order not found"));
+                    }
+                })
+                .addOnFailureListener(listener::onError);
+    }
+
+    /**
      * Parse DocumentSnapshot thành Order object
      */
     @Nullable
@@ -285,6 +303,11 @@ public class OrdersRepository {
 
     public interface OnOrderUpdateListener {
         void onSuccess();
+        void onError(@NonNull Exception error);
+    }
+
+    public interface OnOrderDocumentListener {
+        void onOrderDocumentReceived(@NonNull DocumentSnapshot document);
         void onError(@NonNull Exception error);
     }
 }

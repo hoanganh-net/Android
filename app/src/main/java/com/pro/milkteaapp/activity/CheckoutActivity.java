@@ -13,16 +13,20 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.WriteBatch;
+import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.SessionManager;
 import com.pro.milkteaapp.fragment.bottomsheet.CheckoutBottomSheet;
 import com.pro.milkteaapp.models.CartItem;
 import com.pro.milkteaapp.models.CheckoutInfo;
 import com.pro.milkteaapp.models.ComboCartItem;
-import com.pro.milkteaapp.models.Products;
+import com.pro.milkteaapp.models.Product;
 import com.pro.milkteaapp.models.SelectedTopping;
 import com.pro.milkteaapp.payment.PaymentRequest;
 import com.pro.milkteaapp.payment.PaymentService;
+import com.pro.milkteaapp.constants.FirestoreConstants;
 import com.pro.milkteaapp.utils.MoneyUtils;
+import com.pro.milkteaapp.utils.OrderCreator;
+import com.pro.milkteaapp.utils.VoucherUsageRecorder;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -106,13 +110,15 @@ public class CheckoutActivity extends AppCompatActivity
         String effectiveUid = null;
         try {
             effectiveUid = new SessionManager(getApplicationContext()).getUid();
-        } catch (Throwable ignored) {}
+        } catch (Throwable e) {
+            android.util.Log.w("Checkout", "Failed to get UID from SessionManager: " + e.getMessage());
+        }
         if (TextUtils.isEmpty(effectiveUid)) {
             effectiveUid = auth.getCurrentUser() != null ? auth.getCurrentUser().getUid() : "";
         }
         
         // Tạo order ID tạm để thanh toán
-        String tempOrderId = db.collection("orders").document().getId();
+        String tempOrderId = db.collection(FirestoreConstants.COLLECTION_ORDERS).document().getId();
         long amount = (long) info.getGrandTotal();
         
         // Tạo return URL (deep link để nhận kết quả)
@@ -123,7 +129,7 @@ public class CheckoutActivity extends AppCompatActivity
                 tempOrderId,
                 effectiveUid,
                 amount,
-                "Thanh toán đơn hàng #" + tempOrderId,
+                getString(R.string.payment_order_title, tempOrderId),
                 returnUrl,
                 cancelUrl
         );
@@ -204,129 +210,27 @@ public class CheckoutActivity extends AppCompatActivity
     }
 
     private void placeOrder(@Nullable String transactionId) {
-        if (cartItems.isEmpty() && comboCartItems.isEmpty()) {
-            Toast.makeText(this, "Giỏ hàng trống", Toast.LENGTH_SHORT).show();
-            finish();
+        if (checkoutInfo == null) {
+            Toast.makeText(this, "Thông tin checkout không hợp lệ", Toast.LENGTH_SHORT).show();
             return;
         }
-
-        if (auth.getCurrentUser() == null) {
-            Toast.makeText(this, "Bạn chưa đăng nhập", Toast.LENGTH_SHORT).show();
-            finish();
-            return;
-        }
-
-        // ✅ Lấy userId hiệu lực: ưu tiên USRxxxxx từ SessionManager, fallback Firebase UID
-        String effectiveUid = null;
-        try {
-            effectiveUid = new SessionManager(getApplicationContext()).getUid();
-        } catch (Throwable ignored) {}
-        if (TextUtils.isEmpty(effectiveUid)) {
-            effectiveUid = auth.getCurrentUser().getUid();
-        }
-
-        long subtotal = getSubtotal();
-        long discount = getDiscount();
-        long shipping = getShippingFee();
-        long finalTotal = getGrandTotal();
-
-        String address = checkoutInfo != null ? checkoutInfo.getAddress() : "";
-        String paymentMethod = checkoutInfo != null ? checkoutInfo.getPaymentMethod() : "COD";
-        String shippingLabel = checkoutInfo != null
-                ? checkoutInfo.getShippingLabel()
-                : String.format(Locale.getDefault(), "Tiêu chuẩn (%s)", MoneyUtils.formatVnd(shipping));
-        String voucherCode = checkoutInfo != null ? checkoutInfo.getVoucherCode() : "";
-
-        if (TextUtils.isEmpty(address)) {
-            Toast.makeText(this, "Vui lòng chọn địa chỉ giao hàng", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        // Có thể dùng OrdersIDGenerator nếu dự án của bạn đang áp dụng; ở đây giữ nguyên doc id tự sinh
-        String orderId = db.collection("orders").document().getId();
-
-        Map<String, Object> order = new HashMap<>();
-        order.put("orderId", orderId);
-        order.put("userId", effectiveUid);        // ✅ đồng bộ users/{USRxxxxx}
-        order.put("name", null);
-        order.put("phone", null);
-        order.put("address", address);
-        order.put("subtotal", subtotal);
-        order.put("discount", discount);
-        order.put("shippingFee", shipping);
-        order.put("finalTotal", finalTotal);      // ✅ đổi từ "total" → "finalTotal"
-        PaymentService paymentService = PaymentService.getInstance(this);
-        order.put("paymentMethod", paymentMethod);
-        order.put("paymentStatus", paymentService.requiresOnlinePayment(paymentMethod) 
-                ? (transactionId != null ? "SUCCESS" : "PENDING") 
-                : "PENDING");
-        if (transactionId != null) {
-            order.put("transactionId", transactionId);
-        }
-        order.put("shippingLabel", shippingLabel);
-        order.put("voucherCode", TextUtils.isEmpty(voucherCode) ? null : voucherCode);
-        order.put("status", "PENDING");           // ✅ chuẩn hóa status
-        order.put("createdAt", FieldValue.serverTimestamp()); // ✅ đồng bộ timestamp server
-
-        // Tạo items array để lưu vào order document
-        List<Map<String, Object>> itemsList = new ArrayList<>();
-
-        // Thêm CartItem vào items array
-        for (CartItem item : cartItems) {
-            Products p = item.getMilkTea();
-            Map<String, Object> row = new HashMap<>();
-            row.put("productId", p != null ? p.getId() : null);
-            row.put("name", p != null ? p.getName() : null);
-            row.put("price", p != null && p.getPrice() != null ? p.getPrice().longValue() : 0L);
-            row.put("quantity", item.getQuantity());
-            row.put("size", item.getSize());
-            row.put("unitPrice", item.getUnitPrice());
-            row.put("lineTotal", item.getTotalPrice());
-
-            // Chi tiết tùy chọn
-            row.put("sugar", item.getSugar());
-            row.put("ice", item.getIce());
-            row.put("note", item.getNote());
-
-            // toppings
-            java.util.List<Map<String, Object>> tops = new ArrayList<>();
-            if (item.getToppings() != null) {
-                for (SelectedTopping st : item.getToppings()) {
-                    Map<String, Object> m = new HashMap<>();
-                    m.put("id", st.getId());
-                    m.put("name", st.getName());
-                    m.put("price", st.getPrice());
-                    tops.add(m);
-                }
-            }
-            row.put("toppings", tops);
-            itemsList.add(row);
-        }
-
-        // Thêm ComboCartItem vào items array
-        android.util.Log.d("CheckoutActivity", "comboCartItems size: " + comboCartItems.size());
-        for (ComboCartItem comboItem : comboCartItems) {
-            Map<String, Object> row = comboItem.toOrderItemMap();
-            android.util.Log.d("CheckoutActivity", "Combo item map: " + row);
-            android.util.Log.d("CheckoutActivity", "Combo item type field: " + row.get("type"));
-            itemsList.add(row);
-        }
-        android.util.Log.d("CheckoutActivity", "Total items in itemsList: " + itemsList.size());
-
-        // Thêm items array vào order
-        order.put("items", itemsList);
-        android.util.Log.d("CheckoutActivity", "Order items field set, size: " + itemsList.size());
-
-        WriteBatch batch = db.batch();
-        batch.set(db.collection("orders").document(orderId), order);
-
-        final String finalEffectiveUid = effectiveUid;
-        final String finalVoucherCode = voucherCode;
-
-        batch.commit()
-                .addOnSuccessListener(v -> {
-                    // Không cộng điểm ở đây — điểm chỉ cộng khi Admin xác nhận FINISHED
-                    recordVoucherUsageIfNeeded(finalEffectiveUid, finalVoucherCode,
+        
+        OrderCreator orderCreator = new OrderCreator(this);
+        VoucherUsageRecorder voucherRecorder = new VoucherUsageRecorder();
+        
+        orderCreator.createOrder(
+                cartItems,
+                comboCartItems,
+                checkoutInfo,
+                transactionId,
+                () -> {
+                    // Order created successfully, record voucher usage
+                    String effectiveUid = getEffectiveUserId();
+                    String voucherCode = checkoutInfo.getVoucherCode();
+                    
+                    voucherRecorder.recordVoucherUsageIfNeeded(
+                            effectiveUid,
+                            voucherCode,
                             () -> {
                                 Toast.makeText(this, "Đặt hàng thành công!", Toast.LENGTH_SHORT).show();
                                 finish();
@@ -335,47 +239,25 @@ public class CheckoutActivity extends AppCompatActivity
                                 Toast.makeText(this, "Đơn đã tạo nhưng cập nhật lượt voucher lỗi: " + e.getMessage(), Toast.LENGTH_LONG).show();
                                 finish();
                             });
-                })
-                .addOnFailureListener(e -> Toast.makeText(this, "Lỗi đặt hàng: " + e.getMessage(), Toast.LENGTH_LONG).show());
+                },
+                e -> Toast.makeText(this, "Lỗi đặt hàng: " + e.getMessage(), Toast.LENGTH_LONG).show()
+        );
     }
-
-    // ====== Ghi nhận users/{uid}/voucher_usages/{voucherId}.count += 1 nếu có code ======
-    private void recordVoucherUsageIfNeeded(@NonNull String uid,
-                                            @Nullable String voucherCode,
-                                            @NonNull Runnable onDone,
-                                            @NonNull java.util.function.Consumer<Exception> onError) {
-        if (TextUtils.isEmpty(voucherCode)) {
-            onDone.run();
-            return;
+    
+    @NonNull
+    private String getEffectiveUserId() {
+        String customUid = null;
+        try {
+            customUid = new SessionManager(getApplicationContext()).getUid();
+        } catch (Throwable e) {
+            android.util.Log.w("Checkout", "Failed to get UID from SessionManager: " + e.getMessage());
         }
-
-        db.collection("vouchers")
-                .whereEqualTo("code", voucherCode.trim().toUpperCase(Locale.getDefault()))
-                .limit(1)
-                .get()
-                .addOnSuccessListener(qs -> {
-                    if (qs.isEmpty()) {
-                        onDone.run();
-                        return;
-                    }
-                    String voucherId = qs.getDocuments().get(0).getId();
-
-                    db.collection("users").document(uid)
-                            .collection("voucher_usages").document(voucherId)
-                            .update("count", FieldValue.increment(1))
-                            .addOnSuccessListener(x -> onDone.run())
-                            .addOnFailureListener(e -> {
-                                Map<String, Object> seed = new HashMap<>();
-                                seed.put("count", 1L);
-                                db.collection("users").document(uid)
-                                        .collection("voucher_usages").document(voucherId)
-                                        .set(seed)
-                                        .addOnSuccessListener(x -> onDone.run())
-                                        .addOnFailureListener(onError::accept);
-                            });
-                })
-                .addOnFailureListener(onError::accept);
+        if (TextUtils.isEmpty(customUid) && auth.getCurrentUser() != null) {
+            return auth.getCurrentUser().getUid();
+        }
+        return customUid != null ? customUid : "";
     }
+
 
     @Override
     public boolean onSupportNavigateUp() {

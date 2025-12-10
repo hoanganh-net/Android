@@ -90,7 +90,7 @@ public class AdminOrdersFragment extends Fragment {
     }
 
     private void setupRecyclerView() {
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
         adapter = new AdminOrdersAdapter(
                 this::onItemClicked,
                 null, // Không dùng xác nhận ở màn này
@@ -257,7 +257,9 @@ public class AdminOrdersFragment extends Fragment {
             java.lang.reflect.Method m = o.getClass().getMethod("getCanceledAt");
             Object v = m.invoke(o);
             if (v instanceof Timestamp) return (Timestamp) v;
-        } catch (Exception ignore) {}
+        } catch (Exception e) {
+            android.util.Log.w("AdminOrders", "Failed to get canceledAt via reflection: " + e.getMessage());
+        }
         return null;
     }
 

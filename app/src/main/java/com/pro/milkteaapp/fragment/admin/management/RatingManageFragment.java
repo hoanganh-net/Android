@@ -71,7 +71,7 @@ public class RatingManageFragment extends Fragment {
 
         b.swipeRefresh.setOnRefreshListener(this::reload);
 
-        // Load một lần ban đầu (giống AdminProductsFragment)
+        // Load một lần ban đầu (giống AdminProductFragment)
         loadOnce();
 
         return b.getRoot();

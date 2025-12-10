@@ -391,7 +391,9 @@ public class AdminStatisticsFragment extends Fragment
     
     private void loadAdvancedStatistics() {
         if (selectedDateFrom == null || selectedDateTo == null) {
-            Toast.makeText(getContext(), "Vui lòng chọn đầy đủ từ ngày và đến ngày", Toast.LENGTH_SHORT).show();
+            if (isAdded() && getContext() != null) {
+                Toast.makeText(getContext(), "Vui lòng chọn đầy đủ từ ngày và đến ngày", Toast.LENGTH_SHORT).show();
+            }
             return;
         }
         
@@ -411,7 +413,9 @@ public class AdminStatisticsFragment extends Fragment
         toCal.set(Calendar.MILLISECOND, 0);
         
         if (toCal.before(fromCal)) {
-            Toast.makeText(getContext(), "Ngày đến phải lớn hơn hoặc bằng ngày từ", Toast.LENGTH_SHORT).show();
+            if (isAdded() && getContext() != null) {
+                Toast.makeText(getContext(), "Ngày đến phải lớn hơn hoặc bằng ngày từ", Toast.LENGTH_SHORT).show();
+            }
             return;
         }
         
@@ -438,7 +442,9 @@ public class AdminStatisticsFragment extends Fragment
             public void onError(@NonNull Exception error) {
                 swipe.setRefreshing(false);
                 showLoading(false);
-                Toast.makeText(getContext(), "Lỗi tải dữ liệu: " + error.getMessage(), Toast.LENGTH_LONG).show();
+                if (isAdded() && getContext() != null) {
+                    Toast.makeText(getContext(), "Lỗi tải dữ liệu: " + error.getMessage(), Toast.LENGTH_LONG).show();
+                }
             }
         });
     }
@@ -631,7 +637,9 @@ public class AdminStatisticsFragment extends Fragment
                 swipe.setRefreshing(false);
                 showLoading(false);
                 toggleEmpty(true);
-                Toast.makeText(getContext(), "Lỗi tải dữ liệu: " + error.getMessage(), Toast.LENGTH_LONG).show();
+                if (isAdded() && getContext() != null) {
+                    Toast.makeText(getContext(), "Lỗi tải dữ liệu: " + error.getMessage(), Toast.LENGTH_LONG).show();
+                }
             }
         });
     }

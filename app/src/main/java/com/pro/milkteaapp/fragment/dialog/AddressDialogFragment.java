@@ -44,7 +44,7 @@ public class AddressDialogFragment extends DialogFragment {
         EditText edtPostal = v.findViewById(R.id.edtPostal);
         MaterialButton btnSave = v.findViewById(R.id.btnSave);
 
-        Address editing = getArguments() != null ? getArguments().getParcelable(ARG_ADDRESS) : null;
+        Address editing = getArguments() != null ? getArguments().getParcelable(ARG_ADDRESS, Address.class) : null;
         if (editing != null) {
             edtName.setText(editing.getFullName());
             edtPhone.setText(editing.getPhone());
@@ -70,7 +70,11 @@ public class AddressDialogFragment extends DialogFragment {
 
             if (TextUtils.isEmpty(name) || TextUtils.isEmpty(phone) ||
                     TextUtils.isEmpty(line1) || TextUtils.isEmpty(city) || TextUtils.isEmpty(province)) {
-                // TODO: setError chi tiết nếu cần
+                if (getContext() != null) {
+                    android.widget.Toast.makeText(getContext(), 
+                        "Vui lòng điền đầy đủ thông tin bắt buộc", 
+                        android.widget.Toast.LENGTH_SHORT).show();
+                }
                 return;
             }
 
@@ -94,30 +98,42 @@ public class AddressDialogFragment extends DialogFragment {
                     btnSave.setEnabled(false);
                     repo.addOrUpdate(out, saved -> {
                         // Báo về cho host (Activity/Fragment) nếu có implement Listener
-                        if (getActivity() instanceof Listener) {
-                            ((Listener) getActivity()).onAddressSaved(saved, false);
-                        } else if (getParentFragment() instanceof Listener) {
-                            ((Listener) getParentFragment()).onAddressSaved(saved, false);
+                        if (isAdded()) {
+                            if (getActivity() instanceof Listener) {
+                                ((Listener) getActivity()).onAddressSaved(saved, false);
+                            } else if (getParentFragment() instanceof Listener) {
+                                ((Listener) getParentFragment()).onAddressSaved(saved, false);
+                            }
+                            dismiss();
                         }
-                        dismiss();
                     }, e -> {
                         btnSave.setEnabled(true);
-                        // TODO: hiển thị lỗi (Toast/Snackbar)
+                        if (isAdded() && getContext() != null) {
+                            android.widget.Toast.makeText(getContext(), 
+                                "Lỗi: " + (e.getMessage() != null ? e.getMessage() : "Không thể lưu địa chỉ"), 
+                                android.widget.Toast.LENGTH_SHORT).show();
+                        }
                     });
                 }, e -> {
                     // Nếu lỗi khi fetch, vẫn tạo địa chỉ nhưng không set mặc định
                     out.setDefault(false);
                     btnSave.setEnabled(false);
                     repo.addOrUpdate(out, saved -> {
-                        if (getActivity() instanceof Listener) {
-                            ((Listener) getActivity()).onAddressSaved(saved, false);
-                        } else if (getParentFragment() instanceof Listener) {
-                            ((Listener) getParentFragment()).onAddressSaved(saved, false);
+                        if (isAdded()) {
+                            if (getActivity() instanceof Listener) {
+                                ((Listener) getActivity()).onAddressSaved(saved, false);
+                            } else if (getParentFragment() instanceof Listener) {
+                                ((Listener) getParentFragment()).onAddressSaved(saved, false);
+                            }
+                            dismiss();
                         }
-                        dismiss();
                     }, err -> {
                         btnSave.setEnabled(true);
-                        // TODO: hiển thị lỗi (Toast/Snackbar)
+                        if (isAdded() && getContext() != null) {
+                            android.widget.Toast.makeText(getContext(), 
+                                "Lỗi: " + (err.getMessage() != null ? err.getMessage() : "Không thể lưu địa chỉ"), 
+                                android.widget.Toast.LENGTH_SHORT).show();
+                        }
                     });
                 });
             } else {
@@ -125,15 +141,21 @@ public class AddressDialogFragment extends DialogFragment {
                 btnSave.setEnabled(false);
                 repo.addOrUpdate(out, saved -> {
                     // Báo về cho host (Activity/Fragment) nếu có implement Listener
-                    if (getActivity() instanceof Listener) {
-                        ((Listener) getActivity()).onAddressSaved(saved, true);
-                    } else if (getParentFragment() instanceof Listener) {
-                        ((Listener) getParentFragment()).onAddressSaved(saved, true);
+                    if (isAdded()) {
+                        if (getActivity() instanceof Listener) {
+                            ((Listener) getActivity()).onAddressSaved(saved, true);
+                        } else if (getParentFragment() instanceof Listener) {
+                            ((Listener) getParentFragment()).onAddressSaved(saved, true);
+                        }
+                        dismiss();
                     }
-                    dismiss();
                 }, e -> {
                     btnSave.setEnabled(true);
-                    // TODO: hiển thị lỗi (Toast/Snackbar)
+                    if (isAdded() && getContext() != null) {
+                        android.widget.Toast.makeText(getContext(), 
+                            "Lỗi: " + (e.getMessage() != null ? e.getMessage() : "Không thể lưu địa chỉ"), 
+                            android.widget.Toast.LENGTH_SHORT).show();
+                    }
                 });
             }
         });

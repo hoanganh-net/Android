@@ -17,6 +17,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
+import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.adapter.admin.AdminToppingAdapter;
 import com.pro.milkteaapp.databinding.DialogToppingEditorBinding;
 import com.pro.milkteaapp.databinding.AdminFragmentToppingsBinding;
@@ -80,7 +81,7 @@ public class ToppingManageFragment extends Fragment
 
         binding.swipe.setOnRefreshListener(this::reload);
 
-        // Load một lần ban đầu (giống AdminProductsFragment)
+        // Load một lần ban đầu (giống AdminProductFragment)
         loadOnce();
     }
 

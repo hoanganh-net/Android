@@ -25,7 +25,7 @@ import com.pro.milkteaapp.activity.MainActivity;
 import com.pro.milkteaapp.generator.ProductsIDGenerator;
 import com.pro.milkteaapp.models.Category;
 import com.pro.milkteaapp.repository.CategoriesRepository;
-import com.pro.milkteaapp.repository.ProductsRepository;
+import com.pro.milkteaapp.repository.ProductRepository;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -63,7 +63,7 @@ public class AdminProductEditorActivity extends AppCompatActivity {
     private FirebaseFirestore db;
     private FirebaseAuth auth;
     private CategoriesRepository categoriesRepository;
-    private ProductsRepository productsRepository;
+    private ProductRepository productsRepository;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -89,7 +89,7 @@ public class AdminProductEditorActivity extends AppCompatActivity {
         db   = FirebaseFirestore.getInstance();
         auth = FirebaseAuth.getInstance();
         categoriesRepository = new CategoriesRepository();
-        productsRepository = new ProductsRepository();
+        productsRepository = new ProductRepository();
 
         // Dropdown
         categoryAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, categories);
@@ -163,9 +163,9 @@ public class AdminProductEditorActivity extends AppCompatActivity {
     /* ------------------------- Load product (Edit) ------------------------- */
     private void loadProductForEdit(String id) {
         setLoading(true);
-        productsRepository.fetchProductById(id, new ProductsRepository.OnProductListener() {
+        productsRepository.fetchProductById(id, new ProductRepository.OnSingleProductListener() {
             @Override
-            public void onProductReceived(@NonNull com.pro.milkteaapp.models.Products product) {
+            public void onProductReceived(@NonNull com.pro.milkteaapp.models.Product product) {
                 setLoading(false);
 
                 String name        = product.getName() != null ? product.getName() : "";
@@ -242,7 +242,7 @@ public class AdminProductEditorActivity extends AppCompatActivity {
 
         if (isEditMode) {
             // UPDATE qua Repository
-            productsRepository.updateProduct(productId, data, new ProductsRepository.OnProductUpdateListener() {
+            productsRepository.updateProduct(productId, data, new ProductRepository.OnProductUpdateListener() {
                 @Override
                 public void onSuccess() {
                     setLoading(false);
@@ -269,7 +269,7 @@ public class AdminProductEditorActivity extends AppCompatActivity {
                     .addOnSuccessListener(newId -> {
                         // newId ví dụ: PRD00001
                         data.put("id", newId); // lưu vào trong document để client khác đọc được
-                        productsRepository.createProduct(newId, data, new ProductsRepository.OnProductCreateListener() {
+                        productsRepository.createProduct(newId, data, new ProductRepository.OnProductCreateListener() {
                             @Override
                             public void onSuccess(@NonNull String productId) {
                                 setLoading(false);

@@ -21,6 +21,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Transaction;
 import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.SessionManager;
+import com.pro.milkteaapp.constants.FirestoreConstants;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -146,8 +147,8 @@ public class RateOrderBottomSheet extends BottomSheetDialogFragment {
     private void writeInboxRated(@NonNull String uid, @NonNull String orderId, int rating, @Nullable String review) {
         try {
             FirebaseFirestore.getInstance()
-                    .collection("users").document(uid)
-                    .collection("inbox")
+                    .collection(FirestoreConstants.COLLECTION_USERS).document(uid)
+                    .collection(FirestoreConstants.COLLECTION_INBOX)
                     .add(new HashMap<String, Object>() {{
                         put("type", "order_review");
                         put("orderId", orderId);
@@ -157,7 +158,9 @@ public class RateOrderBottomSheet extends BottomSheetDialogFragment {
                         put("createdAt", Timestamp.now());
                         put("read", false);
                     }});
-        } catch (Throwable ignored) {}
+        } catch (Throwable e) {
+            android.util.Log.w("RateOrder", "Failed to write inbox rated: " + e.getMessage());
+        }
     }
 
     @Nullable
@@ -172,7 +175,9 @@ public class RateOrderBottomSheet extends BottomSheetDialogFragment {
         String customId = null;
         try {
             customId = new SessionManager(requireContext()).getUid();
-        } catch (Throwable ignored) {}
+        } catch (Throwable e) {
+            android.util.Log.w("RateOrder", "Failed to get UID from SessionManager: " + e.getMessage());
+        }
 
         if (!TextUtils.isEmpty(customId)) {
             return customId.trim(); // USRxxxxx

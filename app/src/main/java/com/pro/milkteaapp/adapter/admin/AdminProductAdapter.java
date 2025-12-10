@@ -18,7 +18,7 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.request.RequestOptions;
 import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.activity.admin.AdminProductEditorActivity;
-import com.pro.milkteaapp.models.Products;
+import com.pro.milkteaapp.models.Product;
 import com.pro.milkteaapp.utils.ImageUtils;
 
 import java.text.NumberFormat;
@@ -30,16 +30,16 @@ import java.util.Objects;
 public class AdminProductAdapter extends RecyclerView.Adapter<AdminProductAdapter.ProductViewHolder> {
 
     public interface OnProductActionListener {
-        void onEditProduct(Products product);
-        void onDeleteProduct(Products product);
-        void onToggleFeatured(Products product, boolean featured);
+        void onEditProduct(Product product);
+        void onDeleteProduct(Product product);
+        void onToggleFeatured(Product product, boolean featured);
     }
 
     private final OnProductActionListener listener;
     private final NumberFormat currencyFormat;
-    private List<Products> productList;
+    private List<Product> productList;
 
-    public AdminProductAdapter(@NonNull List<Products> initialList,
+    public AdminProductAdapter(@NonNull List<Product> initialList,
                                @NonNull OnProductActionListener listener) {
         this.productList = new ArrayList<>(initialList);
         this.listener = listener;
@@ -47,9 +47,9 @@ public class AdminProductAdapter extends RecyclerView.Adapter<AdminProductAdapte
         setHasStableIds(true);
     }
 
-    public void updateList(@NonNull List<Products> newList) {
-        final List<Products> oldList = this.productList;
-        final List<Products> newCopy = new ArrayList<>(newList);
+    public void updateList(@NonNull List<Product> newList) {
+        final List<Product> oldList = this.productList;
+        final List<Product> newCopy = new ArrayList<>(newList);
 
         DiffUtil.DiffResult diff = DiffUtil.calculateDiff(new DiffUtil.Callback() {
             @Override public int getOldListSize() { return oldList.size(); }
@@ -67,8 +67,8 @@ public class AdminProductAdapter extends RecyclerView.Adapter<AdminProductAdapte
 
             @Override
             public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
-                Products o = oldList.get(oldItemPosition);
-                Products n = newCopy.get(newItemPosition);
+                Product o = oldList.get(oldItemPosition);
+                Product n = newCopy.get(newItemPosition);
 
                 return Objects.equals(safeStr(o.getName()), safeStr(n.getName())) &&
                         Objects.equals(safeStr(o.getCategory()), safeStr(n.getCategory())) &&
@@ -124,7 +124,7 @@ public class AdminProductAdapter extends RecyclerView.Adapter<AdminProductAdapte
             btnDelete       = itemView.findViewById(R.id.btnDelete);
         }
 
-        void bind(Products p) {
+        void bind(Product p) {
             productName.setText(safeStr(p.getName()));
             productCategory.setText(safeStr(p.getCategory()));
             productPrice.setText(formatPrice(p.getPrice()));
@@ -149,7 +149,7 @@ public class AdminProductAdapter extends RecyclerView.Adapter<AdminProductAdapte
             View.OnClickListener goEdit = v -> {
                 int pos = getBindingAdapterPosition();
                 if (pos == RecyclerView.NO_POSITION) return;
-                Products prod = productList.get(pos);
+                Product prod = productList.get(pos);
 
                 if (listener != null) {
                     listener.onEditProduct(prod);
@@ -190,7 +190,7 @@ public class AdminProductAdapter extends RecyclerView.Adapter<AdminProductAdapte
                 iconFeatured.setOnClickListener(v -> {
                     int pos = getBindingAdapterPosition();
                     if (pos == RecyclerView.NO_POSITION) return;
-                    Products prod = productList.get(pos);
+                    Product prod = productList.get(pos);
                     boolean newFeatured = !isFeatured;
                     
                     // Cập nhật UI ngay lập tức (optimistic update)

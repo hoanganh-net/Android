@@ -7,7 +7,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 
-import com.pro.milkteaapp.fragment.admin.AdminProductsFragment;
+import com.pro.milkteaapp.fragment.admin.AdminProductFragment;
 import com.pro.milkteaapp.fragment.admin.AdminCombosFragment;
 
 /**
@@ -41,7 +41,7 @@ public class ManagementPagerAdapter extends FragmentStateAdapter {
     @Override
     public Fragment createFragment(int position) {
         Fragment f = switch (position) {
-            case PAGE_PRODUCTS -> new AdminProductsFragment();
+            case PAGE_PRODUCTS -> new AdminProductFragment();
             case PAGE_VOUCHER -> new VoucherManageFragment();
             case PAGE_RATING -> new RatingManageFragment();
             case PAGE_TOPPING -> new ToppingManageFragment();

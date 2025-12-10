@@ -21,9 +21,9 @@ import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.adapter.ComboProductOptionAdapter;
 import com.pro.milkteaapp.models.Combo;
 import com.pro.milkteaapp.models.ComboProductOption;
-import com.pro.milkteaapp.models.Products;
+import com.pro.milkteaapp.models.Product;
 import com.pro.milkteaapp.models.SelectedTopping;
-import com.pro.milkteaapp.repository.ProductsRepository;
+import com.pro.milkteaapp.repository.ProductRepository;
 import com.pro.milkteaapp.utils.ImageLoader;
 import com.pro.milkteaapp.utils.MoneyUtils;
 
@@ -44,9 +44,9 @@ public class ComboDetailBottomSheet extends BottomSheetDialogFragment {
     private ImageView comboImage;
     private TextView nameTextView, priceTextView, descriptionTextView, quantityTextView, totalPriceTextView;
     private MaterialButton decrementButton, incrementButton, addToCartButton;
-    private RecyclerView rvProducts;
+    private RecyclerView rvProduct;
     private ComboProductOptionAdapter productsAdapter;
-    private ProductsRepository productsRepository;
+    private ProductRepository productsRepository;
 
     private int quantity = 1;
 
@@ -95,7 +95,7 @@ public class ComboDetailBottomSheet extends BottomSheetDialogFragment {
         decrementButton = v.findViewById(R.id.decrementButton);
         incrementButton = v.findViewById(R.id.incrementButton);
         addToCartButton = v.findViewById(R.id.addToCartButton);
-        rvProducts = v.findViewById(R.id.rvProducts);
+        rvProduct = v.findViewById(R.id.rvProduct);
         return v;
     }
 
@@ -127,16 +127,16 @@ public class ComboDetailBottomSheet extends BottomSheetDialogFragment {
         ImageLoader.load(comboImage, combo.getImageUrl(), R.drawable.milktea);
 
         // Setup products adapter
-        productsRepository = new ProductsRepository();
+        productsRepository = new ProductRepository();
         productsAdapter = new ComboProductOptionAdapter();
         // Set callback để cập nhật giá khi topping thay đổi
         productsAdapter.setOnToppingChangeListener(() -> updateTotal());
-        rvProducts.setLayoutManager(new LinearLayoutManager(requireContext()));
-        rvProducts.setAdapter(productsAdapter);
-        rvProducts.setNestedScrollingEnabled(false);
+        rvProduct.setLayoutManager(new LinearLayoutManager(requireContext()));
+        rvProduct.setAdapter(productsAdapter);
+        rvProduct.setNestedScrollingEnabled(false);
         
         // Load products in combo
-        loadProductsInCombo();
+        loadProductInCombo();
 
         // Quantity
         quantityTextView.setText(String.valueOf(quantity));
@@ -168,7 +168,7 @@ public class ComboDetailBottomSheet extends BottomSheetDialogFragment {
         });
     }
 
-    private void loadProductsInCombo() {
+    private void loadProductInCombo() {
         if (combo == null || productsRepository == null) return;
         
         List<String> productIds = combo.getProductIds();
@@ -176,20 +176,20 @@ public class ComboDetailBottomSheet extends BottomSheetDialogFragment {
             return;
         }
         
-        List<Products> loadedProducts = new ArrayList<>();
+        List<Product> loadedProduct = new ArrayList<>();
         final int[] loadedCount = {0};
         
         for (String productId : productIds) {
-            productsRepository.fetchProductById(productId, new ProductsRepository.OnProductListener() {
+            productsRepository.fetchProductById(productId, new ProductRepository.OnSingleProductListener() {
                 @Override
-                public void onProductReceived(@NonNull Products product) {
-                    loadedProducts.add(product);
+                public void onProductReceived(@NonNull Product product) {
+                    loadedProduct.add(product);
                     loadedCount[0]++;
                     
                     if (loadedCount[0] == productIds.size()) {
                         // Tất cả sản phẩm đã load xong
                         if (productsAdapter != null) {
-                            productsAdapter.submitProducts(loadedProducts);
+                            productsAdapter.submitProduct(loadedProduct);
                         }
                     }
                 }
@@ -199,7 +199,7 @@ public class ComboDetailBottomSheet extends BottomSheetDialogFragment {
                     loadedCount[0]++;
                     // Bỏ qua lỗi, tiếp tục load các sản phẩm khác
                     if (loadedCount[0] == productIds.size() && productsAdapter != null) {
-                        productsAdapter.submitProducts(loadedProducts);
+                        productsAdapter.submitProduct(loadedProduct);
                     }
                 }
             });

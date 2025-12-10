@@ -86,7 +86,11 @@ public class ProfileFragment extends Fragment {
                 v -> startActivity(new Intent(requireContext(), AdminMainActivity.class)));
 
         binding.btnLogout.setOnClickListener(v -> {
-            try { auth.signOut(); } catch (Throwable ignored) {}
+            try { 
+                auth.signOut(); 
+            } catch (Throwable e) {
+                android.util.Log.w("ProfileFragment", "Failed to sign out: " + e.getMessage());
+            }
             session.clear();
             Toast.makeText(requireContext(), getString(R.string.logged_out_successfully), Toast.LENGTH_SHORT).show();
             gotoLogin();

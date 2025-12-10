@@ -416,7 +416,9 @@ public class AdminMainActivity extends AppCompatActivity {
     private void logout() {
         try {
             FirebaseAuth.getInstance().signOut();
-        } catch (Throwable ignored) {}
+        } catch (Throwable e) {
+            android.util.Log.w("AdminMain", "Failed to sign out: " + e.getMessage());
+        }
         new SessionManager(this).clear();
         goToLoginRoot();
     }

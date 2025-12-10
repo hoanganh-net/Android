@@ -22,7 +22,7 @@ public class CartItem implements Serializable {
     private static final long DELTA_MEDIUM = 3000L;
     private static final long DELTA_LARGE  = 6000L;
 
-    private final Products product;
+    private final Product product;
     private int quantity;
     private String size; // Small / Medium / Large (hoặc Nhỏ / Vừa / Lớn)
     private ArrayList<SelectedTopping> toppings; // danh sách topping đã chọn
@@ -34,7 +34,7 @@ public class CartItem implements Serializable {
 
     private long totalPrice;
 
-    public CartItem(@NonNull Products product, int quantity, String size,
+    public CartItem(@NonNull Product product, int quantity, String size,
                     java.util.List<SelectedTopping> toppings) {
         this.product  = Objects.requireNonNull(product, "product không được null");
         this.quantity = Math.max(1, quantity);
@@ -44,7 +44,7 @@ public class CartItem implements Serializable {
         recalcTotal();
     }
 
-    public CartItem(@NonNull Products product, int quantity, String size,
+    public CartItem(@NonNull Product product, int quantity, String size,
                     String sugar, String ice, String note,
                     java.util.List<SelectedTopping> toppings) {
         this.product  = Objects.requireNonNull(product, "product không được null");
@@ -59,8 +59,8 @@ public class CartItem implements Serializable {
     }
 
     // ===== Getter/Setter =====
-    public Products getMilkTea() { return product; }  // tương thích code cũ
-    public Products getProduct() { return product; }
+    public Product getMilkTea() { return product; }  // tương thích code cũ
+    public Product getProduct() { return product; }
     public int getQuantity() { return quantity; }
     public String getSize()  { return size; }
 

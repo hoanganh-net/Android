@@ -17,7 +17,7 @@ import com.google.android.material.navigation.NavigationView;
 import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.databinding.AdminFragmentManagementBinding;
 import com.pro.milkteaapp.fragment.admin.AdminCombosFragment;
-import com.pro.milkteaapp.fragment.admin.AdminProductsFragment;
+import com.pro.milkteaapp.fragment.admin.AdminProductFragment;
 import com.pro.milkteaapp.fragment.admin.AdminUsersFragment;
 import com.pro.milkteaapp.interfaces.AddActionHandler;
 
@@ -120,7 +120,7 @@ public class ManagementFragment extends Fragment implements NavigationView.OnNav
 
         // Tạo fragment mới
         if (menuId == R.id.nav_products) {
-            return new AdminProductsFragment();
+            return new AdminProductFragment();
         } else if (menuId == R.id.nav_category) {
             return new CategoryManageFragment();
         } else if (menuId == R.id.nav_toppings) {

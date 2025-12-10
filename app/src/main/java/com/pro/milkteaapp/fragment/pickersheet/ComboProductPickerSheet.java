@@ -20,9 +20,9 @@ import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.adapter.ProductSelectAdapter;
 import com.pro.milkteaapp.databinding.BottomsheetComboProductPickerBinding;
 import com.pro.milkteaapp.models.Category;
-import com.pro.milkteaapp.models.Products;
+import com.pro.milkteaapp.models.Product;
 import com.pro.milkteaapp.repository.CategoriesRepository;
-import com.pro.milkteaapp.repository.ProductsRepository;
+import com.pro.milkteaapp.repository.ProductRepository;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -37,24 +37,24 @@ import java.util.Set;
  */
 public class ComboProductPickerSheet extends BottomSheetDialogFragment {
 
-    public interface OnProductsSelectedListener {
-        void onProductsSelected(@NonNull List<Products> selectedProducts);
+    public interface OnProductSelectedListener {
+        void onProductSelected(@NonNull List<Product> selectedProduct);
     }
 
     private BottomsheetComboProductPickerBinding binding;
-    private OnProductsSelectedListener listener;
-    private ProductsRepository productsRepository;
+    private OnProductSelectedListener listener;
+    private ProductRepository productsRepository;
     private CategoriesRepository categoriesRepository;
     private ProductSelectAdapter adapter;
     private final Set<String> selectedProductIds = new HashSet<>();
-    private final List<Products> allProducts = new ArrayList<>();
-    private final List<Products> filteredProducts = new ArrayList<>();
-    private final List<Products> selectedProducts = new ArrayList<>();
+    private final List<Product> allProduct = new ArrayList<>();
+    private final List<Product> filteredProduct = new ArrayList<>();
+    private final List<Product> selectedProduct = new ArrayList<>();
     private final List<String> categories = new ArrayList<>();
     private ArrayAdapter<String> categoryAdapter;
     private String selectedCategory = "Tất cả";
 
-    public void setListener(OnProductsSelectedListener listener) {
+    public void setListener(OnProductSelectedListener listener) {
         this.listener = listener;
     }
 
@@ -77,7 +77,7 @@ public class ComboProductPickerSheet extends BottomSheetDialogFragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        productsRepository = new ProductsRepository();
+        productsRepository = new ProductRepository();
         categoriesRepository = new CategoriesRepository();
 
         // Setup RecyclerView
@@ -87,12 +87,12 @@ public class ComboProductPickerSheet extends BottomSheetDialogFragment {
             String productId = product.getId();
             if (isSelected) {
                 selectedProductIds.add(productId);
-                if (!selectedProducts.contains(product)) {
-                    selectedProducts.add(product);
+                if (!selectedProduct.contains(product)) {
+                    selectedProduct.add(product);
                 }
             } else {
                 selectedProductIds.remove(productId);
-                selectedProducts.removeIf(p -> productId.equals(p.getId()));
+                selectedProduct.removeIf(p -> productId.equals(p.getId()));
             }
             updateSelectedCount();
         });
@@ -106,17 +106,17 @@ public class ComboProductPickerSheet extends BottomSheetDialogFragment {
         binding.actCategory.setOnItemClickListener((parent, itemView, position, id) -> {
             String category = categories.get(position);
             selectedCategory = category;
-            filterProductsByCategory(category);
+            filterProductByCategory(category);
         });
 
         // Nút xác nhận
         binding.btnConfirm.setOnClickListener(v -> {
-            if (selectedProducts.isEmpty()) {
+            if (selectedProduct.isEmpty()) {
                 Toast.makeText(requireContext(), "Vui lòng chọn ít nhất một sản phẩm", Toast.LENGTH_SHORT).show();
                 return;
             }
             if (listener != null) {
-                listener.onProductsSelected(new ArrayList<>(selectedProducts));
+                listener.onProductSelected(new ArrayList<>(selectedProduct));
             }
             dismiss();
         });
@@ -126,7 +126,7 @@ public class ComboProductPickerSheet extends BottomSheetDialogFragment {
 
         // Load categories và sản phẩm
         loadCategories();
-        loadActiveProducts();
+        loadActiveProduct();
     }
 
     private void loadCategories() {
@@ -152,31 +152,31 @@ public class ComboProductPickerSheet extends BottomSheetDialogFragment {
         });
     }
 
-    private void loadActiveProducts() {
+    private void loadActiveProduct() {
         binding.progressBar.setVisibility(View.VISIBLE);
         binding.recyclerView.setVisibility(View.GONE);
 
-        productsRepository.fetchProductsByStatus(
+        productsRepository.fetchProductByStatus(
                 com.pro.milkteaapp.constants.FirestoreConstants.STATUS_ACTIVE,
-                new ProductsRepository.OnProductsListener() {
+                new ProductRepository.OnProductListener() {
                     @Override
-                    public void onProductsReceived(@NonNull List<Products> products) {
+                    public void onProductReceived(@NonNull List<Product> products) {
                         binding.progressBar.setVisibility(View.GONE);
                         binding.recyclerView.setVisibility(View.VISIBLE);
 
-                        allProducts.clear();
-                        allProducts.addAll(products);
+                        allProduct.clear();
+                        allProduct.addAll(products);
 
-                        // Cập nhật selectedProducts dựa trên selectedProductIds
-                        selectedProducts.clear();
-                        for (Products product : products) {
+                        // Cập nhật selectedProduct dựa trên selectedProductIds
+                        selectedProduct.clear();
+                        for (Product product : products) {
                             if (selectedProductIds.contains(product.getId())) {
-                                selectedProducts.add(product);
+                                selectedProduct.add(product);
                             }
                         }
 
                         // Filter theo category hiện tại
-                        filterProductsByCategory(selectedCategory);
+                        filterProductByCategory(selectedCategory);
                     }
 
                     @Override
@@ -188,28 +188,28 @@ public class ComboProductPickerSheet extends BottomSheetDialogFragment {
         );
     }
 
-    private void filterProductsByCategory(String category) {
+    private void filterProductByCategory(String category) {
         if (category == null || category.equals("Tất cả")) {
-            filteredProducts.clear();
-            filteredProducts.addAll(allProducts);
+            filteredProduct.clear();
+            filteredProduct.addAll(allProduct);
         } else {
-            filteredProducts.clear();
-            for (Products product : allProducts) {
+            filteredProduct.clear();
+            for (Product product : allProduct) {
                 String productCategory = product.getCategory();
                 if (category.equals(productCategory)) {
-                    filteredProducts.add(product);
+                    filteredProduct.add(product);
                 }
             }
         }
 
-        adapter.submitList(filteredProducts);
+        adapter.submitList(filteredProduct);
         adapter.setSelectedProductIds(selectedProductIds);
         updateSelectedCount();
     }
 
 
     private void updateSelectedCount() {
-        int count = selectedProducts.size();
+        int count = selectedProduct.size();
         binding.tvSelectedCount.setText("Đã chọn: " + count + " sản phẩm");
         binding.btnConfirm.setEnabled(count > 0);
     }

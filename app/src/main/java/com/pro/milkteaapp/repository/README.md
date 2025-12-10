@@ -14,7 +14,7 @@ Project đã được chuẩn hóa với Repository Pattern để:
 - `FirestoreConstants.java`: Tập trung tất cả collection names và field names
 
 ### Repositories
-- `ProductsRepository`: Quản lý products
+- `ProductRepository`: Quản lý products
 - `CategoriesRepository`: Quản lý categories
 - `OrdersRepository`: Quản lý orders
 - `ReviewsRepository`: Quản lý reviews
@@ -29,11 +29,11 @@ Project đã được chuẩn hóa với Repository Pattern để:
 ### Ví dụ 1: Lấy tất cả products
 
 ```java
-ProductsRepository repository = new ProductsRepository();
+ProductRepository repository = new ProductRepository();
 
-repository.fetchAllProducts(new ProductsRepository.OnProductsListener() {
+repository.fetchAllProduct(new ProductRepository.OnProductListener() {
     @Override
-    public void onProductsReceived(@NonNull List<Products> products) {
+    public void onProductReceived(@NonNull List<Product> products) {
         // Xử lý danh sách products
         adapter.submitList(products);
     }
@@ -50,12 +50,12 @@ repository.fetchAllProducts(new ProductsRepository.OnProductsListener() {
 ### Ví dụ 2: Lắng nghe realtime products
 
 ```java
-ProductsRepository repository = new ProductsRepository();
+ProductRepository repository = new ProductRepository();
 
-ListenerRegistration registration = repository.listenAllProducts(
-    new ProductsRepository.OnProductsListener() {
+ListenerRegistration registration = repository.listenAllProduct(
+    new ProductRepository.OnProductListener() {
         @Override
-        public void onProductsReceived(@NonNull List<Products> products) {
+        public void onProductReceived(@NonNull List<Product> products) {
             // Tự động cập nhật khi có thay đổi
             adapter.submitList(products);
         }
@@ -81,7 +81,7 @@ public void onDestroyView() {
 
 ```java
 CategoriesRepository categoriesRepo = new CategoriesRepository();
-ProductsRepository productsRepo = new ProductsRepository();
+ProductRepository productsRepo = new ProductRepository();
 
 // Lấy categories trước
 categoriesRepo.fetchActiveCategories(new CategoriesRepository.OnCategoriesListener() {
@@ -90,10 +90,10 @@ categoriesRepo.fetchActiveCategories(new CategoriesRepository.OnCategoriesListen
         // Sau đó lấy products theo category đầu tiên
         if (!categories.isEmpty()) {
             String firstCategory = categories.get(0).getName();
-            productsRepo.fetchProductsByCategory(firstCategory, 
-                new ProductsRepository.OnProductsListener() {
+            productsRepo.fetchProductByCategory(firstCategory, 
+                new ProductRepository.OnProductListener() {
                     @Override
-                    public void onProductsReceived(@NonNull List<Products> products) {
+                    public void onProductReceived(@NonNull List<Product> products) {
                         // Xử lý products
                     }
 
@@ -149,10 +149,10 @@ db.collection("products")
 
 ### Sau (mới):
 ```java
-ProductsRepository repository = new ProductsRepository();
-repository.fetchAllProducts(new ProductsRepository.OnProductsListener() {
+ProductRepository repository = new ProductRepository();
+repository.fetchAllProduct(new ProductRepository.OnProductListener() {
     @Override
-    public void onProductsReceived(@NonNull List<Products> products) {
+    public void onProductReceived(@NonNull List<Product> products) {
         // Xử lý
     }
 
