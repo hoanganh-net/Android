@@ -12,11 +12,11 @@
 
     <LinearLayout
         android:orientation="vertical"
-        android:padding="10dp"
+        android:padding="8dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <!-- Header: Code + Active switch -->
+        <!-- Header: Code + Points + Active switch -->
         <LinearLayout
             android:orientation="horizontal"
             android:gravity="center_vertical"
@@ -33,83 +33,110 @@
                 android:textSize="14sp"
                 android:textColor="@color/primary" />
 
+            <TextView
+                android:id="@+id/tvPointsRequired"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="100 điểm"
+                android:textSize="12sp"
+                android:textColor="@android:color/darker_gray"
+                android:visibility="gone" />
+
             <com.google.android.material.switchmaterial.SwitchMaterial
                 android:id="@+id/swActive"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
                 android:text=""
                 android:textSize="12sp" />
         </LinearLayout>
 
-        <!-- Thông tin chính: Ưu đãi, Đơn tối thiểu, Hạn sử dụng -->
+        <!-- Ưu đãi + Số tiền tối thiểu (cùng hàng) -->
         <LinearLayout
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:orientation="vertical">
+            android:layout_marginTop="4dp">
 
             <TextView
                 android:id="@+id/tvBenefit"
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:text="Giảm 15.000đ"
                 android:textSize="13sp"
                 android:textColor="@android:color/black" />
 
             <TextView
                 android:id="@+id/tvMin"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Từ 60.000đ"
                 android:textSize="12sp"
-                android:textColor="@android:color/darker_gray"
-                android:layout_marginTop="2dp" />
-
-            <TextView
-                android:id="@+id/tvExpiry"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Đến 15/11/2025"
-                android:textSize="12sp"
-                android:textColor="@android:color/darker_gray"
-                android:layout_marginTop="2dp" />
+                android:textColor="@android:color/darker_gray" />
         </LinearLayout>
 
-        <!-- Hình thức thanh toán (compact) -->
-        <com.google.android.material.chip.ChipGroup
-            android:id="@+id/chipsChannels"
+        <!-- Hạn sử dụng -->
+        <TextView
+            android:id="@+id/tvExpiry"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            app:singleSelection="false"
-            app:singleLine="true"
-            app:chipSpacingHorizontal="4dp"
-            app:chipSpacingVertical="0dp" />
-        <!-- Actions -->
+            android:layout_marginTop="2dp"
+            android:text="Đến 15/11/2025"
+            android:textSize="12sp"
+            android:textColor="@android:color/darker_gray" />
+
+        <!-- Hình thức thanh toán + Actions (cùng hàng) -->
         <LinearLayout
             android:orientation="horizontal"
-            android:gravity="end"
+            android:gravity="center_vertical"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp">
+            android:layout_marginTop="4dp">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnEdit"
-                android:layout_width="wrap_content"
-                android:layout_height="36dp"
-                android:text="Sửa"
-                android:textSize="13sp"
-                android:paddingHorizontal="10dp" />
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chipsChannels"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                app:singleSelection="false"
+                app:singleLine="true"
+                app:chipSpacingHorizontal="4dp"
+                app:chipSpacingVertical="0dp" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnDelete"
-                style="@style/Widget.Material3.Button.OutlinedButton"
+            <!-- Actions xếp dọc -->
+            <LinearLayout
+                android:orientation="vertical"
                 android:layout_width="wrap_content"
-                android:layout_height="36dp"
-                android:text="Xóa"
-                android:textSize="13sp"
-                android:layout_marginStart="8dp"
-                android:paddingHorizontal="10dp" />
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnEdit"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    app:icon="@drawable/ic_edit"
+                    app:iconTint="@color/white"
+                    app:backgroundTint="@color/primary"
+                    app:iconGravity="start"
+                    style="@style/Widget.MaterialComponents.Button.Icon" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnDelete"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginTop="4dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    app:icon="@drawable/ic_delete"
+                    app:iconTint="@color/white"
+                    app:iconGravity="start"
+                    app:backgroundTint="@color/error_red"
+                    style="@style/Widget.MaterialComponents.Button.Icon" />
+            </LinearLayout>
         </LinearLayout>
 
     </LinearLayout>

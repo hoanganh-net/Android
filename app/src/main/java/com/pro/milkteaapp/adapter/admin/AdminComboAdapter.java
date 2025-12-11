@@ -158,7 +158,7 @@ public class AdminComboAdapter extends RecyclerView.Adapter<AdminComboAdapter.Co
     private void loadAndDisplayProductNames(@NonNull ComboViewHolder holder, @NonNull Combo combo, String statusText) {
         List<String> productIds = combo.getProductIds();
         if (productIds == null || productIds.isEmpty()) {
-            holder.tvCategory.setText("Không có sản phẩm • " + statusText);
+            holder.tvCategory.setText(holder.itemView.getContext().getString(R.string.no_products_in_combo) + " • " + statusText);
             return;
         }
 

@@ -165,10 +165,10 @@ public class OrdersFragment extends Fragment implements OrdersAdapter.Listener {
     }
 
     private void setupTabsAndSelectCurrent() {
-        b.tabs.addTab(b.tabs.newTab().setText("Tất cả").setTag("ALL"));
-        b.tabs.addTab(b.tabs.newTab().setText("Chờ xác nhận").setTag(Order.STATUS_PENDING));
-        b.tabs.addTab(b.tabs.newTab().setText("Hoàn tất").setTag(Order.STATUS_FINISHED));
-        b.tabs.addTab(b.tabs.newTab().setText("Đã hủy").setTag(Order.STATUS_CANCELLED));
+        b.tabs.addTab(b.tabs.newTab().setText(getString(R.string.order_status_all)).setTag("ALL"));
+        b.tabs.addTab(b.tabs.newTab().setText(getString(R.string.order_status_pending)).setTag(Order.STATUS_PENDING));
+        b.tabs.addTab(b.tabs.newTab().setText(getString(R.string.order_status_finished)).setTag(Order.STATUS_FINISHED));
+        b.tabs.addTab(b.tabs.newTab().setText(getString(R.string.order_status_cancelled)).setTag(Order.STATUS_CANCELLED));
 
         for (int i = 0; i < b.tabs.getTabCount(); i++) {
             TabLayout.Tab t = b.tabs.getTabAt(i);

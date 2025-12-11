@@ -531,7 +531,7 @@ public class HomeFragment extends Fragment {
                 displayName = "Người dùng";
             }
         }
-        textGreeting.setText("Xin chào, " + displayName + "!");
+        textGreeting.setText(getString(R.string.greeting_with_name, displayName));
 
         // Avatar từ session (nếu có) → hiển thị ngay
         ImageLoader.load(profileIcon, cachedAvatar, R.drawable.ic_avatar_default);
@@ -561,7 +561,7 @@ public class HomeFragment extends Fragment {
 
                         // Bind UI
                         String display = !TextUtils.isEmpty(fullName) ? fullName : email;
-                        textGreeting.setText("Xin chào, " + display + "!");
+                        textGreeting.setText(getString(R.string.greeting_with_name, display));
                         ImageLoader.load(profileIcon, avatar, R.drawable.ic_avatar_default);
 
                         // Nghe realtime

@@ -72,7 +72,7 @@
             android:id="@+id/empty"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Chưa có đơn hàng"
+            android:text="@string/no_orders_user"
             android:gravity="center"
             android:padding="24dp"
             android:visibility="gone"/>

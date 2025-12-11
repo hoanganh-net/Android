@@ -251,7 +251,7 @@ public class CartFragment extends Fragment
 
             FirebaseUser user = auth.getCurrentUser();
             if (user == null) {
-                Toast.makeText(requireContext(), "Vui lòng đăng nhập trước khi đặt hàng", Toast.LENGTH_SHORT).show();
+                Toast.makeText(requireContext(), getString(R.string.please_login_first), Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -311,14 +311,14 @@ public class CartFragment extends Fragment
         if (position < 0 || position >= cartManager.getCartItemsCount()) return;
 
         new AlertDialog.Builder(requireContext())
-                .setTitle("Xác nhận xóa")
+                .setTitle(getString(R.string.confirm_delete))
                 .setMessage("Bạn có chắc chắn muốn xóa sản phẩm này khỏi giỏ hàng không?")
                 .setPositiveButton("Xóa", (dialog, which) -> {
                     cartManager.removeCartItem(position);
                     if (adapter != null) adapter.notifyItemRemoved(position);
                     updateTotal();
                     if (isAdded() && getContext() != null) {
-                        Toast.makeText(getContext(), "Đã xóa sản phẩm", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(), getString(R.string.product_deleted), Toast.LENGTH_SHORT).show();
                     }
                 })
                 .setNegativeButton("Hủy", null)
@@ -352,14 +352,14 @@ public class CartFragment extends Fragment
         if (position < 0 || position >= cartManager.getComboCartItemsCount()) return;
 
         new AlertDialog.Builder(requireContext())
-                .setTitle("Xác nhận xóa")
+                .setTitle(getString(R.string.confirm_delete))
                 .setMessage("Bạn có chắc chắn muốn xóa combo này khỏi giỏ hàng không?")
                 .setPositiveButton("Xóa", (dialog, which) -> {
                     cartManager.removeComboCartItem(position);
                     if (comboAdapter != null) comboAdapter.notifyItemRemoved(position);
                     updateTotal();
                     if (isAdded() && getContext() != null) {
-                        Toast.makeText(getContext(), "Đã xóa combo", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(), getString(R.string.combo_deleted), Toast.LENGTH_SHORT).show();
                     }
                 })
                 .setNegativeButton("Hủy", null)
@@ -448,7 +448,7 @@ public class CartFragment extends Fragment
                                             });
                                         },
                                         e -> {
-                                            Toast.makeText(app, "Đơn đã tạo, nhưng cập nhật lượt voucher lỗi: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                                            Toast.makeText(app, app.getString(R.string.voucher_update_error, e.getMessage()), Toast.LENGTH_LONG).show();
 
                                             cartManager.clearAll();
                                             runOnUiSafe(() -> {
@@ -460,7 +460,7 @@ public class CartFragment extends Fragment
                                         }))
 
                                 .addOnFailureListener(e -> {
-                                    Toast.makeText(app, "Lỗi tạo đơn: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                                    Toast.makeText(app, app.getString(R.string.create_order_error, e.getMessage()), Toast.LENGTH_LONG).show();
                                     runOnUiSafe(() -> {
                                         if (binding != null) binding.checkoutButton.setEnabled(true);
                                     });
@@ -470,7 +470,7 @@ public class CartFragment extends Fragment
                                 }))
                 )
                 .addOnFailureListener(e -> {
-                    Toast.makeText(app, "Lỗi sinh mã đơn: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    Toast.makeText(app, app.getString(R.string.generate_order_id_error, e.getMessage()), Toast.LENGTH_LONG).show();
                     runOnUiSafe(() -> {
                         if (binding != null) binding.checkoutButton.setEnabled(true);
                     });

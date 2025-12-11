@@ -68,12 +68,39 @@ public class ChatMessagesAdapter extends RecyclerView.Adapter<ChatMessagesAdapte
     public void onBindViewHolder(@NonNull VH h, int position) {
         if (position < 0 || position >= data.size()) return;
         ChatMessage msg = data.get(position);
+        if (msg == null) return;
         
         h.tvMessage.setText(msg.getMessage() != null ? msg.getMessage() : "");
         h.tvTime.setText(msg.getCreatedAt() != null ? timeFormat.format(msg.getCreatedAt().toDate()) : "");
         
+        // Luôn hiển thị tên người gửi
         if (h.tvSender != null) {
-            h.tvSender.setText(msg.getSenderName() != null ? msg.getSenderName() : "");
+            String senderName = msg.getSenderName() != null ? msg.getSenderName() : "";
+            // Tính toán isSent trực tiếp từ message thay vì gọi getItemViewType lại
+            boolean isSent = false;
+            if ("admin".equals(currentUserId)) {
+                isSent = "admin".equals(msg.getSenderId());
+            } else {
+                isSent = currentUserId != null && currentUserId.equals(msg.getSenderId());
+            }
+            
+            if (isSent) {
+                // Tin nhắn đã gửi: hiển thị "Bạn"
+                h.tvSender.setText("Bạn");
+                h.tvSender.setVisibility(View.VISIBLE);
+            } else {
+                // Tin nhắn đã nhận: hiển thị tên người gửi
+                if (senderName.isEmpty()) {
+                    if ("admin".equals(msg.getSenderId())) {
+                        h.tvSender.setText("Admin");
+                    } else {
+                        h.tvSender.setText("Người dùng");
+                    }
+                } else {
+                    h.tvSender.setText(senderName);
+                }
+                h.tvSender.setVisibility(View.VISIBLE);
+            }
         }
     }
 

@@ -312,14 +312,16 @@ public class AdminCombosFragment extends Fragment
     }
 
     @Override
-    public void scrollToTop() {
-        if (recyclerView != null) recyclerView.smoothScrollToPosition(0);
-    }
-
-    @Override
     public void refresh() {
         if (swipeRefresh != null) swipeRefresh.setRefreshing(false);
         loadOnce();
+    }
+    
+    @Override
+    public void scrollToTop() {
+        if (recyclerView != null) {
+            recyclerView.smoothScrollToPosition(0);
+        }
     }
 
     private boolean isAdmin() {

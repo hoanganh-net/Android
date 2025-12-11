@@ -36,7 +36,7 @@
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvItems"
             android:layout_width="match_parent"
-            android:layout_height="160dp"
+            android:layout_height="240dp"
             android:overScrollMode="ifContentScrolls"
             android:nestedScrollingEnabled="true" />
 
@@ -102,7 +102,7 @@
                 android:src="@drawable/ic_chevron_right"/>
         </LinearLayout>
 
-        <!-- Hàng chọn: Voucher -->
+        <!-- Hàng chọn: Voucher giảm giá -->
         <LinearLayout
             android:id="@+id/rowVoucher"
             android:layout_width="match_parent"
@@ -116,11 +116,42 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="@string/voucher_code"
+                android:text="Voucher giảm giá"
                 android:textStyle="bold"/>
 
             <TextView
                 android:id="@+id/tvVoucherValue"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Không áp dụng"
+                android:alpha="0.85"
+                android:paddingRight="8dp"/>
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_chevron_right"/>
+        </LinearLayout>
+
+        <!-- Hàng chọn: Voucher đổi quà -->
+        <LinearLayout
+            android:id="@+id/rowRewardVoucher"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingTop="12dp"
+            android:paddingBottom="12dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Voucher đổi quà"
+                android:textStyle="bold"/>
+
+            <TextView
+                android:id="@+id/tvRewardVoucherValue"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Không áp dụng"
@@ -197,7 +228,7 @@
                         android:text="0đ"/>
                 </LinearLayout>
 
-                <!-- Giảm giá Voucher -->
+                <!-- Giảm giá Voucher giảm giá -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -208,10 +239,30 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="@string/discount"/>
+                        android:text="Giảm giá voucher"/>
 
                     <TextView
                         android:id="@+id/tvDiscount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="- 0đ"/>
+                </LinearLayout>
+
+                <!-- Giảm giá Voucher đổi quà -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="6dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Giảm giá đổi quà"/>
+
+                    <TextView
+                        android:id="@+id/tvRewardDiscount"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="- 0đ"/>

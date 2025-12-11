@@ -555,9 +555,11 @@ public class AdminStatisticsFragment extends Fragment
 
     @Override
     public void scrollToTop() {
-        if (recyclerView != null) recyclerView.smoothScrollToPosition(0);
+        if (recyclerView != null) {
+            recyclerView.smoothScrollToPosition(0);
+        }
     }
-
+    
     @SuppressLint("SetTextI18n")
     @Override
     public void refresh() {

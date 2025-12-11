@@ -160,7 +160,7 @@ public class AdminOrderDetailActivity extends AppCompatActivity {
 
                 @Override
                 public void onError(@NonNull Exception error) {
-                    b.tvUser.setText("Không thể tải người dùng");
+                    b.tvUser.setText(getString(R.string.cannot_load_user));
                 }
             });
         } else {
@@ -239,13 +239,13 @@ public class AdminOrderDetailActivity extends AppCompatActivity {
         }
 
         setVisible(b.tvConfirmedAt, confirmedAt != null);
-        if (confirmedAt != null) b.tvConfirmedAt.setText("Xác nhận: " + formatTs(confirmedAt));
+        if (confirmedAt != null) b.tvConfirmedAt.setText(getString(R.string.confirmed_at, formatTs(confirmedAt)));
 
         setVisible(b.tvFinishedAt, finishedAt != null);
-        if (finishedAt != null) b.tvFinishedAt.setText("Hoàn tất: " + formatTs(finishedAt));
+        if (finishedAt != null) b.tvFinishedAt.setText(getString(R.string.finished_at, formatTs(finishedAt)));
 
         setVisible(b.tvConfirmedBy, !TextUtils.isEmpty(confirmedBy));
-        if (!TextUtils.isEmpty(confirmedBy)) b.tvConfirmedBy.setText("Người xác nhận: " + confirmedBy);
+        if (!TextUtils.isEmpty(confirmedBy)) b.tvConfirmedBy.setText(getString(R.string.confirmed_by, confirmedBy));
 
         // địa chỉ
         String addressStr = s(d.getString("address"));
@@ -262,7 +262,7 @@ public class AdminOrderDetailActivity extends AppCompatActivity {
             b.tvAddressLines.setText(!TextUtils.isEmpty(display) ? display : "—");
         } else {
             b.tvReceiver.setText("—");
-            b.tvAddressLines.setText(!TextUtils.isEmpty(addressStr) ? addressStr : "Chưa có địa chỉ");
+            b.tvAddressLines.setText(!TextUtils.isEmpty(addressStr) ? addressStr : getString(R.string.no_address));
         }
 
         // items — GIỮ API CŨ
@@ -341,7 +341,7 @@ public class AdminOrderDetailActivity extends AppCompatActivity {
         }
 
         new MaterialAlertDialogBuilder(this)
-                .setTitle("Huỷ đơn hàng")
+                .setTitle(getString(R.string.cancel_order_title))
                 .setMessage("Bạn chắc chắn muốn huỷ đơn này?")
                 .setView(view)
                 .setNegativeButton("Đóng", null)
@@ -458,14 +458,14 @@ public class AdminOrderDetailActivity extends AppCompatActivity {
         b.tvCancelReason.setText(!TextUtils.isEmpty(cancelReason) ? cancelReason : "—");
 
         if (canceledAt != null) {
-            b.tvCanceledAt.setText("Thời gian huỷ: " + formatTs(canceledAt));
+            b.tvCanceledAt.setText(getString(R.string.cancel_time_label, formatTs(canceledAt)));
             setVisible(b.tvCanceledAt, true);
         } else {
             setVisible(b.tvCanceledAt, false);
         }
 
         if (!TextUtils.isEmpty(cancelledBy)) {
-            b.tvCanceledBy.setText("Huỷ bởi: " + cancelledBy);
+            b.tvCanceledBy.setText(getString(R.string.cancel_by_label, cancelledBy));
             setVisible(b.tvCanceledBy, true);
         } else {
             setVisible(b.tvCanceledBy, false);

@@ -90,13 +90,14 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
                 android:hint="% Giảm giá"
+                app:helperText="Nhập % giảm giá (ví dụ: 15, 12)"
+                app:helperTextEnabled="true"
                 app:suffixText="%">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/editTextDiscountPercent"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Nhập % giảm giá (ví dụ: 15, 12)"
                     android:inputType="number"
                     android:maxLines="1" />
             </com.google.android.material.textfield.TextInputLayout>

@@ -14,7 +14,7 @@
 
     <LinearLayout
         android:orientation="vertical"
-        android:padding="12dp"
+        android:padding="10dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
@@ -33,7 +33,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="user@email.com"
-            android:layout_marginTop="2dp"
+            android:layout_marginTop="1dp"
             android:textColor="@android:color/darker_gray" />
 
         <!-- Status pill (mặc định: Pending) -->
@@ -43,7 +43,7 @@
             android:layout_height="wrap_content"
             android:text="PENDING"
             android:textStyle="bold"
-            android:layout_marginTop="6dp"
+            android:layout_marginTop="4dp"
             android:paddingHorizontal="10dp"
             android:paddingVertical="4dp"
             android:background="@drawable/bg_status_pill_pending"
@@ -57,7 +57,7 @@
             android:text="100.000₫"
             android:textSize="15sp"
             android:textStyle="bold"
-            android:layout_marginTop="8dp" />
+            android:layout_marginTop="6dp" />
 
         <TextView
             android:id="@+id/tvOrderTime"
@@ -66,13 +66,13 @@
             android:text="12:00 01/10/2025"
             android:textSize="13sp"
             android:textColor="@android:color/darker_gray"
-            android:layout_marginTop="2dp" />
+            android:layout_marginTop="1dp" />
 
         <!-- Divider mảnh -->
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="8dp"
             android:background="@android:color/darker_gray"
             android:alpha="0.15" />
 
@@ -82,7 +82,7 @@
             android:gravity="end"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp">
+            android:layout_marginTop="8dp">
 
             <!-- Xác nhận (Pending) -->
             <com.google.android.material.button.MaterialButton
@@ -117,17 +117,17 @@
             <!-- Xoá (Cancelled) -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnDelete"
-                style="@style/Widget.MaterialComponents.Button"
-                android:layout_width="wrap_content"
-                android:layout_height="40dp"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
                 android:layout_marginStart="8dp"
-                android:text="Xoá"
-                android:textAllCaps="false"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
                 android:visibility="gone"
-                app:cornerRadius="12dp"
-                app:iconPadding="8dp"
-                app:iconTint="@android:color/white"
-                app:icon="@android:drawable/ic_menu_delete" />
+                app:icon="@drawable/ic_delete"
+                app:iconTint="@color/white"
+                app:iconGravity="end"
+                app:backgroundTint="@color/error_red"
+                style="@style/Widget.MaterialComponents.Button.Icon" />
         </LinearLayout>
 
     </LinearLayout>

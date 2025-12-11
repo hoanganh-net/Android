@@ -28,14 +28,22 @@
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
     <!-- Navigation Drawer -->
-    <com.google.android.material.navigation.NavigationView
-        android:id="@+id/navigationView"
+    <FrameLayout
         android:layout_width="@dimen/drawer_width"
-        android:layout_height="match_parent"
-        android:layout_gravity="start"
-        android:fitsSystemWindows="true"
-        app:headerLayout="@layout/admin_nav_header_management"
-        app:menu="@menu/menu_management_drawer"
-        app:itemTextAppearance="@style/NavigationDrawerTextStyle" />
+        android:layout_height="wrap_content"
+        android:layout_gravity="start|top"
+        android:background="@drawable/bg_drawer_statistics"
+        android:paddingEnd="8dp">
+        
+        <com.google.android.material.navigation.NavigationView
+            android:id="@+id/navigationView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top"
+            android:background="@android:color/transparent"
+            app:headerLayout="@layout/admin_nav_header_management"
+            app:menu="@menu/menu_management_drawer"
+            app:itemTextAppearance="@style/NavigationDrawerTextStyle" />
+    </FrameLayout>
 
 </androidx.drawerlayout.widget.DrawerLayout>

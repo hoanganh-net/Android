@@ -151,7 +151,7 @@ public class ComboAdapter extends ListAdapter<Combo, ComboAdapter.ViewHolder> {
     private void loadAndDisplayProductNames(@NonNull ViewHolder holder, @NonNull Combo combo) {
         List<String> productIds = combo.getProductIds();
         if (productIds == null || productIds.isEmpty()) {
-            holder.binding.comboProductCount.setText("Không có sản phẩm");
+            holder.binding.comboProductCount.setText(holder.itemView.getContext().getString(R.string.no_products_in_combo));
             return;
         }
 

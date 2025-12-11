@@ -89,6 +89,12 @@
             android:exported="false"
             android:theme="@style/Theme.MilkteaApp.NoActionBar" />
 
+        <!-- User Chat -->
+        <activity
+            android:name=".activity.user.UserChatActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MilkteaApp.NoActionBar" />
+
         <!-- Cart & Checkout -->
         <activity
             android:name=".activity.CheckoutActivity"

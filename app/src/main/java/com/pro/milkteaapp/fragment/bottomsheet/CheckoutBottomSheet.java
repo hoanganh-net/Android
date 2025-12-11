@@ -17,6 +17,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.pro.milkteaapp.SessionManager;
@@ -26,6 +28,7 @@ import com.pro.milkteaapp.fragment.pickersheet.AddressPickerSheet;
 import com.pro.milkteaapp.fragment.pickersheet.PaymentMethodPickerSheet;
 import com.pro.milkteaapp.fragment.pickersheet.ShippingPickerSheet;
 import com.pro.milkteaapp.fragment.pickersheet.VoucherListPickerSheet;
+import com.pro.milkteaapp.fragment.pickersheet.RewardVoucherPickerSheet;
 import com.pro.milkteaapp.models.Address;
 import com.pro.milkteaapp.models.CartItem;
 import com.pro.milkteaapp.models.CheckoutInfo;
@@ -68,8 +71,10 @@ public class CheckoutBottomSheet extends BottomSheetDialogFragment {
     // State
     @Nullable private Address selectedAddress;
     private String paymentMethod = "COD";
-    @Nullable private Voucher selectedVoucher = null;
+    @Nullable private Voucher selectedVoucher = null;  // voucher giảm giá
     private String voucherCode = "";
+    @Nullable private Voucher selectedRewardVoucher = null;  // voucher đổi quà
+    private String rewardVoucherCode = "";
     private String shippingLabel = "Tiêu chuẩn (15.000đ)";
     private long shippingFee = 15_000L;
 
@@ -88,6 +93,31 @@ public class CheckoutBottomSheet extends BottomSheetDialogFragment {
     public View onCreateView(@NonNull LayoutInflater inf, @Nullable ViewGroup container, @Nullable Bundle s) {
         b = BottomsheetCheckoutBinding.inflate(inf, container, false);
         return b.getRoot();
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        BottomSheetDialog dialog = (BottomSheetDialog) getDialog();
+        if (dialog != null) {
+            View sheet = dialog.findViewById(com.google.android.material.R.id.design_bottom_sheet);
+            if (sheet != null) {
+                BottomSheetBehavior<View> behavior = BottomSheetBehavior.from(sheet);
+                int screenHeight = getResources().getDisplayMetrics().heightPixels;
+                int targetHeight = (int) (screenHeight * 0.9f);
+                
+                // Set max height để giới hạn chiều cao tối đa
+                sheet.getLayoutParams().height = targetHeight;
+                
+                // Configure behavior để sát bottom và mở đầy đủ
+                behavior.setPeekHeight(targetHeight);
+                behavior.setFitToContents(true);
+                behavior.setSkipCollapsed(true);
+                behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+                
+                sheet.requestLayout();
+            }
+        }
     }
 
     @Override
@@ -151,7 +181,7 @@ public class CheckoutBottomSheet extends BottomSheetDialogFragment {
             sheet.show(getParentFragmentManager(), "PaymentPicker");
         });
 
-        // Chọn voucher từ danh sách hợp lệ
+        // Chọn voucher giảm giá từ danh sách hợp lệ
         b.rowVoucher.setOnClickListener(v13 -> {
             Bundle args = new Bundle();
             args.putLong("subtotal", calcSubtotal());
@@ -178,6 +208,33 @@ public class CheckoutBottomSheet extends BottomSheetDialogFragment {
                 updateSummaryUI();
             });
             sheet.show(getParentFragmentManager(), "VoucherPickerList");
+        });
+
+        // Chọn voucher đổi quà từ danh sách đã đổi
+        b.rowRewardVoucher.setOnClickListener(v13 -> {
+            Bundle args = new Bundle();
+            args.putLong("subtotal", calcSubtotal());
+            args.putString("payment", paymentMethod);
+            String uid = getEffectiveUserId(requireContext());
+            args.putString("userId", uid);
+
+            RewardVoucherPickerSheet sheet = RewardVoucherPickerSheet.newInstance(calcSubtotal(), paymentMethod, uid);
+            sheet.setListener(vSelected -> {
+                if (vSelected != null) {
+                    // Validate voucher trước khi áp dụng
+                    long currentSubtotal = calcSubtotal();
+                    String validationError = validateVoucher(vSelected, currentSubtotal, paymentMethod);
+                    if (validationError != null) {
+                        Toast.makeText(requireContext(), validationError, Toast.LENGTH_LONG).show();
+                        return;
+                    }
+                }
+                selectedRewardVoucher = vSelected;
+                rewardVoucherCode = (vSelected != null ? safe(vSelected.getCode()) : "");
+                setText(b.tvRewardVoucherValue, rewardVoucherCode.isEmpty() ? "Không áp dụng" : rewardVoucherCode);
+                updateSummaryUI();
+            });
+            sheet.show(getParentFragmentManager(), "RewardVoucherPickerList");
         });
 
         // Chọn phương thức giao hàng
@@ -297,7 +354,7 @@ public class CheckoutBottomSheet extends BottomSheetDialogFragment {
     private void updateSummaryUI() {
         long subtotal = calcSubtotal();
 
-        // Voucher
+        // Voucher giảm giá
         long orderDisc = 0L, shipDisc = 0L;
         if (selectedVoucher != null) {
             VoucherUtils.DiscountResult r = VoucherUtils.calc(selectedVoucher, subtotal, shippingFee);
@@ -305,6 +362,15 @@ public class CheckoutBottomSheet extends BottomSheetDialogFragment {
             shipDisc = r.shippingDiscount;
         }
         long voucherDiscount = orderDisc + shipDisc;
+
+        // Voucher đổi quà
+        long rewardOrderDisc = 0L, rewardShipDisc = 0L;
+        if (selectedRewardVoucher != null) {
+            VoucherUtils.DiscountResult r = VoucherUtils.calc(selectedRewardVoucher, subtotal, shippingFee);
+            rewardOrderDisc = r.orderDiscount;
+            rewardShipDisc = r.shippingDiscount;
+        }
+        long rewardDiscount = rewardOrderDisc + rewardShipDisc;
 
         // Loyalty theo LoyaltyPolicy
         double loyaltyPercent = 0.0;
@@ -318,17 +384,19 @@ public class CheckoutBottomSheet extends BottomSheetDialogFragment {
         }
         long loyaltyDiscount = (long) (subtotal * loyaltyPercent);
 
-        long totalDiscount = voucherDiscount + loyaltyDiscount;
+        long totalDiscount = voucherDiscount + rewardDiscount + loyaltyDiscount;
         long total = Math.max(0L, subtotal - totalDiscount + shippingFee);
 
         b.tvSubtotal.setText(MoneyUtils.formatVnd(subtotal));
         b.tvDiscount.setText(String.format(Locale.getDefault(), "- %s", MoneyUtils.formatVnd(voucherDiscount)));
+        b.tvRewardDiscount.setText(String.format(Locale.getDefault(), "- %s", MoneyUtils.formatVnd(rewardDiscount)));
         b.tvLoyaltyDiscount.setText(String.format(Locale.getDefault(), "- %s", MoneyUtils.formatVnd(loyaltyDiscount)));
         b.tvShipping.setText(MoneyUtils.formatVnd(shippingFee));
         b.tvFinal.setText(MoneyUtils.formatVnd(total));
 
         if (selectedAddress != null) setText(b.tvAddressValue, selectedAddress.displayLine());
         setText(b.tvVoucherValue, voucherCode.isEmpty() ? "Không áp dụng" : voucherCode);
+        setText(b.tvRewardVoucherValue, rewardVoucherCode.isEmpty() ? "Không áp dụng" : rewardVoucherCode);
         setText(b.tvShippingValue, shippingLabel);
         setText(b.tvPaymentValue, paymentMethod);
     }
@@ -336,6 +404,7 @@ public class CheckoutBottomSheet extends BottomSheetDialogFragment {
     private CheckoutInfo buildInfo() {
         long subtotal = calcSubtotal();
 
+        // Voucher giảm giá
         long orderDisc = 0L, shipDisc = 0L;
         if (selectedVoucher != null) {
             VoucherUtils.DiscountResult r = VoucherUtils.calc(selectedVoucher, subtotal, shippingFee);
@@ -343,6 +412,15 @@ public class CheckoutBottomSheet extends BottomSheetDialogFragment {
             shipDisc = r.shippingDiscount;
         }
         long voucherDiscount = orderDisc + shipDisc;
+
+        // Voucher đổi quà
+        long rewardOrderDisc = 0L, rewardShipDisc = 0L;
+        if (selectedRewardVoucher != null) {
+            VoucherUtils.DiscountResult r = VoucherUtils.calc(selectedRewardVoucher, subtotal, shippingFee);
+            rewardOrderDisc = r.orderDiscount;
+            rewardShipDisc = r.shippingDiscount;
+        }
+        long rewardDiscount = rewardOrderDisc + rewardShipDisc;
 
         // Loyalty theo LoyaltyPolicy
         double loyaltyPercent = 0.0;
@@ -356,7 +434,7 @@ public class CheckoutBottomSheet extends BottomSheetDialogFragment {
         }
         long loyaltyDiscount = (long) (subtotal * loyaltyPercent);
 
-        long totalDiscount = voucherDiscount + loyaltyDiscount;
+        long totalDiscount = voucherDiscount + rewardDiscount + loyaltyDiscount;
         long total = Math.max(0L, subtotal - totalDiscount + shippingFee);
 
         String addressString = selectedAddress != null ? selectedAddress.displayLine() : "";
@@ -366,9 +444,11 @@ public class CheckoutBottomSheet extends BottomSheetDialogFragment {
                 selectedAddress,
                 paymentMethod,
                 voucherCode,
+                rewardVoucherCode,
                 shippingLabel,
                 subtotal,
-                totalDiscount,
+                voucherDiscount,
+                rewardDiscount,
                 shippingFee,
                 total
         );
@@ -386,6 +466,12 @@ public class CheckoutBottomSheet extends BottomSheetDialogFragment {
      */
     @Nullable
     private String validateVoucher(@NonNull Voucher voucher, long subtotal, @Nullable String paymentMethod) {
+        // Kiểm tra voucher đổi điểm: voucher có pointsRequired > 0 chỉ nên được sử dụng sau khi đã đổi
+        // Voucher đổi điểm chỉ nên được chọn từ RewardVoucherPickerSheet, không phải từ VoucherListPickerSheet
+        if (voucher.getPointsRequired() != null && voucher.getPointsRequired() > 0) {
+            return "Voucher này cần đổi bằng điểm trước khi sử dụng. Vui lòng đổi voucher trong mục Đổi quà.";
+        }
+
         // Kiểm tra thời hạn
         if (!VoucherUtils.isInRangeNow(voucher)) {
             return "Voucher đã hết hạn";

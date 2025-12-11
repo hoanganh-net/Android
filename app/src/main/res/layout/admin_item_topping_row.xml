@@ -11,7 +11,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="12dp"
+        android:padding="10dp"
         android:orientation="vertical">
 
         <LinearLayout
@@ -42,7 +42,7 @@
             android:layout_height="wrap_content"
             android:text="5.000đ"
             android:textColor="@android:color/holo_green_dark"
-            android:paddingTop="4dp"/>
+            android:paddingTop="2dp"/>
 
         <TextView
             android:id="@+id/tvCategories"
@@ -56,27 +56,32 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="end"
-            android:paddingTop="8dp">
+            android:paddingTop="6dp">
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnEdit"
-                style="@style/Widget.Material3.Button.OutlinedButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="@dimen/define_dimen_18"
-                android:text="Sửa"
-                tools:ignore="SpUsage" />
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                app:icon="@drawable/ic_edit"
+                app:iconTint="@color/white"
+                app:backgroundTint="@color/primary"
+                app:iconGravity="end"
+                style="@style/Widget.MaterialComponents.Button.Icon" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnDelete"
-                style="@style/Widget.Material3.Button.OutlinedButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Xoá"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
                 android:layout_marginStart="8dp"
-                android:textSize="@dimen/define_dimen_18"
-                android:icon="@drawable/ic_delete"
-                tools:ignore="SpUsage" />
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                app:icon="@drawable/ic_delete"
+                app:iconTint="@color/white"
+                app:iconGravity="end"
+                app:backgroundTint="@color/error_red"
+                style="@style/Widget.MaterialComponents.Button.Icon" />
         </LinearLayout>
     </LinearLayout>
 </androidx.cardview.widget.CardView>

@@ -52,7 +52,7 @@ public class OrderDetailActivity extends AppCompatActivity {
 
         // Toolbar + Back
         setSupportActionBar(b.toolbar);
-        Objects.requireNonNull(getSupportActionBar()).setTitle("CHI TIẾT ĐƠN HÀNG");
+        Objects.requireNonNull(getSupportActionBar()).setTitle(getString(R.string.order_detail_title));
         b.toolbar.setTitleTextAppearance(this, R.style.ToolbarTitleStyle);
         b.toolbar.setNavigationIcon(com.google.android.material.R.drawable.ic_arrow_back_black_24);
         b.toolbar.setNavigationOnClickListener(v -> getOnBackPressedDispatcher().onBackPressed());
@@ -66,7 +66,7 @@ public class OrderDetailActivity extends AppCompatActivity {
 
         orderId = getIntent().getStringExtra(EXTRA_ORDER_ID);
         if (TextUtils.isEmpty(orderId)) {
-            Toast.makeText(this, "Thiếu mã đơn hàng", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.missing_order_id), Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
@@ -99,7 +99,7 @@ public class OrderDetailActivity extends AppCompatActivity {
 
             @Override
             public void onError(@NonNull Exception error) {
-                Toast.makeText(OrderDetailActivity.this, "Lỗi tải đơn: " + error.getMessage(), Toast.LENGTH_LONG).show();
+                Toast.makeText(OrderDetailActivity.this, getString(R.string.load_order_error, error.getMessage()), Toast.LENGTH_LONG).show();
                 b.progress.setVisibility(View.GONE);
                 b.btnCancelOrder.setVisibility(View.GONE);
                 b.btnCancelOrder.setEnabled(false);
@@ -117,7 +117,7 @@ public class OrderDetailActivity extends AppCompatActivity {
 
             @Override
             public void onError(@NonNull Exception error) {
-                Toast.makeText(OrderDetailActivity.this, "Lỗi tải chi tiết đơn: " + error.getMessage(), Toast.LENGTH_LONG).show();
+                Toast.makeText(OrderDetailActivity.this, getString(R.string.load_order_detail_error, error.getMessage()), Toast.LENGTH_LONG).show();
                 b.progress.setVisibility(View.GONE);
                 b.btnCancelOrder.setVisibility(View.GONE);
                 b.btnCancelOrder.setEnabled(false);
@@ -209,7 +209,7 @@ public class OrderDetailActivity extends AppCompatActivity {
                     : join(", ", line1, line2, city, province, postal));
         } else {
             b.tvReceiver.setText("—");
-            b.tvAddressLines.setText(!TextUtils.isEmpty(addressStr) ? addressStr : "Chưa có địa chỉ");
+            b.tvAddressLines.setText(!TextUtils.isEmpty(addressStr) ? addressStr : getString(R.string.no_address));
         }
 
         // Items
@@ -243,7 +243,7 @@ public class OrderDetailActivity extends AppCompatActivity {
             if (canceledAt != null) {
                 String timeStr = DateFormat.getMediumDateFormat(this).format(canceledAt.toDate())
                         + " " + DateFormat.getTimeFormat(this).format(canceledAt.toDate());
-                b.tvCanceledAt.setText(String.format(Locale.getDefault(), "Thời gian hủy: %s", timeStr));
+                b.tvCanceledAt.setText(String.format(Locale.getDefault(), getString(R.string.cancel_time), timeStr));
             } else {
                 b.tvCanceledAt.setText("");
             }
@@ -277,7 +277,7 @@ public class OrderDetailActivity extends AppCompatActivity {
         }
 
         new MaterialAlertDialogBuilder(this)
-                .setTitle("Hủy đơn hàng")
+                .setTitle(getString(R.string.cancel_order_title))
                 .setMessage("Bạn chắc chắn muốn hủy đơn này?")
                 .setView(view)
                 .setPositiveButton("Hủy đơn", (dialog, which) -> {
@@ -308,7 +308,7 @@ public class OrderDetailActivity extends AppCompatActivity {
 
             @Override
             public void onError(@NonNull Exception error) {
-                Toast.makeText(OrderDetailActivity.this, "Hủy đơn thất bại: " + error.getMessage(), Toast.LENGTH_LONG).show();
+                Toast.makeText(OrderDetailActivity.this, getString(R.string.cancel_order_failed, error.getMessage()), Toast.LENGTH_LONG).show();
                 b.progress.setVisibility(View.GONE);
             }
         });

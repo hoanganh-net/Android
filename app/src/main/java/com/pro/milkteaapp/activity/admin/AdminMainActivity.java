@@ -82,7 +82,7 @@ public class AdminMainActivity extends AppCompatActivity {
             SessionManager sm = new SessionManager(this);
             if (sm.hasCachedRole()) {
                 if (!sm.isAdmin()) {
-                    Toast.makeText(this, "Bạn không có quyền truy cập (admin-only)", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, getString(R.string.no_admin_access), Toast.LENGTH_SHORT).show();
                     goToUserRoot();
                     return;
                 }
@@ -92,13 +92,19 @@ public class AdminMainActivity extends AppCompatActivity {
             }
         } catch (Exception e) {
             // Lỗi khởi tạo -> fallback về MainActivity
-            Toast.makeText(this, "Lỗi khởi tạo: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.init_error, e.getMessage()), Toast.LENGTH_SHORT).show();
             goToUserRoot();
         }
     }
 
     private void continueInit(@Nullable Bundle savedInstanceState) {
         try {
+            if (binding == null) {
+                Toast.makeText(this, getString(R.string.init_error, "Binding is null"), Toast.LENGTH_SHORT).show();
+                goToUserRoot();
+                return;
+            }
+            
             if (savedInstanceState != null) {
                 currentTabId = savedInstanceState.getInt(STATE_SELECTED_TAB, R.id.adminOrders);
             }
@@ -109,17 +115,21 @@ public class AdminMainActivity extends AppCompatActivity {
                 // xử lý intent điều hướng sang tab cụ thể
                 if (!handleIntent(getIntent())) {
                     // mặc định chọn đơn hàng
-                    binding.bottomNavigationView.setSelectedItemId(R.id.adminOrders);
+                    if (binding.bottomNavigationView != null) {
+                        binding.bottomNavigationView.setSelectedItemId(R.id.adminOrders);
+                    }
                     switchTo(R.id.adminOrders);
                 }
             } else {
-                binding.bottomNavigationView.setSelectedItemId(currentTabId);
+                if (binding.bottomNavigationView != null) {
+                    binding.bottomNavigationView.setSelectedItemId(currentTabId);
+                }
                 switchTo(currentTabId);
             }
         } catch (Exception e) {
             // Lỗi khởi tạo fragment -> fallback về tab đơn hàng
-            Toast.makeText(this, "Lỗi khởi tạo: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-            if (binding != null) {
+            Toast.makeText(this, getString(R.string.init_error, e.getMessage()), Toast.LENGTH_SHORT).show();
+            if (binding != null && binding.bottomNavigationView != null) {
                 binding.bottomNavigationView.setSelectedItemId(R.id.adminOrders);
             }
         }
@@ -170,12 +180,12 @@ public class AdminMainActivity extends AppCompatActivity {
 
                         @Override
                         public void onError(@NonNull Exception error2) {
-                            Toast.makeText(AdminMainActivity.this, "Không kiểm tra được quyền: " + error2.getMessage(), Toast.LENGTH_SHORT).show();
+                            Toast.makeText(AdminMainActivity.this, getString(R.string.cannot_check_permission, error2.getMessage()), Toast.LENGTH_SHORT).show();
                             goToUserRoot();
                         }
                     });
                 } else {
-                    Toast.makeText(AdminMainActivity.this, "Không kiểm tra được quyền: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(AdminMainActivity.this, getString(R.string.cannot_check_permission, error.getMessage()), Toast.LENGTH_SHORT).show();
                     goToUserRoot();
                 }
             }
@@ -183,6 +193,8 @@ public class AdminMainActivity extends AppCompatActivity {
     }
 
     private void setupToolbar() {
+        if (binding == null || binding.toolbar == null) return;
+        
         setSupportActionBar(binding.toolbar);
         updateToolbarTitle(currentTabId);
 
@@ -192,7 +204,7 @@ public class AdminMainActivity extends AppCompatActivity {
         // Đổi màu menu icon (3 chấm dọc) thành trắng
         // Sử dụng post để đảm bảo menu đã được inflate
         binding.toolbar.post(() -> {
-            if (binding.toolbar.getOverflowIcon() != null) {
+            if (binding != null && binding.toolbar != null && binding.toolbar.getOverflowIcon() != null) {
                 binding.toolbar.getOverflowIcon().setTint(getResources().getColor(R.color.white, getTheme()));
             }
         });
@@ -266,6 +278,8 @@ public class AdminMainActivity extends AppCompatActivity {
     }
 
     private boolean switchTo(@IdRes int menuId) {
+        if (binding == null) return false;
+        
         String targetTag = idToTag.get(menuId);
         if (targetTag == null) return false;
 
@@ -293,7 +307,8 @@ public class AdminMainActivity extends AppCompatActivity {
     private android.widget.TextView customTitleView;
     
     private void updateToolbarTitle(@IdRes int menuId) {
-        if (getSupportActionBar() == null) return;
+        if (binding == null || binding.toolbar == null || getSupportActionBar() == null) return;
+        
         int titleRes = R.string.app_name;
         if (menuId == R.id.adminOrders)          titleRes = R.string.admin_title_orders;
         else if (menuId == R.id.adminChat)       titleRes = R.string.admin_title_chat;
@@ -318,7 +333,8 @@ public class AdminMainActivity extends AppCompatActivity {
     }
 
     private boolean handleIntent(Intent intent) {
-        if (intent == null) return false;
+        if (intent == null || binding == null || binding.bottomNavigationView == null) return false;
+        
         String target = intent.getStringExtra(EXTRA_ADMIN_TARGET);
         if (target == null) return false;
 
@@ -358,6 +374,20 @@ public class AdminMainActivity extends AppCompatActivity {
                             return;
                         }
                     }
+                    // Kiểm tra drawer của StatisticsFragment
+                    else if (current instanceof AdminStatisticsFragment stats) {
+                        if (stats.isDrawerOpen()) {
+                            stats.closeDrawer();
+                            return;
+                        }
+                    }
+                    // Kiểm tra drawer của OrdersFragment
+                    else if (current instanceof AdminOrdersFragment orders) {
+                        if (orders.isDrawerOpen()) {
+                            orders.closeDrawer();
+                            return;
+                        }
+                    }
                 }
                 
                 // Xử lý back press cho child fragments
@@ -367,7 +397,9 @@ public class AdminMainActivity extends AppCompatActivity {
                 
                 // back về tab Đơn hàng nếu đang ở tab khác
                 if (currentTabId != R.id.adminOrders) {
-                    binding.bottomNavigationView.setSelectedItemId(R.id.adminOrders);
+                    if (binding != null && binding.bottomNavigationView != null) {
+                        binding.bottomNavigationView.setSelectedItemId(R.id.adminOrders);
+                    }
                     switchTo(R.id.adminOrders);
                 } else {
                     // hành vi mặc định: đóng Activity
@@ -423,6 +455,12 @@ public class AdminMainActivity extends AppCompatActivity {
         }
         new SessionManager(this).clear();
         goToLoginRoot();
+    }
+
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putInt(STATE_SELECTED_TAB, currentTabId);
     }
 
     @IdRes

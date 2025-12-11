@@ -6,14 +6,14 @@
     android:layout_height="72dp"
     android:orientation="horizontal"
     android:gravity="center_vertical"
-    android:paddingStart="12dp"
-    android:paddingEnd="8dp"
+    android:paddingStart="10dp"
+    android:paddingEnd="6dp"
     android:background="?attr/selectableItemBackground">
 
     <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/categoryImage"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
         android:scaleType="centerCrop"
         android:contentDescription="@string/app_name"
         app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.App.Circle"
@@ -25,8 +25,8 @@
         android:layout_width="0dp"
         android:layout_weight="1"
         android:layout_height="wrap_content"
-        android:paddingStart="12dp"
-        android:paddingEnd="8dp"
+        android:paddingStart="10dp"
+        android:paddingEnd="6dp"
         tools:ignore="RtlSymmetry">
 
         <TextView
@@ -48,7 +48,7 @@
             android:textStyle="bold"
             android:paddingHorizontal="8dp"
             android:paddingVertical="2dp"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="2dp"
             android:background="@drawable/bg_chip_neutral"
             android:textColor="?attr/colorOnPrimary"
             tools:text="Active" />

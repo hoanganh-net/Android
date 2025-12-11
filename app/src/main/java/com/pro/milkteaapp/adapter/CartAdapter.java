@@ -93,7 +93,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
         ImageLoader.load(h.cartItemImage, imageSource, R.drawable.ic_milk_tea);
 
         // ===== TÊN =====
-        h.cartItemName.setText(p != null ? p.getName() : "Sản phẩm");
+        h.cartItemName.setText(p != null ? p.getName() : h.itemView.getContext().getString(R.string.product_name_placeholder));
 
         // ===== HÀNG 1: Size • Đường • Đá =====
         String size = item.getSize();
@@ -138,7 +138,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
         // ===== GHI CHÚ (nếu có) =====
         String note = item.getNote();
         if (!TextUtils.isEmpty(note)) {
-            h.cartItemNote.setText("Ghi chú: " + note);
+            h.cartItemNote.setText(h.itemView.getContext().getString(R.string.note, note));
             h.cartItemNote.setVisibility(View.VISIBLE);
         } else {
             h.cartItemNote.setText("");

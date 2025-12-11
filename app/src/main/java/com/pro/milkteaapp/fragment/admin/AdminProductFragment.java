@@ -83,7 +83,7 @@ public class AdminProductFragment extends Fragment
         View view = inflater.inflate(R.layout.admin_fragment_products, container, false);
 
         if (!isAdminRole) {
-            Toast.makeText(requireContext(), "Bạn không có quyền truy cập (admin-only).", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), getString(R.string.no_admin_access), Toast.LENGTH_SHORT).show();
             if (getActivity() != null) {
                 getActivity().getOnBackPressedDispatcher().onBackPressed();
             }
@@ -285,7 +285,7 @@ public class AdminProductFragment extends Fragment
             return;
         }
         new AlertDialog.Builder(requireContext())
-                .setTitle("Xóa sản phẩm")
+                .setTitle(getString(R.string.delete_product_confirm))
                 .setMessage("Bạn có chắc muốn xóa \"" + safe(product.getName()) + "\"?")
                 .setPositiveButton("Xóa", (d, w) -> deleteProductById(product.getId()))
                 .setNegativeButton("Hủy", null)
@@ -337,13 +337,16 @@ public class AdminProductFragment extends Fragment
         });
     }
 
-    @Override public void scrollToTop() {
-        if (recyclerView != null) recyclerView.smoothScrollToPosition(0);
-    }
-
     @Override public void refresh() {
         if (swipeRefresh != null) swipeRefresh.setRefreshing(false);
         loadOnce();
+    }
+    
+    @Override
+    public void scrollToTop() {
+        if (recyclerView != null) {
+            recyclerView.smoothScrollToPosition(0);
+        }
     }
 
     private boolean isAdmin() {

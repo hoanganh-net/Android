@@ -9,9 +9,6 @@ import android.text.InputFilter;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
@@ -34,10 +31,10 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.google.android.material.textfield.TextInputEditText;
-import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.activity.admin.AdminMainActivity;
+import com.pro.milkteaapp.interfaces.AddActionHandler;
 import com.pro.milkteaapp.models.User;
 import com.pro.milkteaapp.repository.UsersRepository;
 
@@ -47,9 +44,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 
 public class AdminUsersFragment extends Fragment
-        implements AdminMainActivity.ScrollToTop, AdminMainActivity.SupportsRefresh {
+        implements AdminMainActivity.ScrollToTop, AdminMainActivity.SupportsRefresh, AddActionHandler {
 
     // Views
     private SwipeRefreshLayout swipe;
@@ -266,7 +264,8 @@ public class AdminUsersFragment extends Fragment
         if (empty != null) empty.setVisibility(View.GONE);
     }
 
-    @Override public void scrollToTop() {
+    @Override
+    public void scrollToTop() {
         if (recycler != null) recycler.smoothScrollToPosition(0);
     }
 
@@ -275,15 +274,15 @@ public class AdminUsersFragment extends Fragment
         if (!isAdded()) return;
 
         View content = LayoutInflater.from(requireContext()).inflate(R.layout._dialog_edit_user, null, false);
-        EditText etName    = content.findViewById(R.id.etName);
-        EditText etEmail   = content.findViewById(R.id.etEmail);
-        EditText etPhone   = content.findViewById(R.id.etPhone);
-        EditText etAddress = content.findViewById(R.id.etAddress);
+        com.google.android.material.textfield.TextInputEditText etName    = content.findViewById(R.id.etName);
+        com.google.android.material.textfield.TextInputEditText etEmail   = content.findViewById(R.id.etEmail);
+        com.google.android.material.textfield.TextInputEditText etPhone   = content.findViewById(R.id.etPhone);
+        com.google.android.material.textfield.TextInputEditText etAddress = content.findViewById(R.id.etAddress);
         Spinner spRole     = content.findViewById(R.id.spRole);
 
         // Prefill
         etName.setText(safeShow(u.getFullName()));
-        etName.setSelection(etName.getText().length());
+        etName.setSelection(Objects.requireNonNull(etName.getText()).length());
         etName.setFilters(new InputFilter[]{ new InputFilter.LengthFilter(60) });
 
         etEmail.setText(safeShow(u.getEmail()));
@@ -532,17 +531,130 @@ public class AdminUsersFragment extends Fragment
         }
     }
 
-    @SuppressWarnings("deprecation")
+    // ===== AddActionHandler =====
     @Override
-    public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
-        // inflater.inflate(R.menu.menu_admin_users, menu);
-        super.onCreateOptionsMenu(menu, inflater);
+    public void onAddAction() {
+        showAddUserDialog();
     }
 
-    @SuppressWarnings("deprecation")
-    @Override
-    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        // if (item.getItemId() == R.id.action_refresh_users) { refresh(); return true; }
-        return super.onOptionsItemSelected(item);
+    // ===== Add user dialog =====
+    private void showAddUserDialog() {
+        if (!isAdded()) return;
+
+        View content = LayoutInflater.from(requireContext()).inflate(R.layout._dialog_add_user, null, false);
+        com.google.android.material.textfield.TextInputEditText etName = content.findViewById(R.id.etName);
+        com.google.android.material.textfield.TextInputEditText etEmail = content.findViewById(R.id.etEmail);
+        com.google.android.material.textfield.TextInputEditText etPassword = content.findViewById(R.id.etPassword);
+        com.google.android.material.textfield.TextInputEditText etConfirmPassword = content.findViewById(R.id.etConfirmPassword);
+        com.google.android.material.textfield.TextInputEditText etPhone = content.findViewById(R.id.etPhone);
+        com.google.android.material.textfield.TextInputEditText etAddress = content.findViewById(R.id.etAddress);
+        Spinner spRole = content.findViewById(R.id.spRole);
+
+        etName.setFilters(new InputFilter[]{ new InputFilter.LengthFilter(60) });
+
+        List<String> roles = Arrays.asList("admin", "user", "manager", "staff");
+        ArrayAdapter<String> roleAdapter = new ArrayAdapter<>(requireContext(),
+                android.R.layout.simple_spinner_dropdown_item, roles);
+        spRole.setAdapter(roleAdapter);
+        spRole.setSelection(roles.indexOf("user")); // Mặc định là user
+
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Thêm người dùng mới")
+                .setView(content)
+                .setPositiveButton("Thêm", (d, w) -> {
+                    String name = etName.getText() != null ? etName.getText().toString().trim() : "";
+                    String email = etEmail.getText() != null ? etEmail.getText().toString().trim() : "";
+                    String password = etPassword.getText() != null ? etPassword.getText().toString() : "";
+                    String confirmPassword = etConfirmPassword.getText() != null ? etConfirmPassword.getText().toString() : "";
+                    String phone = etPhone.getText() != null ? etPhone.getText().toString().trim() : "";
+                    String address = etAddress.getText() != null ? etAddress.getText().toString().trim() : "";
+                    String role = roles.get(spRole.getSelectedItemPosition());
+
+                    if (!validateAddUserInputs(name, email, password, confirmPassword, phone, etName, etEmail, etPassword, etConfirmPassword, etPhone)) {
+                        return;
+                    }
+
+                    createUser(name, email, password, phone, address, role);
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
+    }
+
+    private boolean validateAddUserInputs(String name, String email, String password, String confirmPassword, String phone,
+                                         com.google.android.material.textfield.TextInputEditText etName, 
+                                         com.google.android.material.textfield.TextInputEditText etEmail, 
+                                         com.google.android.material.textfield.TextInputEditText etPassword, 
+                                         com.google.android.material.textfield.TextInputEditText etConfirmPassword, 
+                                         com.google.android.material.textfield.TextInputEditText etPhone) {
+        if (TextUtils.isEmpty(name)) {
+            etName.setError("Vui lòng nhập tên người dùng");
+            etName.requestFocus();
+            return false;
+        }
+
+        if (TextUtils.isEmpty(email)) {
+            etEmail.setError("Vui lòng nhập email");
+            etEmail.requestFocus();
+            return false;
+        }
+
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            etEmail.setError("Email không hợp lệ");
+            etEmail.requestFocus();
+            return false;
+        }
+
+        if (TextUtils.isEmpty(password)) {
+            etPassword.setError("Vui lòng nhập mật khẩu");
+            etPassword.requestFocus();
+            return false;
+        }
+
+        if (password.length() < 6) {
+            etPassword.setError("Mật khẩu phải có ít nhất 6 ký tự");
+            etPassword.requestFocus();
+            return false;
+        }
+
+        if (TextUtils.isEmpty(confirmPassword)) {
+            etConfirmPassword.setError("Vui lòng xác nhận mật khẩu");
+            etConfirmPassword.requestFocus();
+            return false;
+        }
+
+        if (!password.equals(confirmPassword)) {
+            etConfirmPassword.setError("Mật khẩu xác nhận không khớp");
+            etConfirmPassword.requestFocus();
+            return false;
+        }
+
+        if (!TextUtils.isEmpty(phone)) {
+            String digitsOnly = phone.replaceAll("\\D+", "");
+            if (digitsOnly.length() < 9 || digitsOnly.length() > 11) {
+                etPhone.setError("Số điện thoại không hợp lệ (9-11 chữ số)");
+                etPhone.requestFocus();
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private void createUser(String name, String email, String password, String phone, String address, String role) {
+        showLoading(true);
+        usersRepository.createUser(name, email, password, phone, address, role,
+                new UsersRepository.OnUserCreateListener() {
+                    @Override
+                    public void onSuccess(@NonNull String userId) {
+                        showLoading(false);
+                        toast("Đã thêm người dùng thành công");
+                    }
+
+                    @Override
+                    public void onError(@NonNull Exception error) {
+                        showLoading(false);
+                        toast("Thêm người dùng thất bại: " + error.getMessage());
+                    }
+                });
     }
 }

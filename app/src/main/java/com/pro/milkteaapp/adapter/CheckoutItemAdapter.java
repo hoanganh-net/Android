@@ -10,6 +10,7 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.databinding.ItemCheckoutRowBinding;
 import com.pro.milkteaapp.models.CartItem;
 import com.pro.milkteaapp.models.ComboCartItem;
@@ -117,7 +118,7 @@ public class CheckoutItemAdapter extends RecyclerView.Adapter<CheckoutItemAdapte
         // Hàng 2: Topping
         String toppingLabel = ci.getToppingsLabel();
         if (!TextUtils.isEmpty(toppingLabel)) {
-            h.b.tvToppings.setText("Topping: " + toppingLabel);
+            h.b.tvToppings.setText(h.itemView.getContext().getString(R.string.toppings) + " " + toppingLabel);
             h.b.tvToppings.setVisibility(View.VISIBLE);
         } else {
             h.b.tvToppings.setVisibility(View.GONE);
@@ -126,7 +127,7 @@ public class CheckoutItemAdapter extends RecyclerView.Adapter<CheckoutItemAdapte
         // Ghi chú
         String note = ci.getNote();
         if (!TextUtils.isEmpty(note)) {
-            h.b.tvNote.setText("Ghi chú: " + note);
+            h.b.tvNote.setText(h.itemView.getContext().getString(R.string.note, note));
             h.b.tvNote.setVisibility(View.VISIBLE);
         } else {
             h.b.tvNote.setVisibility(View.GONE);
@@ -147,10 +148,10 @@ public class CheckoutItemAdapter extends RecyclerView.Adapter<CheckoutItemAdapte
         com.pro.milkteaapp.models.Combo combo = comboItem.getCombo();
 
         // Tên
-        h.b.tvName.setText(combo != null ? combo.getName() : "Combo");
+        h.b.tvName.setText(combo != null ? combo.getName() : h.itemView.getContext().getString(R.string.combo_label));
 
         // Combo - không có size/topping/sugar/ice
-        h.b.tvLine1.setText("Combo");
+        h.b.tvLine1.setText(h.itemView.getContext().getString(R.string.combo_label));
         h.b.tvLine1.setVisibility(View.VISIBLE);
         h.b.tvToppings.setVisibility(View.GONE);
         h.b.tvNote.setVisibility(View.GONE);

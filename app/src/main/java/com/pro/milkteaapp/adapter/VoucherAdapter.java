@@ -70,12 +70,16 @@ public class VoucherAdapter extends RecyclerView.Adapter<VoucherAdapter.VH> {
         // --- Mã voucher ---
         h.tvCode.setText(nz(v.getCode()));
 
-        // --- Ưu đãi (có thể thêm điểm nếu là voucher đổi điểm) ---
-        String benefitText = buildBenefit(v);
+        // --- Số điểm cần đổi ---
         if (v.getPointsRequired() != null && v.getPointsRequired() > 0) {
-            benefitText += " • " + v.getPointsRequired() + " điểm";
+            h.tvPointsRequired.setText(v.getPointsRequired() + " điểm");
+            h.tvPointsRequired.setVisibility(View.VISIBLE);
+        } else {
+            h.tvPointsRequired.setVisibility(View.GONE);
         }
-        h.tvBenefit.setText(benefitText);
+
+        // --- Ưu đãi ---
+        h.tvBenefit.setText(buildBenefit(v));
 
         // --- Áp dụng với hóa đơn ---
         h.tvMin.setText(buildMinOrder(v.getMinOrder()));
@@ -167,7 +171,7 @@ public class VoucherAdapter extends RecyclerView.Adapter<VoucherAdapter.VH> {
 
     // ================= ViewHolder =================
     static class VH extends RecyclerView.ViewHolder {
-        TextView tvCode, tvBenefit, tvExpiry, tvMin;
+        TextView tvCode, tvBenefit, tvExpiry, tvMin, tvPointsRequired;
         ChipGroup chipsChannels;
         SwitchMaterial swActive;
         View btnEdit, btnDelete;
@@ -178,6 +182,7 @@ public class VoucherAdapter extends RecyclerView.Adapter<VoucherAdapter.VH> {
             tvBenefit = v.findViewById(R.id.tvBenefit);
             tvExpiry = v.findViewById(R.id.tvExpiry);
             tvMin = v.findViewById(R.id.tvMin);
+            tvPointsRequired = v.findViewById(R.id.tvPointsRequired);
             chipsChannels = v.findViewById(R.id.chipsChannels);
             swActive = v.findViewById(R.id.swActive);
             btnEdit = v.findViewById(R.id.btnEdit);

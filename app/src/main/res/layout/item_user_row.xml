@@ -2,7 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
-    android:padding="12dp"
+    android:padding="10dp"
     android:layout_width="match_parent"
     android:layout_height="wrap_content">
 
@@ -40,7 +40,7 @@
                 android:maxLines="1"
                 android:ellipsize="end"
                 android:textColor="@android:color/darker_gray"
-                android:layout_marginTop="2dp" />
+                android:layout_marginTop="1dp" />
 
             <!-- Phone -->
             <TextView
@@ -52,7 +52,7 @@
                 android:maxLines="1"
                 android:ellipsize="end"
                 android:textColor="@android:color/darker_gray"
-                android:layout_marginTop="2dp" />
+                android:layout_marginTop="1dp" />
 
             <!-- Address -->
             <TextView
@@ -64,7 +64,7 @@
                 android:maxLines="1"
                 android:ellipsize="end"
                 android:textColor="@android:color/darker_gray"
-                android:layout_marginTop="2dp" />
+                android:layout_marginTop="1dp" />
 
         </LinearLayout>
 
@@ -75,21 +75,30 @@
             android:orientation="horizontal"
             android:gravity="end|center_vertical">
 
-            <ImageButton
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnEdit"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@drawable/ic_edit"
-                app:tint="@android:color/black" />
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                app:icon="@drawable/ic_edit"
+                app:iconTint="@color/white"
+                app:backgroundTint="@color/primary"
+                app:iconGravity="end"
+                style="@style/Widget.MaterialComponents.Button.Icon" />
 
-            <ImageButton
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnDelete"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@drawable/ic_delete"
-                app:tint="@android:color/black" />
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_marginStart="8dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                app:icon="@drawable/ic_delete"
+                app:iconTint="@color/white"
+                app:iconGravity="end"
+                app:backgroundTint="@color/error_red"
+                style="@style/Widget.MaterialComponents.Button.Icon" />
         </LinearLayout>
     </LinearLayout>
 
@@ -100,6 +109,6 @@
         android:layout_height="wrap_content"
         android:text="user"
         android:textSize="12sp"
-        android:layout_marginTop="6dp"/>
+        android:layout_marginTop="4dp"/>
 
 </LinearLayout>

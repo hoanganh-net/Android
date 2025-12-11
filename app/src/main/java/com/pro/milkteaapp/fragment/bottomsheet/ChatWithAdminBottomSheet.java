@@ -61,18 +61,18 @@ public class ChatWithAdminBottomSheet extends BottomSheetDialogFragment {
         chatRepository = new ChatRepository();
         UsersRepository usersRepository = new UsersRepository();
         
-        // Setup adapter
-        chatAdapter = new ChatMessagesAdapter("user");
-        chatRecyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
-        chatRecyclerView.setAdapter(chatAdapter);
-        
-        // Load user info
+        // Load user info first, then create adapter with actual userId
         currentUserId = getUnifiedUidOrNotify();
         if (currentUserId == null) {
             Toast.makeText(requireContext(), "Lỗi: Không lấy được thông tin người dùng", Toast.LENGTH_SHORT).show();
             dismiss();
             return v;
         }
+        
+        // Create adapter with actual userId
+        chatAdapter = new ChatMessagesAdapter(currentUserId);
+        chatRecyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
+        chatRecyclerView.setAdapter(chatAdapter);
         
         usersRepository.fetchUserById(currentUserId, new UsersRepository.OnUserListener() {
             @Override
@@ -114,11 +114,11 @@ public class ChatWithAdminBottomSheet extends BottomSheetDialogFragment {
         chatRegistration = chatRepository.listenMessages(currentUserId, new ChatRepository.OnChatMessagesListener() {
             @Override
             public void onMessagesReceived(@NonNull List<ChatMessage> messages) {
-                if (chatRecyclerView == null) return;
+                if (chatRecyclerView == null || chatAdapter == null) return;
                 chatAdapter.submit(messages);
-                if (messages.size() > 0) {
+                if (!messages.isEmpty()) {
                     chatRecyclerView.post(() -> {
-                        if (chatRecyclerView != null) {
+                        if (chatRecyclerView != null && chatAdapter != null) {
                             chatRecyclerView.smoothScrollToPosition(messages.size() - 1);
                         }
                     });

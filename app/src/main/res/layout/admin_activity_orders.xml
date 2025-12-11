@@ -40,7 +40,7 @@
                     <com.google.android.material.textview.MaterialTextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Chưa có đơn nào"
+                        android:text="@string/no_orders"
                         android:textAppearance="@style/TextAppearance.Material3.TitleMedium"/>
                 </LinearLayout>
 

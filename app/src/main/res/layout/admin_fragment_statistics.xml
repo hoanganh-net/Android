@@ -85,7 +85,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Tóm tắt thống kê"
+                        android:text="@string/statistics_summary"
                         android:textStyle="bold"
                         android:textSize="16sp"
                         android:textColor="@color/black"
@@ -128,7 +128,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Chưa có dữ liệu thống kê"
+            android:text="@string/no_statistics"
             android:textColor="@color/gray_600"
             android:textSize="18sp"
             android:textStyle="bold"
@@ -137,7 +137,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Kéo xuống để làm mới hoặc thử lại sau."
+            android:text="@string/pull_to_refresh"
             android:textColor="@color/gray_500"
             android:textSize="14sp"
             android:layout_marginTop="6dp" />

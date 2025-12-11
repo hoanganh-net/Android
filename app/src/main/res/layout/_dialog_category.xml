@@ -1,87 +1,106 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:padding="20dp"
-    android:orientation="vertical"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:fillViewport="true">
 
-    <!-- Tên category -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/tilName"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-        android:hint="Tên danh mục"
+    <LinearLayout
+        android:orientation="vertical"
+        android:padding="20dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/edtName"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
-    </com.google.android.material.textfield.TextInputLayout>
-
-    <!-- URL / tên ảnh -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/tilImageUrl"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-        android:hint="Đường dẫn ảnh (URL) hoặc tên drawable"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/edtImageUrl"
+        <!-- Tên danh mục -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilName"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="textUri"/>
-    </com.google.android.material.textfield.TextInputLayout>
+            android:hint="Tên danh mục"
+            app:boxStrokeColor="@color/primary"
+            app:hintTextColor="@color/primary">
 
-    <!-- Trạng thái kích hoạt -->
-    <com.google.android.material.checkbox.MaterialCheckBox
-        android:id="@+id/cbActive"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Kích hoạt"
-        android:checked="true"
-        android:layout_marginTop="8dp"/>
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/edtName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textCapWords"
+                android:maxLines="1" />
+        </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- Xem trước ảnh category -->
-    <ImageView
-        android:id="@+id/imgPreview"
-        android:layout_width="match_parent"
-        android:layout_height="160dp"
-        android:layout_marginTop="12dp"
-        android:scaleType="fitCenter"
-        android:contentDescription="@string/app_name"
-        android:src="@drawable/milktea" />
+        <!-- URL / tên ảnh -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilImageUrl"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:hint="Đường dẫn ảnh (URL) hoặc tên drawable"
+            app:boxStrokeColor="@color/primary"
+            app:hintTextColor="@color/primary">
 
-    <!-- nút chọn ảnh có sẵn -->
-    <Button
-        android:id="@+id/btnPickBuiltinImage"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Chọn ảnh có sẵn"
-        android:layout_marginTop="8dp" />
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/edtImageUrl"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textUri"
+                android:maxLines="1" />
+        </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- Hàng nút Hủy / Lưu -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="end"
-        android:layout_marginTop="12dp"
-        android:orientation="horizontal">
-
-        <Button
-            android:id="@+id/btnCancel"
-            android:text="Hủy"
+        <!-- Nút chọn ảnh có sẵn -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnPickBuiltinImage"
+            style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            android:text="Chọn ảnh có sẵn"
+            android:layout_marginTop="8dp" />
 
-        <Button
-            android:id="@+id/btnSave"
-            android:text="Lưu"
-            android:layout_marginStart="8dp"
+        <!-- Xem trước ảnh category -->
+        <ImageView
+            android:id="@+id/imgPreview"
+            android:layout_width="match_parent"
+            android:layout_height="220dp"
+            android:layout_marginTop="16dp"
+            android:scaleType="fitCenter"
+            android:adjustViewBounds="true"
+            android:background="@drawable/bg_image_preview"
+            android:contentDescription="@string/app_name"
+            android:src="@drawable/milktea" />
+
+        <!-- Trạng thái kích hoạt -->
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/cbActive"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            android:text="Kích hoạt"
+            android:checked="true"
+            android:layout_marginTop="16dp" />
+
+        <!-- Hàng nút Hủy / Lưu -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="end"
+            android:layout_marginTop="20dp"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnCancel"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:text="Hủy"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSave"
+                style="@style/Widget.Material3.Button"
+                android:text="Lưu"
+                android:layout_marginStart="8dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
     </LinearLayout>
-
-</LinearLayout>
+</ScrollView>

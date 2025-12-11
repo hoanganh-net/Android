@@ -84,9 +84,14 @@ public class ChatActivity extends AppCompatActivity {
         listener = chatRepository.listenMessages(userId, new ChatRepository.OnChatMessagesListener() {
             @Override
             public void onMessagesReceived(@NonNull List<ChatMessage> messages) {
+                if (adapter == null || recyclerView == null) return;
                 adapter.submit(messages);
-                if (messages.size() > 0) {
-                    recyclerView.smoothScrollToPosition(messages.size() - 1);
+                if (!messages.isEmpty()) {
+                    recyclerView.post(() -> {
+                        if (recyclerView != null && adapter != null) {
+                            recyclerView.smoothScrollToPosition(messages.size() - 1);
+                        }
+                    });
                 }
             }
 

@@ -21,7 +21,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="12dp">
+            android:padding="10dp">
 
             <!-- Họ tên + SĐT -->
             <TextView
@@ -38,7 +38,7 @@
                 android:id="@+id/tvAddressLines"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="2dp"
                 style="@style/TextAppearance.Material3.BodyMedium"
                 tools:text="123 Nguyễn Trãi, P.1, Q.5, TP.HCM" />
 
@@ -48,7 +48,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="end"
-                android:layout_marginTop="10dp">
+                android:layout_marginTop="6dp">
 
                 <!-- Mặc định -->
                 <com.google.android.material.button.MaterialButton
@@ -70,35 +70,29 @@
                 <!-- Sửa -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnEdit"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="36dp"
-                    android:text="Sửa"
-                    android:textAllCaps="false"
-                    android:textSize="13sp"
-                    android:textColor="@color/primary"
-                    app:strokeColor="@color/primary"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
                     app:icon="@drawable/ic_edit"
-                    app:iconTint="@color/primary"
-                    app:iconGravity="textStart"
-                    app:iconPadding="6dp"
-                    android:layout_marginEnd="6dp" />
+                    app:iconTint="@color/white"
+                    app:backgroundTint="@color/primary"
+                    app:iconGravity="end"
+                    android:layout_marginEnd="6dp"
+                    style="@style/Widget.MaterialComponents.Button.Icon" />
 
                 <!-- Xóa -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnDelete"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="36dp"
-                    android:text="Xóa"
-                    android:textAllCaps="false"
-                    android:textSize="13sp"
-                    android:textColor="@color/red_dark"
-                    app:strokeColor="@color/red_dark"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
                     app:icon="@drawable/ic_delete"
-                    app:iconTint="@color/red_dark"
-                    app:iconGravity="textStart"
-                    app:iconPadding="6dp" />
+                    app:iconTint="@color/white"
+                    app:iconGravity="end"
+                    app:backgroundTint="@color/error_red"
+                    style="@style/Widget.MaterialComponents.Button.Icon" />
             </LinearLayout>
         </LinearLayout>
 

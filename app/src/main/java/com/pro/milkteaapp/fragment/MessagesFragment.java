@@ -24,7 +24,6 @@ import com.pro.milkteaapp.constants.FirestoreConstants;
 import com.pro.milkteaapp.activity.MainActivity;
 import com.pro.milkteaapp.adapter.MessagesAdapter;
 import com.pro.milkteaapp.databinding.FragmentMessagesBinding;
-import com.pro.milkteaapp.fragment.bottomsheet.ChatWithAdminBottomSheet;
 import com.pro.milkteaapp.fragment.bottomsheet.RateOrderBottomSheet;
 import com.pro.milkteaapp.models.Message;
 
@@ -53,8 +52,8 @@ public class MessagesFragment extends Fragment {
         
         // Setup nút chat với admin
         binding.btnChatWithAdmin.setOnClickListener(v -> {
-            ChatWithAdminBottomSheet bottomSheet = ChatWithAdminBottomSheet.newInstance();
-            bottomSheet.show(getParentFragmentManager(), ChatWithAdminBottomSheet.TAG);
+            android.content.Intent intent = new android.content.Intent(requireContext(), com.pro.milkteaapp.activity.user.UserChatActivity.class);
+            startActivity(intent);
         });
         
         setupToolbar();
@@ -92,25 +91,35 @@ public class MessagesFragment extends Fragment {
             
             binding.navigationView.setNavigationItemSelectedListener(item -> {
                 int itemId = item.getItemId();
-                String filter = "Tất cả";
                 
-                if (itemId == R.id.menu_all) {
-                    filter = "Tất cả";
-                } else if (itemId == R.id.menu_system) {
-                    filter = "Hệ thống";
-                } else if (itemId == R.id.menu_chat) {
-                    filter = "Chat với Admin";
-                }
-                
-                // Cập nhật checked state
-                binding.navigationView.setCheckedItem(item.getItemId());
-                
-                selectedFilter = filter;
-                filterMessages();
-                
+                // Đóng drawer trước
                 if (binding.drawerLayout != null) {
                     binding.drawerLayout.closeDrawer(GravityCompat.END);
                 }
+                
+                if (itemId == R.id.menu_all) {
+                    // Filter: Tất cả
+                    selectedFilter = "Tất cả";
+                    binding.navigationView.setCheckedItem(R.id.menu_all);
+                    filterMessages();
+                } else if (itemId == R.id.menu_system) {
+                    // Filter: Hệ thống
+                    selectedFilter = "Hệ thống";
+                    binding.navigationView.setCheckedItem(R.id.menu_system);
+                    filterMessages();
+                } else if (itemId == R.id.menu_chat) {
+                    // Mở màn hình chat với admin
+                    android.content.Intent intent = new android.content.Intent(requireContext(), com.pro.milkteaapp.activity.user.UserChatActivity.class);
+                    startActivity(intent);
+                    // Không cập nhật checked state vì đây là action, không phải filter
+                    // Reset về menu_all sau khi quay lại
+                    binding.navigationView.post(() -> {
+                        if (binding.navigationView != null && isAdded()) {
+                            binding.navigationView.setCheckedItem(R.id.menu_all);
+                        }
+                    });
+                }
+                
                 return true;
             });
         }
@@ -198,7 +207,14 @@ public class MessagesFragment extends Fragment {
                     .collection("inbox").document(m.getId())
                     .update("read", true, "readAt", Timestamp.now());
         }
-        if ("order_done".equals(m.getType()) && m.getOrderId() != null) {
+        
+        // Xử lý theo loại message
+        if ("chat".equals(m.getType())) {
+            // Mở màn hình chat với admin
+            android.content.Intent intent = new android.content.Intent(requireContext(), com.pro.milkteaapp.activity.user.UserChatActivity.class);
+            startActivity(intent);
+        } else if ("order_done".equals(m.getType()) && m.getOrderId() != null) {
+            // Mở dialog đánh giá đơn hàng
             RateOrderBottomSheet.newInstance(m.getOrderId())
                     .show(getParentFragmentManager(), "rate_order");
         }
@@ -241,7 +257,7 @@ public class MessagesFragment extends Fragment {
         // Fallback sang Firebase UID (không khuyến nghị, nhưng an toàn)
         if (FirebaseAuth.getInstance().getCurrentUser() == null) {
             if (isAdded() && getContext() != null) {
-                Toast.makeText(getContext(), "Bạn chưa đăng nhập", Toast.LENGTH_LONG).show();
+                Toast.makeText(getContext(), getString(R.string.not_logged_in), Toast.LENGTH_LONG).show();
             }
             return null;
         }

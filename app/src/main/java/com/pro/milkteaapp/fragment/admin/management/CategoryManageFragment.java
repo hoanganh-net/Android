@@ -17,7 +17,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
-import com.google.android.material.checkbox.MaterialCheckBox;
+import com.google.android.material.switchmaterial.SwitchMaterial;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.textfield.TextInputEditText;
@@ -199,11 +199,10 @@ public class CategoryManageFragment extends Fragment implements
         TextInputEditText edtName = dialogView.findViewById(R.id.edtName);
         TextInputEditText edtImageUrl = dialogView.findViewById(R.id.edtImageUrl);
         ImageView imgPreview = dialogView.findViewById(R.id.imgPreview);
-        MaterialCheckBox cbActive = dialogView.findViewById(R.id.cbActive);
-        Button btnSave = dialogView.findViewById(R.id.btnSave);
-        Button btnCancel = dialogView.findViewById(R.id.btnCancel);
-        // nút mới
-        Button btnPickBuiltinImage = dialogView.findViewById(R.id.btnPickBuiltinImage);
+        SwitchMaterial cbActive = dialogView.findViewById(R.id.cbActive);
+        com.google.android.material.button.MaterialButton btnSave = dialogView.findViewById(R.id.btnSave);
+        com.google.android.material.button.MaterialButton btnCancel = dialogView.findViewById(R.id.btnCancel);
+        com.google.android.material.button.MaterialButton btnPickBuiltinImage = dialogView.findViewById(R.id.btnPickBuiltinImage);
 
         // nếu sửa
         if (category != null) {

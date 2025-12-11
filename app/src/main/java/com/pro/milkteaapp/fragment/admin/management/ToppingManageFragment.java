@@ -40,7 +40,6 @@ public class ToppingManageFragment extends Fragment
     private final ArrayList<Topping> allToppings = new ArrayList<>();
     private AdminToppingAdapter adapter;
     private final ArrayList<String> allCategories = new ArrayList<>();
-    private TextInputEditText searchEditText;
     private String lastSearch = "";
 
     @Nullable
@@ -62,7 +61,7 @@ public class ToppingManageFragment extends Fragment
         binding.recycler.setLayoutManager(new LinearLayoutManager(requireContext()));
         binding.recycler.setAdapter(adapter);
 
-        searchEditText = binding.getRoot().findViewById(R.id.searchEditText);
+        TextInputEditText searchEditText = binding.getRoot().findViewById(R.id.searchEditText);
         if (searchEditText != null) {
             searchEditText.addTextChangedListener(new TextWatcher() {
                 @Override
@@ -244,6 +243,7 @@ public class ToppingManageFragment extends Fragment
 
     private void openCreateDialog() { openEditor(null); }
 
+    @SuppressLint("NotifyDataSetChanged")
     private void filterToppings() {
         if (allToppings.isEmpty()) {
             data.clear();

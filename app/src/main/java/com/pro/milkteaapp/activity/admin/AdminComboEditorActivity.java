@@ -61,7 +61,7 @@ public class AdminComboEditorActivity extends AppCompatActivity {
         
         // Chặn non-admin
         if (!new SessionManager(this).isAdmin()) {
-            Toast.makeText(this, "Bạn không có quyền truy cập (admin-only)", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.no_admin_access), Toast.LENGTH_SHORT).show();
             startActivity(new Intent(this, MainActivity.class)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
             finish();
@@ -83,12 +83,12 @@ public class AdminComboEditorActivity extends AppCompatActivity {
         btnReset.setOnClickListener(v -> resetForm());
 
         if (isEditMode) {
-            toolbar.setTitle("SỬA COMBO");
+            toolbar.setTitle(getString(R.string.edit_combo));
             toolbar.setTitleTextAppearance(this, R.style.ToolbarTitleStyle);
             toolbar.setTitleTextColor(getResources().getColor(R.color.white, getTheme()));
             loadComboForEdit(comboId);
         } else {
-            toolbar.setTitle("THÊM COMBO MỚI");
+            toolbar.setTitle(getString(R.string.add_new_combo));
             toolbar.setTitleTextAppearance(this, R.style.ToolbarTitleStyle);
             toolbar.setTitleTextColor(getResources().getColor(R.color.white, getTheme()));
         }
@@ -152,8 +152,8 @@ public class AdminComboEditorActivity extends AppCompatActivity {
     private void updateProductInfo() {
         if (selectedProduct.isEmpty()) {
             ((android.widget.TextView) tvSelectedProduct).setText("Chưa chọn sản phẩm");
-            ((android.widget.TextView) tvTotalPrice).setText("Tổng giá: 0đ");
-            ((android.widget.TextView) tvComboPrice).setText("Giá combo: 0đ");
+            ((android.widget.TextView) tvTotalPrice).setText(getString(R.string.total_price, "0đ"));
+            ((android.widget.TextView) tvComboPrice).setText(getString(R.string.combo_price, "0đ"));
             return;
         }
 
@@ -195,9 +195,9 @@ public class AdminComboEditorActivity extends AppCompatActivity {
         double discountAmount = totalPrice * discountPercent / 100.0;
         double comboPrice = totalPrice - discountAmount;
 
-        ((android.widget.TextView) tvTotalPrice).setText("Tổng giá: " + MoneyUtils.formatVnd(totalPrice));
+        ((android.widget.TextView) tvTotalPrice).setText(getString(R.string.total_price, MoneyUtils.formatVnd(totalPrice)));
         ((android.widget.TextView) tvComboPrice).setText(
-                String.format("Giá combo (giảm %d%%): %s", discountPercent, MoneyUtils.formatVnd(comboPrice))
+                getString(R.string.combo_price_90, String.valueOf(discountPercent), MoneyUtils.formatVnd(comboPrice))
         );
     }
 
@@ -228,7 +228,7 @@ public class AdminComboEditorActivity extends AppCompatActivity {
             @Override
             public void onError(@NonNull Exception error) {
                 setLoading(false);
-                Toast.makeText(AdminComboEditorActivity.this, "Lỗi tải combo: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(AdminComboEditorActivity.this, getString(R.string.load_combo_error, error.getMessage()), Toast.LENGTH_SHORT).show();
                 finish();
             }
         });
@@ -276,13 +276,13 @@ public class AdminComboEditorActivity extends AppCompatActivity {
         String imageUrl = etImageUrl.getText() != null ? etImageUrl.getText().toString().trim() : "";
 
         if (name.isEmpty()) {
-            Toast.makeText(this, "Vui lòng nhập tên combo!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.please_enter_combo_name), Toast.LENGTH_SHORT).show();
             if (btnSave != null) btnSave.setEnabled(true);
             return;
         }
 
         if (selectedProduct.isEmpty()) {
-            Toast.makeText(this, "Vui lòng chọn ít nhất một sản phẩm!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.please_select_at_least_one_product), Toast.LENGTH_SHORT).show();
             if (btnSave != null) btnSave.setEnabled(true);
             return;
         }
@@ -355,7 +355,7 @@ public class AdminComboEditorActivity extends AppCompatActivity {
                 @Override
                 public void onError(@NonNull Exception error) {
                     setLoading(false);
-                    Toast.makeText(AdminComboEditorActivity.this, "Cập nhật thất bại: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(AdminComboEditorActivity.this, getString(R.string.update_combo_failed, error.getMessage()), Toast.LENGTH_SHORT).show();
                     if (btnSave != null) btnSave.setEnabled(true);
                 }
             });
@@ -380,14 +380,14 @@ public class AdminComboEditorActivity extends AppCompatActivity {
                             @Override
                             public void onError(@NonNull Exception error) {
                                 setLoading(false);
-                                Toast.makeText(AdminComboEditorActivity.this, "Thêm thất bại: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                                Toast.makeText(AdminComboEditorActivity.this, getString(R.string.add_combo_failed, error.getMessage()), Toast.LENGTH_SHORT).show();
                                 if (btnSave != null) btnSave.setEnabled(true);
                             }
                         });
                     })
                     .addOnFailureListener(e -> {
                         setLoading(false);
-                        Toast.makeText(AdminComboEditorActivity.this, "Sinh mã combo lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(AdminComboEditorActivity.this, getString(R.string.generate_combo_id_error, e.getMessage()), Toast.LENGTH_SHORT).show();
                         if (btnSave != null) btnSave.setEnabled(true);
                     });
         }

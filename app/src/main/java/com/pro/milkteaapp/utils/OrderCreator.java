@@ -10,6 +10,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.WriteBatch;
+import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.SessionManager;
 import com.pro.milkteaapp.constants.FirestoreConstants;
 import com.pro.milkteaapp.models.CartItem;
@@ -63,12 +64,12 @@ public class OrderCreator {
             @NonNull Consumer<Exception> onError) {
         
         if (cartItems.isEmpty() && comboCartItems.isEmpty()) {
-            Toast.makeText(context, "Giỏ hàng trống", Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, context.getString(R.string.empty_cart_message), Toast.LENGTH_SHORT).show();
             return;
         }
         
         if (auth.getCurrentUser() == null) {
-            Toast.makeText(context, "Bạn chưa đăng nhập", Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, context.getString(R.string.not_logged_in), Toast.LENGTH_SHORT).show();
             return;
         }
         
@@ -82,7 +83,7 @@ public class OrderCreator {
         // Validate address
         String address = checkoutInfo.getAddress();
         if (TextUtils.isEmpty(address)) {
-            Toast.makeText(context, "Vui lòng chọn địa chỉ giao hàng", Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, context.getString(R.string.please_select_address), Toast.LENGTH_SHORT).show();
             return;
         }
         
@@ -158,6 +159,7 @@ public class OrderCreator {
         
         order.put("shippingLabel", checkoutInfo.getShippingLabel());
         order.put("voucherCode", TextUtils.isEmpty(checkoutInfo.getVoucherCode()) ? null : checkoutInfo.getVoucherCode());
+        order.put("rewardVoucherCode", TextUtils.isEmpty(checkoutInfo.getRewardVoucherCode()) ? null : checkoutInfo.getRewardVoucherCode());
         order.put("status", "PENDING");
         order.put("createdAt", FieldValue.serverTimestamp());
         

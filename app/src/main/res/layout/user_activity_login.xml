@@ -53,7 +53,8 @@
             android:layout_marginBottom="24dp"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             app:boxStrokeColor="@color/primary"
-            app:hintTextColor="@color/primary">
+            app:hintTextColor="@color/primary"
+            app:endIconMode="password_toggle">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/passwordEditText"

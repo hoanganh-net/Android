@@ -60,6 +60,7 @@ public class OrderPayloadBuilder {
         
         order.put("paymentMethod", info.paymentMethod);
         order.put("voucherCode", info.voucherCode);
+        order.put("rewardVoucherCode", info.rewardVoucherCode);
         order.put("shippingLabel", info.shippingLabel);
         
         order.put("createdAt", FieldValue.serverTimestamp());

@@ -169,7 +169,7 @@ public class CheckoutActivity extends AppCompatActivity
                 }
             } else {
                 // Người dùng quay lại mà không thanh toán
-                Toast.makeText(this, "Bạn đã hủy thanh toán", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, getString(R.string.payment_cancelled), Toast.LENGTH_SHORT).show();
             }
         }
     }
@@ -211,7 +211,7 @@ public class CheckoutActivity extends AppCompatActivity
 
     private void placeOrder(@Nullable String transactionId) {
         if (checkoutInfo == null) {
-            Toast.makeText(this, "Thông tin checkout không hợp lệ", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.invalid_checkout_info), Toast.LENGTH_SHORT).show();
             return;
         }
         
@@ -227,20 +227,32 @@ public class CheckoutActivity extends AppCompatActivity
                     // Order created successfully, record voucher usage
                     String effectiveUid = getEffectiveUserId();
                     String voucherCode = checkoutInfo.getVoucherCode();
+                    String rewardVoucherCode = checkoutInfo.getRewardVoucherCode();
                     
+                    // Record voucher giảm giá usage
                     voucherRecorder.recordVoucherUsageIfNeeded(
                             effectiveUid,
                             voucherCode,
                             () -> {
-                                Toast.makeText(this, "Đặt hàng thành công!", Toast.LENGTH_SHORT).show();
-                                finish();
+                                // Sau khi record voucher giảm giá, record voucher đổi quà
+                                voucherRecorder.recordVoucherUsageIfNeeded(
+                                        effectiveUid,
+                                        rewardVoucherCode,
+                                        () -> {
+                                            Toast.makeText(this, "Đặt hàng thành công!", Toast.LENGTH_SHORT).show();
+                                            finish();
+                                        },
+                                        e -> {
+                                            Toast.makeText(this, "Đơn đã tạo nhưng cập nhật lượt voucher đổi quà lỗi: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                                            finish();
+                                        });
                             },
                             e -> {
-                                Toast.makeText(this, "Đơn đã tạo nhưng cập nhật lượt voucher lỗi: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                                Toast.makeText(this, "Đơn đã tạo nhưng cập nhật lượt voucher giảm giá lỗi: " + e.getMessage(), Toast.LENGTH_LONG).show();
                                 finish();
                             });
                 },
-                e -> Toast.makeText(this, "Lỗi đặt hàng: " + e.getMessage(), Toast.LENGTH_LONG).show()
+                e -> Toast.makeText(this, getString(R.string.create_order_error, e.getMessage()), Toast.LENGTH_LONG).show()
         );
     }
     

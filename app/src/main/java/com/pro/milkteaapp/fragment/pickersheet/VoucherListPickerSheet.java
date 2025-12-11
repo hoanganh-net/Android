@@ -125,6 +125,10 @@ public class VoucherListPickerSheet extends BottomSheetDialogFragment {
                 // Điều kiện chung: thời hạn, min order, kênh thanh toán
                 Date today0 = stripTime(new Date());
                 for (Voucher v : vouchers) {
+                    // Loại bỏ voucher đổi điểm (có pointsRequired > 0)
+                    // Voucher đổi điểm chỉ nên xuất hiện trong RewardVoucherPickerSheet sau khi user đã đổi
+                    if (v.getPointsRequired() != null && v.getPointsRequired() > 0) continue;
+
                     // Kiểm tra thời hạn
                     if (!VoucherUtils.isInRangeNow(v)) continue;
                     if (v.getEndAt() != null && v.getEndAt().toDate().before(today0)) continue;

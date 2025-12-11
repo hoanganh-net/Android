@@ -76,6 +76,22 @@ public class AdminOrdersFragment extends Fragment {
             drawerLayout.openDrawer(GravityCompat.START);
         }
     }
+    
+    /**
+     * Đóng drawer
+     */
+    public void closeDrawer() {
+        if (drawerLayout != null && isAdded()) {
+            drawerLayout.closeDrawer(GravityCompat.START);
+        }
+    }
+    
+    /**
+     * Kiểm tra drawer có đang mở không
+     */
+    public boolean isDrawerOpen() {
+        return drawerLayout != null && isAdded() && drawerLayout.isDrawerOpen(GravityCompat.START);
+    }
 
     private void setupDrawer() {
         if (drawerLayout == null || navigationView == null || !isAdded()) return;

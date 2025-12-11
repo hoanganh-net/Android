@@ -3,6 +3,7 @@ package com.pro.milkteaapp.repository;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -11,6 +12,7 @@ import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.Transaction;
 import com.pro.milkteaapp.constants.FirestoreConstants;
+import com.pro.milkteaapp.generator.UserIDGenerator;
 import com.pro.milkteaapp.models.User;
 import com.pro.milkteaapp.utils.LoyaltyPolicy;
 
@@ -182,6 +184,77 @@ public class UsersRepository {
     }
 
     /**
+     * Tạo user mới (Firebase Auth + Firestore)
+     */
+    public void createUser(@NonNull String fullName,
+                          @NonNull String email,
+                          @NonNull String password,
+                          @Nullable String phone,
+                          @Nullable String address,
+                          @NonNull String role,
+                          @NonNull OnUserCreateListener listener) {
+        // Tạo Firebase Auth user trước
+        FirebaseAuth auth = FirebaseAuth.getInstance();
+        auth.createUserWithEmailAndPassword(email, password)
+                .addOnSuccessListener(authResult -> {
+                    if (authResult == null || authResult.getUser() == null) {
+                        listener.onError(new Exception("Không tạo được tài khoản Firebase Auth"));
+                        return;
+                    }
+
+                    String authUid = authResult.getUser().getUid();
+
+                    // Sinh mã USRxxxxx
+                    UserIDGenerator gen = new UserIDGenerator();
+                    gen.nextUserId()
+                            .addOnSuccessListener(userId -> {
+                                // Tạo User object
+                                User user = new User();
+                                user.setUid(userId);
+                                user.setFullName(fullName);
+                                user.setEmail(email);
+                                user.setPhone(phone != null ? phone : "");
+                                user.setAddress(address != null ? address : "");
+                                user.setRole(role);
+                                user.setAvatar("");
+
+                                // Loyalty mặc định
+                                user.setLoyaltyTier("Chưa xếp hạng");
+                                user.setLoyaltyPoints(0);
+                                user.setRewardPoints(0);
+                                user.setTotalSpent(0);
+
+                                // Convert User to Map và thêm authUid
+                                Map<String, Object> userMap = userToMap(user);
+                                userMap.put(FirestoreConstants.FIELD_AUTH_UID, authUid);
+
+                                // Lưu vào Firestore
+                                db.collection(FirestoreConstants.COLLECTION_USERS)
+                                        .document(userId)
+                                        .set(userMap)
+                                        .addOnSuccessListener(aVoid -> listener.onSuccess(userId))
+                                        .addOnFailureListener(listener::onError);
+                            })
+                            .addOnFailureListener(listener::onError);
+                })
+                .addOnFailureListener(e -> {
+                    String errorMsg = "Tạo tài khoản thất bại";
+                    if (e.getMessage() != null) {
+                        if (e.getMessage().contains("email-already-in-use")) {
+                            errorMsg = "Email đã được sử dụng";
+                        } else if (e.getMessage().contains("weak-password")) {
+                            errorMsg = "Mật khẩu quá yếu";
+                        } else if (e.getMessage().contains("invalid-email")) {
+                            errorMsg = "Email không hợp lệ";
+                        } else {
+                            errorMsg = e.getMessage();
+                        }
+                    }
+                    listener.onError(new Exception(errorMsg));
+                });
+    }
+
+    /**
      * Cập nhật thông tin user
      */
     public void updateUser(@NonNull String userId, @NonNull Map<String, Object> updates, @NonNull OnUserUpdateListener listener) {
@@ -304,6 +377,28 @@ public class UsersRepository {
         }
     }
 
+    /**
+     * Convert User object to Map for Firestore
+     */
+    @NonNull
+    private Map<String, Object> userToMap(@NonNull User user) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("uid", user.getUid());
+        map.put("email", user.getEmail() != null ? user.getEmail() : "");
+        map.put("fullName", user.getFullName() != null ? user.getFullName() : "");
+        map.put("role", user.getRole() != null ? user.getRole() : "user");
+        map.put("phone", user.getPhone() != null ? user.getPhone() : "");
+        map.put("address", user.getAddress() != null ? user.getAddress() : "");
+        map.put("avatar", user.getAvatar() != null ? user.getAvatar() : "");
+        map.put("loyaltyTier", user.getLoyaltyTier() != null ? user.getLoyaltyTier() : "Chưa xếp hạng");
+        map.put("loyaltyPoints", user.getLoyaltyPoints());
+        map.put("rewardPoints", user.getRewardPoints());
+        map.put("totalSpent", user.getTotalSpent());
+        if (user.getCreatedAt() != null) map.put("createdAt", user.getCreatedAt());
+        if (user.getUpdatedAt() != null) map.put("updatedAt", user.getUpdatedAt());
+        return map;
+    }
+
     // ===== CALLBACK INTERFACES =====
 
     public interface OnUsersListener {
@@ -318,6 +413,11 @@ public class UsersRepository {
 
     public interface OnUserUpdateListener {
         void onSuccess();
+        void onError(@NonNull Exception error);
+    }
+
+    public interface OnUserCreateListener {
+        void onSuccess(@NonNull String userId);
         void onError(@NonNull Exception error);
     }
 }

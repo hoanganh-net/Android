@@ -1,12 +1,12 @@
 package com.pro.milkteaapp.fragment.admin;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -21,9 +21,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.google.android.material.navigation.NavigationView;
-import com.google.android.material.textfield.MaterialAutoCompleteTextView;
-import com.google.android.material.textfield.TextInputLayout;
-import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.activity.admin.AdminMainActivity;
@@ -48,17 +45,16 @@ public class AdminChatFragment extends Fragment
     private NavigationView navigationView;
     
     private UsersRepository usersRepository;
-    private ChatRepository chatRepository;
     private ListenerRegistration listener;
     
-    private List<User> allUsers = new ArrayList<>();
+    private final List<User> allUsers = new ArrayList<>();
     private String selectedRole = "Tất cả"; // Mặc định hiển thị tất cả
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         usersRepository = new UsersRepository();
-        chatRepository = new ChatRepository();
+        ChatRepository chatRepository = new ChatRepository();
     }
 
     @Nullable
@@ -116,8 +112,7 @@ public class AdminChatFragment extends Fragment
                 }
                 
                 // Xử lý lọc theo role - lấy title từ menu item
-                String title = item.getTitle() != null ? item.getTitle().toString() : "";
-                selectedRole = title;
+                selectedRole = item.getTitle() != null ? item.getTitle().toString() : "";
                 
                 // Cập nhật checked state
                 navigationView.setCheckedItem(item.getItemId());
@@ -276,10 +271,12 @@ public class AdminChatFragment extends Fragment
         if (swipeRefresh != null) swipeRefresh.setRefreshing(true);
         attachListener();
     }
-
+    
     @Override
     public void scrollToTop() {
-        if (recyclerView != null) recyclerView.smoothScrollToPosition(0);
+        if (recyclerView != null) {
+            recyclerView.smoothScrollToPosition(0);
+        }
     }
 
     private void toggleEmpty(boolean showEmpty) {
@@ -308,6 +305,7 @@ public class AdminChatFragment extends Fragment
             setHasStableIds(true);
         }
 
+        @SuppressLint("NotifyDataSetChanged")
         void submit(List<User> newData) {
             data.clear();
             if (newData != null) data.addAll(newData);

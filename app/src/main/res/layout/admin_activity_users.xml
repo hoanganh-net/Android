@@ -32,7 +32,7 @@
                     android:id="@+id/chipAll"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Tất cả"
+                    android:text="@string/order_status_all"
                     android:checked="true"
                     style="@style/Widget.MaterialComponents.Chip.Choice" />
                 
@@ -40,14 +40,14 @@
                     android:id="@+id/chipUser"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="User"
+                    android:text="@string/role_user"
                     style="@style/Widget.MaterialComponents.Chip.Choice" />
                 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipAdmin"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Admin"
+                    android:text="@string/role_admin"
                     style="@style/Widget.MaterialComponents.Chip.Choice" />
             </com.google.android.material.chip.ChipGroup>
 
@@ -120,7 +120,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Chưa có người dùng"
+            android:text="@string/no_users"
             android:textColor="@color/gray_600"
             android:textSize="18sp"
             android:textStyle="bold"
@@ -129,7 +129,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Kéo xuống để làm mới hoặc thử lại sau."
+            android:text="@string/pull_to_refresh"
             android:textColor="@color/gray_500"
             android:textSize="14sp"
             android:layout_marginTop="6dp" />

@@ -3,10 +3,11 @@
     import android.view.LayoutInflater;
     import android.view.View;
     import android.view.ViewGroup;
-    import android.widget.ImageButton;
     import android.widget.ImageView;
     import android.widget.RatingBar;
     import android.widget.TextView;
+
+    import com.google.android.material.button.MaterialButton;
 
     import androidx.annotation.NonNull;
     import androidx.recyclerview.widget.DiffUtil;
@@ -82,7 +83,7 @@
             ImageView imgAvatar;
             TextView tvUser, tvComment, tvMeta;
             RatingBar ratingBar;
-            ImageButton btnDelete;
+            MaterialButton btnDelete;
 
             public VH(@NonNull View itemView) {
                 super(itemView);

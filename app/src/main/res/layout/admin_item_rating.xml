@@ -13,7 +13,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="12dp">
+        android:padding="10dp">
 
         <ImageView
             android:id="@+id/imgAvatar"
@@ -30,7 +30,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical"
-            android:layout_marginStart="12dp">
+            android:layout_marginStart="10dp">
 
             <TextView
                 android:id="@+id/tvUser"
@@ -55,7 +55,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Bình luận..."
-                android:layout_marginTop="4dp"/>
+                android:layout_marginTop="2dp"/>
 
             <TextView
                 android:id="@+id/tvMeta"
@@ -64,15 +64,19 @@
                 android:text="#ORDER12345 · 2025-10-28 10:22"
                 android:textSize="12sp"
                 android:textColor="#666"
-                android:layout_marginTop="4dp"/>
+                android:layout_marginTop="2dp"/>
         </LinearLayout>
 
-        <ImageButton
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnDelete"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/delete"
-            android:src="@drawable/ic_delete"/>
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            app:icon="@drawable/ic_delete"
+            app:iconTint="@color/white"
+            app:iconGravity="end"
+            app:backgroundTint="@color/error_red"
+            style="@style/Widget.MaterialComponents.Button.Icon" />
     </LinearLayout>
 </androidx.cardview.widget.CardView>

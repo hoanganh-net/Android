@@ -47,10 +47,9 @@
     <string name="admin_title_statistics">THỐNG KÊ</string>
     <string name="logged_out_successfully">Đăng xuất thành công !</string>
 
-    <string name="unknown">Unknow</string>
+    <string name="unknown">Không rõ</string>
     <string name="logout">"Đăng xuất "</string>
     <string name="edit_profile">Sửa Thông Tin</string>
-    <string name="please_login_first">Hãy đăng nhập trước !</string>
     <string name="load_failed_with_reason">Đăng nhập thất bại: %1$s</string>
     <string name="error_fullname_required">Lỗi: Yêu cầu nhập fullname</string>
     <string name="error_invalid_email">Lỗi: Yêu cầu nhập email !</string>
@@ -70,12 +69,9 @@
     <string name="edit">Sửa</string>
     <string name="delete">Xóa</string>
     <string name="save">Lưu</string>
-    <string name="edit_address">Chỉnh sửa địa chỉ</string>
     <string name="Intro">Trà sữa tươi mỗi ngày — chọn mức đường, đá, topping theo ý bạn!</string>
     <string name="admin_title_management">QUẢN LÝ</string>
     <string name="add">Thêm</string>
-    <string name="title_edit_product">SỬA SẢN PHẨM</string>
-    <string name="title_add_product">THÊM SẢN PHẨM</string>
     <string name="voucher_code">Mã giảm giá</string>
     <string name="payment_method">Phương thức thanh toán</string>
     <string name="subtotal">Tạm tính</string>
@@ -85,7 +81,6 @@
     <string name="confirm_order">Xác nhận đặt hàng</string>
     <string name="total">Tổng Cộng:</string>
     <string name="postal_code">Mã bưu chính</string>
-    <string name="cancel">Cancel</string>
     <string name="no_messages_yet">Chưa có tin nhắn nào</string>
     <string name="change_avatar">Đổi ảnh đại diện</string>
     <string name="manage_address">Quản lý địa chỉ giao hàng</string>
@@ -100,5 +95,212 @@
     <string name="filter_products">Sản phẩm</string>
     <string name="filter_combo">Combo</string>
     <string name="payment_order_title">Thanh toán đơn hàng #%1$s</string>
+    <string name="edit_address">Sửa địa chỉ</string>
+    <string name="cancel">Hủy</string>
+    <string name="title_edit_product">Sửa sản phẩm</string>
+    <string name="title_add_product">Thêm sản phẩm</string>
+    
+    <!-- Empty states -->
+    <string name="no_orders">Chưa có đơn nào</string>
+    <string name="no_orders_user">Chưa có đơn hàng</string>
+    <string name="no_users">Chưa có người dùng</string>
+    <string name="no_toppings">Chưa có topping</string>
+    <string name="no_categories">Chưa có danh mục nào</string>
+    <string name="no_products">Không có sản phẩm</string>
+    <string name="no_statistics">Chưa có dữ liệu thống kê</string>
+    <string name="no_customers">Chưa có khách hàng</string>
+    <string name="no_vouchers">Không có voucher nào có thể đổi</string>
+    <string name="pull_to_refresh">Kéo xuống để làm mới hoặc thử lại sau.</string>
+    
+    <!-- Messages -->
+    <string name="messages_title">TIN NHẮN</string>
+    
+    <!-- Order status -->
+    <string name="order_status_pending">Chờ xác nhận</string>
+    <string name="order_status_finished">Hoàn tất</string>
+    <string name="order_status_cancelled">Đã hủy</string>
+    <string name="order_status_all">Tất cả</string>
+    
+    <!-- User roles -->
+    <string name="role_user">User</string>
+    <string name="role_admin">Admin</string>
+    
+    <!-- Common actions -->
+    <string name="confirm_delete">Xác nhận xóa</string>
+    <string name="view">Xem</string>
+    <string name="default_address">Mặc định</string>
+    <string name="confirm">Xác nhận</string>
+    
+    <!-- Order details -->
+    <string name="order_detail_title">CHI TIẾT ĐƠN HÀNG</string>
+    <string name="missing_order_id">Thiếu mã đơn hàng</string>
+    <string name="order_date">Ngày đặt</string>
+    <string name="payment_method_label">Phương thức thanh toán</string>
+    <string name="payment_status">Trạng thái thanh toán</string>
+    <string name="transaction_id">Mã giao dịch</string>
+    <string name="voucher_code_label">Mã giảm giá</string>
+    <string name="shipping_method">Phương thức giao hàng</string>
+    <string name="name_phone">Họ tên • SĐT</string>
+    <string name="products">Sản phẩm</string>
+    <string name="total_amount">Tổng cộng</string>
+    <string name="subtotal_label">Tạm tính</string>
+    <string name="discount_label">Giảm giá</string>
+    <string name="shipping_fee_label">Phí vận chuyển</string>
+    <string name="final_amount">Thành tiền</string>
+    <string name="cancel_info">Thông tin hủy</string>
+    <string name="cancel_time">Thời gian hủy: %1$s</string>
+    <string name="cancelled_by">Huỷ bởi: %1$s</string>
+    <string name="cancel_order">Hủy đơn hàng</string>
+    <string name="cancel_order_title">Hủy đơn hàng</string>
+    <string name="no_address">Chưa có địa chỉ</string>
+    
+    <!-- Admin order details -->
+    <string name="order_info">Thông tin đơn hàng</string>
+    <string name="created_at">Tạo lúc: ...</string>
+    <string name="confirmed_at">Xác nhận: %1$s</string>
+    <string name="finished_at">Hoàn tất: %1$s</string>
+    <string name="confirmed_by">Người xác nhận: %1$s</string>
+    <string name="payment_info">Thông tin thanh toán</string>
+    <string name="method">Phương thức</string>
+    <string name="status">Trạng thái</string>
+    <string name="cancel_info_title">Thông tin hủy</string>
+    <string name="cancel_time_label">Thời gian huỷ: %1$s</string>
+    <string name="cancel_by_label">Huỷ bởi: %1$s</string>
+    <string name="cancel_order_admin">Huỷ đơn</string>
+    <string name="cannot_load_user">Không thể tải người dùng</string>
+    <string name="loading_user">Đang tải người đặt.</string>
+    
+    <!-- Errors and messages -->
+    <string name="please_login_first">Vui lòng đăng nhập trước khi đặt hàng</string>
+    <string name="not_logged_in">Bạn chưa đăng nhập</string>
+    <string name="no_admin_access">Bạn không có quyền truy cập (admin-only)</string>
+    <string name="init_error">Lỗi khởi tạo: %1$s</string>
+    <string name="cannot_check_permission">Không kiểm tra được quyền: %1$s</string>
+    <string name="load_order_error">Lỗi tải đơn: %1$s</string>
+    <string name="load_order_detail_error">Lỗi tải chi tiết đơn: %1$s</string>
+    <string name="cancel_order_failed">Hủy đơn thất bại: %1$s</string>
+    <string name="create_order_error">Lỗi tạo đơn: %1$s</string>
+    <string name="generate_order_id_error">Lỗi sinh mã đơn: %1$s</string>
+    <string name="payment_cancelled">Bạn đã hủy thanh toán</string>
+    <string name="invalid_checkout_info">Thông tin checkout không hợp lệ</string>
+    <string name="empty_cart_message">Giỏ hàng trống</string>
+    <string name="please_select_address">Vui lòng chọn địa chỉ giao hàng</string>
+    <string name="product_deleted">Đã xóa sản phẩm</string>
+    <string name="combo_deleted">Đã xóa combo</string>
+    <string name="voucher_update_error">Đơn đã tạo, nhưng cập nhật lượt voucher lỗi: %1$s</string>
+    
+    <!-- Combo -->
+    <string name="products_in_combo">Sản phẩm trong combo:</string>
+    <string name="combo_total">Tổng cộng</string>
+    <string name="no_products_selected">Chưa chọn sản phẩm</string>
+    <string name="total_price">Tổng giá: %1$s</string>
+    <string name="combo_price">Giá combo: %1$s</string>
+    <string name="combo_price_90">Giá combo (giảm %1$s%%): %2$s</string>
+    <string name="select_products">Chọn sản phẩm</string>
+    <string name="add_combo">Thêm Combo</string>
+    <string name="refresh_form">Làm Mới Form</string>
+    <string name="edit_combo">SỬA COMBO</string>
+    <string name="add_new_combo">THÊM COMBO MỚI</string>
+    <string name="please_enter_combo_name">Vui lòng nhập tên combo!</string>
+    <string name="please_select_at_least_one_product">Vui lòng chọn ít nhất một sản phẩm!</string>
+    <string name="load_combo_error">Lỗi tải combo: %1$s</string>
+    <string name="update_combo_failed">Cập nhật thất bại: %1$s</string>
+    <string name="add_combo_failed">Thêm thất bại: %1$s</string>
+    <string name="generate_combo_id_error">Sinh mã combo lỗi: %1$s</string>
+    <string name="select_products_for_combo">Chọn sản phẩm cho Combo</string>
+    <string name="no_products_in_combo">Không có sản phẩm</string>
+    <string name="combo_label">Combo</string>
+    
+    <!-- Product -->
+    <string name="product_name">Tên sản phẩm</string>
+    <string name="size">Size:</string>
+    <string name="size_small">Nhỏ</string>
+    <string name="size_medium">Vừa</string>
+    <string name="size_large">Lớn</string>
+    <string name="sugar_level">Mức đường:</string>
+    <string name="toppings">Topping:</string>
+    <string name="no_toppings_available">Không có topping nào</string>
+    <string name="note">Ghi chú: %1$s</string>
+    <string name="size_topping_format">Size %1$s • Topping: %2$s</string>
+    <string name="update_product">Cập nhật Sản phẩm</string>
+    <string name="delete_product">Xóa sản phẩm</string>
+    <string name="delete_product_confirm">Xóa sản phẩm</string>
+    
+    <!-- Category -->
+    <string name="add_first_category">Thêm danh mục đầu tiên</string>
+    <string name="not_selected">Chưa chọn</string>
+    <string name="select_time">Chọn thời gian</string>
+    
+    <!-- Voucher -->
+    <string name="voucher_type">Loại voucher</string>
+    <string name="voucher_application_time">Thời gian áp dụng</string>
+    <string name="activate_voucher">Kích hoạt voucher</string>
+    <string name="add_voucher">Thêm voucher</string>
+    <string name="discount_amount">Giảm %1$s</string>
+    <string name="from_amount">Từ %1$s</string>
+    <string name="voucher_description">Mô tả voucher</string>
+    <string name="expiry_date">HSD: %1$s</string>
+    
+    <!-- Statistics -->
+    <string name="statistics_summary">Tóm tắt thống kê</string>
+    <string name="no_statistics_data">Chưa có dữ liệu thống kê</string>
+    <string name="select_statistics_period">Chọn khoảng thời gian thống kê</string>
+    <string name="select_date_range">Chọn khoảng ngày</string>
+    <string name="no_date_selected">Chưa chọn ngày</string>
+    <string name="view_statistics">Xem thống kê</string>
+    <string name="today">Hôm nay</string>
+    <string name="no_data_for_period">Chưa có dữ liệu cho khoảng thời gian này</string>
+    <string name="please_select_other_period">Vui lòng chọn khoảng thời gian khác hoặc thử lại sau</string>
+    
+    <!-- Profile -->
+    <string name="loyalty_customer">Khách hàng thân thiết</string>
+    <string name="current_level">Cấp độ hiện tại</string>
+    <string name="not_ranked">Chưa xếp hạng</string>
+    <string name="current_level_benefits">Quyền lợi hạng hiện tại</string>
+    <string name="next_target">Mục tiêu tiếp theo</string>
+    <string name="next_level_benefits">Quyền lợi khi lên hạng</string>
+    <string name="view_rules_benefits">Xem quy tắc - quyền lợi các hạng</string>
+    <string name="current_status">Trạng thái hiện tại</string>
+    <string name="current_benefits">Quyền lợi hiện tại</string>
+    <string name="ranking_rules">Quy tắc xếp hạng</string>
+    
+    <!-- Home -->
+    <string name="greeting">Xin chào!</string>
+    <string name="greeting_with_name">Xin chào, %1$s!</string>
+    <string name="introduction">Giới thiệu</string>
+    
+    <!-- Settings -->
+    <string name="settings">Cài đặt</string>
+    <string name="feature_under_development">Tính năng đang phát triển</string>
+    
+    <!-- Avatar -->
+    <string name="select_avatar">Chọn avatar</string>
+    <string name="customer_name">Tên khách hàng</string>
+    <string name="example_email">email@example.com</string>
+    
+    <!-- Product picker -->
+    <string name="all_categories">Tất cả</string>
+    
+    <!-- Rating -->
+    <string name="delete_rating">Xoá đánh giá?</string>
+    <string name="load_error">Lỗi tải: %1$s</string>
+    <string name="delete_error">Lỗi xoá: %1$s</string>
+    <string name="load_toppings_error">Lỗi tải toppings: %1$s</string>
+    <string name="update_error">Lỗi cập nhật: %1$s</string>
+    <string name="delete_topping">Xoá topping</string>
+    <string name="add_topping">Thêm topping</string>
+    <string name="edit_topping">Sửa topping</string>
+    <string name="add_error">Lỗi thêm: %1$s</string>
+    <string name="select_category">Chọn category áp dụng</string>
+    
+    <!-- Order line -->
+    <string name="product_name_placeholder">Tên sản phẩm</string>
+    <string name="size_topping_format_placeholder">Size L • Topping: Trân châu, Pudding</string>
+    <string name="note_placeholder">Ghi chú: Ít đá</string>
+    
+    <!-- Empty product state -->
+    <string name="no_products_available">Không có sản phẩm nào</string>
+    <string name="add_first_product">Hãy thêm sản phẩm đầu tiên của bạn</string>
+    <string name="add_product_button">Thêm sản phẩm</string>
 
 </resources>
