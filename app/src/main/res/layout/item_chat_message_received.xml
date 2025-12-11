@@ -1,31 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="horizontal"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="4dp"
     android:gravity="start">
 
-    <TextView
-        android:id="@+id/tvSender"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Người gửi"
-        android:textSize="12sp"
-        android:textStyle="bold"
-        android:textColor="@color/gray_600"
-        android:layout_marginStart="8dp"
-        android:layout_marginBottom="4dp"
-        android:visibility="visible" />
+    <de.hdodenhof.circleimageview.CircleImageView
+        android:id="@+id/imgAvatar"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:src="@drawable/ic_profile_placeholder"
+        android:scaleType="centerCrop"
+        android:layout_marginEnd="8dp"
+        android:layout_gravity="bottom"
+        app:civ_border_width="1dp"
+        app:civ_border_color="@color/gray_300" />
 
     <LinearLayout
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_gravity="start"
+        android:layout_weight="1"
         android:orientation="vertical"
-        android:background="@drawable/bg_chat_received"
-        android:padding="12dp"
-        android:maxWidth="280dp">
+        android:gravity="start">
+
+        <TextView
+            android:id="@+id/tvSender"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Người gửi"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:textColor="@color/gray_600"
+            android:layout_marginStart="8dp"
+            android:layout_marginBottom="4dp"
+            android:visibility="visible" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="start"
+            android:orientation="vertical"
+            android:background="@drawable/bg_chat_received"
+            android:padding="12dp"
+            android:maxWidth="280dp">
 
         <TextView
             android:id="@+id/tvMessage"
@@ -35,15 +54,16 @@
             android:textColor="@android:color/black"
             android:textSize="14sp" />
 
-        <TextView
-            android:id="@+id/tvTime"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="end"
-            android:text="10:30"
-            android:textColor="@color/gray_600"
-            android:textSize="11sp"
-            android:layout_marginTop="4dp" />
+            <TextView
+                android:id="@+id/tvTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:text="10:30"
+                android:textColor="@color/gray_600"
+                android:textSize="11sp"
+                android:layout_marginTop="4dp" />
+        </LinearLayout>
     </LinearLayout>
 </LinearLayout>
 

@@ -119,6 +119,61 @@ public class ChatRepository {
     }
 
     /**
+     * Đánh dấu tất cả tin nhắn chưa đọc từ user là đã đọc (khi admin mở chat)
+     */
+    public void markAllUserMessagesAsRead(@NonNull String userId, @NonNull OnChatSendListener listener) {
+        // Lấy tất cả tin nhắn chưa đọc
+        db.collection("chats")
+                .document(userId)
+                .collection("messages")
+                .whereEqualTo("read", false)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    if (querySnapshot == null || querySnapshot.isEmpty()) {
+                        listener.onSuccess();
+                        return;
+                    }
+                    
+                    // Batch update tất cả tin nhắn chưa đọc từ user (không phải admin)
+                    com.google.firebase.firestore.WriteBatch batch = db.batch();
+                    int count = 0;
+                    for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                        ChatMessage msg = doc.toObject(ChatMessage.class);
+                        if (msg != null) {
+                            String senderId = msg.getSenderId();
+                            // Chỉ đánh dấu tin nhắn từ user (không phải admin)
+                            if (senderId != null && !"admin".equals(senderId)) {
+                                batch.update(doc.getReference(), "read", true, "readAt", Timestamp.now());
+                                count++;
+                            }
+                        }
+                    }
+                    
+                    // Tạo biến final để sử dụng trong lambda
+                    final int finalCount = count;
+                    final String finalUserId = userId;
+                    
+                    if (count > 0) {
+                        batch.commit()
+                                .addOnSuccessListener(aVoid -> {
+                                    android.util.Log.d("ChatRepository", "Marked " + finalCount + " messages as read for user: " + finalUserId);
+                                    listener.onSuccess();
+                                })
+                                .addOnFailureListener(e -> {
+                                    android.util.Log.e("ChatRepository", "Error marking messages as read: " + e.getMessage());
+                                    listener.onError(e);
+                                });
+                    } else {
+                        listener.onSuccess();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    android.util.Log.e("ChatRepository", "Error fetching unread messages: " + e.getMessage());
+                    listener.onError(e);
+                });
+    }
+
+    /**
      * Lấy danh sách users có tin nhắn (cho admin xem danh sách chat)
      * Lấy từ collection users và kiểm tra xem có collection chats/{userId}/messages không
      */
@@ -141,6 +196,52 @@ public class ChatRepository {
 
     public interface OnUsersListener {
         void onUsersReceived(@NonNull List<String> userIds);
+        void onError(@NonNull Exception error);
+    }
+
+    /**
+     * Lấy tin nhắn mới nhất và số tin nhắn chưa đọc từ user
+     */
+    public void getLatestMessageAndUnreadCount(@NonNull String userId, @NonNull OnLatestMessageListener listener) {
+        // Lấy tất cả tin nhắn để vừa lấy tin nhắn mới nhất vừa đếm số chưa đọc
+        db.collection("chats")
+                .document(userId)
+                .collection("messages")
+                .orderBy("createdAt", Query.Direction.DESCENDING)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    ChatMessage latestMessage = null;
+                    int unreadCount = 0;
+                    
+                    if (querySnapshot != null && !querySnapshot.isEmpty()) {
+                        // Lấy tin nhắn mới nhất
+                        DocumentSnapshot latestDoc = querySnapshot.getDocuments().get(0);
+                        latestMessage = latestDoc.toObject(ChatMessage.class);
+                        if (latestMessage != null) {
+                            latestMessage.setId(latestDoc.getId());
+                        }
+                        
+                        // Đếm số tin nhắn chưa đọc (chỉ tin nhắn từ user, không phải admin)
+                        for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                            ChatMessage msg = doc.toObject(ChatMessage.class);
+                            if (msg != null) {
+                                Boolean read = msg.getRead();
+                                String senderId = msg.getSenderId();
+                                // Chỉ đếm tin nhắn chưa đọc từ user (không phải admin)
+                                if ((read == null || !read) && senderId != null && !"admin".equals(senderId)) {
+                                    unreadCount++;
+                                }
+                            }
+                        }
+                    }
+                    
+                    listener.onResult(latestMessage, unreadCount);
+                })
+                .addOnFailureListener(listener::onError);
+    }
+
+    public interface OnLatestMessageListener {
+        void onResult(@Nullable ChatMessage latestMessage, int unreadCount);
         void onError(@NonNull Exception error);
     }
 }

@@ -12,6 +12,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
@@ -25,12 +26,16 @@ import com.google.firebase.firestore.ListenerRegistration;
 import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.activity.admin.AdminMainActivity;
 import com.pro.milkteaapp.activity.admin.ChatActivity;
+import com.pro.milkteaapp.models.ChatMessage;
 import com.pro.milkteaapp.models.User;
 import com.pro.milkteaapp.repository.ChatRepository;
 import com.pro.milkteaapp.repository.UsersRepository;
 import com.pro.milkteaapp.utils.ImageLoader;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -45,16 +50,30 @@ public class AdminChatFragment extends Fragment
     private NavigationView navigationView;
     
     private UsersRepository usersRepository;
+    private ChatRepository chatRepository;
     private ListenerRegistration listener;
     
-    private final List<User> allUsers = new ArrayList<>();
+    private final List<UserChatInfo> allUsers = new ArrayList<>();
     private String selectedRole = "Tất cả"; // Mặc định hiển thị tất cả
+    
+    // Wrapper class để lưu User + thông tin tin nhắn
+    private static class UserChatInfo {
+        final User user;
+        ChatMessage latestMessage;
+        int unreadCount;
+        
+        UserChatInfo(User user) {
+            this.user = user;
+            this.latestMessage = null;
+            this.unreadCount = 0;
+        }
+    }
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         usersRepository = new UsersRepository();
-        ChatRepository chatRepository = new ChatRepository();
+        chatRepository = new ChatRepository();
     }
 
     @Nullable
@@ -97,6 +116,15 @@ public class AdminChatFragment extends Fragment
     }
 
     @Override
+    public void onResume() {
+        super.onResume();
+        // Refresh lại thông tin tin nhắn khi quay lại từ ChatActivity
+        if (!allUsers.isEmpty()) {
+            loadChatInfoForUsers();
+        }
+    }
+
+    @Override
     public void onStop() {
         super.onStop();
         detachListener();
@@ -133,8 +161,8 @@ public class AdminChatFragment extends Fragment
         
         // Lấy tất cả các role unique từ danh sách users
         java.util.Set<String> uniqueRoles = new java.util.HashSet<>();
-        for (User user : allUsers) {
-            String role = user.getRole();
+        for (UserChatInfo info : allUsers) {
+            String role = info.user.getRole();
             if (role == null || role.trim().isEmpty()) {
                 role = "user";
             }
@@ -195,25 +223,53 @@ public class AdminChatFragment extends Fragment
     }
     
     private void filterUsersByRole() {
-        List<User> filtered = new ArrayList<>();
+        List<UserChatInfo> filtered = new ArrayList<>();
         
         if ("Tất cả".equals(selectedRole)) {
             filtered.addAll(allUsers);
         } else {
             // So sánh không phân biệt hoa thường
             String selectedRoleLower = selectedRole.toLowerCase(Locale.ROOT);
-            for (User u : allUsers) {
-                String role = u.getRole();
+            for (UserChatInfo info : allUsers) {
+                String role = info.user.getRole();
                 if (role == null || role.trim().isEmpty()) {
                     role = "user";
                 }
                 role = role.toLowerCase(Locale.ROOT);
                 
                 if (selectedRoleLower.equals(role)) {
-                    filtered.add(u);
+                    filtered.add(info);
                 }
             }
         }
+        
+        // Sắp xếp: user có tin nhắn mới (chưa đọc) lên đầu
+        filtered.sort((a, b) -> {
+            // Ưu tiên: có tin nhắn chưa đọc > có tin nhắn mới nhất > không có tin nhắn
+            if (a.unreadCount > 0 && b.unreadCount == 0) return -1;
+            if (a.unreadCount == 0 && b.unreadCount > 0) return 1;
+            if (a.unreadCount > 0 && b.unreadCount > 0) {
+                // Cả hai đều có tin nhắn chưa đọc, so sánh theo thời gian tin nhắn mới nhất
+                if (a.latestMessage != null && b.latestMessage != null) {
+                    Date aTime = a.latestMessage.getCreatedAt() != null ? a.latestMessage.getCreatedAt().toDate() : null;
+                    Date bTime = b.latestMessage.getCreatedAt() != null ? b.latestMessage.getCreatedAt().toDate() : null;
+                    if (aTime != null && bTime != null) {
+                        return bTime.compareTo(aTime); // Mới hơn lên đầu
+                    }
+                }
+            }
+            // So sánh theo thời gian tin nhắn mới nhất
+            if (a.latestMessage != null && b.latestMessage != null) {
+                Date aTime = a.latestMessage.getCreatedAt() != null ? a.latestMessage.getCreatedAt().toDate() : null;
+                Date bTime = b.latestMessage.getCreatedAt() != null ? b.latestMessage.getCreatedAt().toDate() : null;
+                if (aTime != null && bTime != null) {
+                    return bTime.compareTo(aTime); // Mới hơn lên đầu
+                }
+                if (aTime != null) return -1;
+                if (bTime != null) return 1;
+            }
+            return 0;
+        });
         
         adapter.submit(filtered);
         toggleEmpty(filtered.isEmpty());
@@ -232,15 +288,17 @@ public class AdminChatFragment extends Fragment
                 showLoading(false);
                 if (swipeRefresh != null) swipeRefresh.setRefreshing(false);
                 
-                // Lưu tất cả users (không filter)
+                // Tạo UserChatInfo cho mỗi user
                 allUsers.clear();
-                allUsers.addAll(users);
+                for (User user : users) {
+                    allUsers.add(new UserChatInfo(user));
+                }
+                
+                // Load thông tin tin nhắn cho mỗi user
+                loadChatInfoForUsers();
                 
                 // Cập nhật menu drawer với tất cả các role
                 updateDrawerMenuWithRoles();
-                
-                // Filter theo role được chọn
-                filterUsersByRole();
             }
 
             @Override
@@ -257,6 +315,54 @@ public class AdminChatFragment extends Fragment
                 }
             }
         });
+    }
+
+    private void loadChatInfoForUsers() {
+        if (chatRepository == null || allUsers.isEmpty()) {
+            filterUsersByRole();
+            return;
+        }
+        
+        final int[] loadedCount = {0};
+        final int totalUsers = allUsers.size();
+        
+        // Reset loadedCount nếu đang refresh
+        loadedCount[0] = 0;
+        
+        for (UserChatInfo info : allUsers) {
+            String userId = info.user.getUid();
+            if (userId == null || userId.isEmpty()) {
+                loadedCount[0]++;
+                if (loadedCount[0] == totalUsers) {
+                    filterUsersByRole();
+                }
+                continue;
+            }
+            
+            chatRepository.getLatestMessageAndUnreadCount(userId, new ChatRepository.OnLatestMessageListener() {
+                @Override
+                public void onResult(@Nullable ChatMessage latestMessage, int unreadCount) {
+                    info.latestMessage = latestMessage;
+                    info.unreadCount = unreadCount;
+                    loadedCount[0]++;
+                    
+                    if (loadedCount[0] == totalUsers) {
+                        filterUsersByRole();
+                    }
+                }
+
+                @Override
+                public void onError(@NonNull Exception error) {
+                    // Nếu lỗi, vẫn cập nhật với giá trị null/0
+                    info.latestMessage = null;
+                    info.unreadCount = 0;
+                    loadedCount[0]++;
+                    if (loadedCount[0] == totalUsers) {
+                        filterUsersByRole();
+                    }
+                }
+            });
+        }
     }
 
     private void detachListener() {
@@ -293,8 +399,10 @@ public class AdminChatFragment extends Fragment
 
     // Adapter
     private static class ChatUsersAdapter extends RecyclerView.Adapter<ChatUserVH> {
-        private final List<User> data = new ArrayList<>();
+        private final List<UserChatInfo> data = new ArrayList<>();
         private final OnUserClick onClick;
+        private final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
+        private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM", Locale.getDefault());
 
         interface OnUserClick {
             void onClick(@NonNull User user);
@@ -306,7 +414,7 @@ public class AdminChatFragment extends Fragment
         }
 
         @SuppressLint("NotifyDataSetChanged")
-        void submit(List<User> newData) {
+        void submit(List<UserChatInfo> newData) {
             data.clear();
             if (newData != null) data.addAll(newData);
             notifyDataSetChanged();
@@ -315,7 +423,7 @@ public class AdminChatFragment extends Fragment
         @Override
         public long getItemId(int position) {
             if (position < 0 || position >= data.size()) return RecyclerView.NO_ID;
-            String id = data.get(position).getUid();
+            String id = data.get(position).user.getUid();
             return (id == null ? "" : id).hashCode();
         }
 
@@ -330,7 +438,7 @@ public class AdminChatFragment extends Fragment
         @Override
         public void onBindViewHolder(@NonNull ChatUserVH h, int pos) {
             if (pos < 0 || pos >= data.size()) return;
-            h.bind(data.get(pos), onClick);
+            h.bind(data.get(pos), onClick, timeFormat, dateFormat);
         }
 
         @Override
@@ -340,23 +448,61 @@ public class AdminChatFragment extends Fragment
     }
 
     private static class ChatUserVH extends RecyclerView.ViewHolder {
-        private final TextView tvName, tvEmail;
+        private final TextView tvName, tvEmail, tvLastMessage, tvUnreadBadge;
         private final de.hdodenhof.circleimageview.CircleImageView imgAvatar;
 
         ChatUserVH(@NonNull View itemView) {
             super(itemView);
             tvName = itemView.findViewById(R.id.tvName);
             tvEmail = itemView.findViewById(R.id.tvEmail);
+            tvLastMessage = itemView.findViewById(R.id.tvLastMessage);
+            tvUnreadBadge = itemView.findViewById(R.id.tvUnreadBadge);
             imgAvatar = itemView.findViewById(R.id.imgAvatar);
         }
 
-        void bind(@NonNull User user, ChatUsersAdapter.OnUserClick onClick) {
+        void bind(@NonNull UserChatInfo info, ChatUsersAdapter.OnUserClick onClick, 
+                  SimpleDateFormat timeFormat, SimpleDateFormat dateFormat) {
+            User user = info.user;
+            
             String name = user.getFullName();
             if (TextUtils.isEmpty(name)) name = "(No name)";
             tvName.setText(name);
             
-            String email = user.getEmail();
-            tvEmail.setText(TextUtils.isEmpty(email) ? "(no email)" : email);
+            // Ẩn email
+            tvEmail.setVisibility(View.GONE);
+            
+            // Hiển thị tin nhắn mới nhất
+            if (info.latestMessage != null && info.latestMessage.getMessage() != null) {
+                tvLastMessage.setVisibility(View.VISIBLE);
+                String message = info.latestMessage.getMessage();
+                // Chỉ hiển thị tin nhắn từ user (không phải admin)
+                if (!"admin".equals(info.latestMessage.getSenderId())) {
+                    tvLastMessage.setText(message);
+                    tvLastMessage.setTextColor(ContextCompat.getColor(itemView.getContext(), android.R.color.black));
+                    tvLastMessage.setTypeface(null, android.graphics.Typeface.BOLD);
+                } else {
+                    tvLastMessage.setText("Bạn: " + message);
+                    tvLastMessage.setTextColor(ContextCompat.getColor(itemView.getContext(), android.R.color.darker_gray));
+                    tvLastMessage.setTypeface(null, android.graphics.Typeface.NORMAL);
+                }
+            } else {
+                tvLastMessage.setVisibility(View.GONE);
+            }
+            
+            // Hiển thị badge số tin nhắn chưa đọc
+            if (info.unreadCount > 0) {
+                tvUnreadBadge.setVisibility(View.VISIBLE);
+                tvUnreadBadge.setText(String.valueOf(info.unreadCount));
+                // Làm nổi bật item có tin nhắn mới
+                itemView.setBackgroundColor(ContextCompat.getColor(itemView.getContext(), R.color.primary_light));
+                tvName.setTextColor(ContextCompat.getColor(itemView.getContext(), android.R.color.black));
+                tvName.setTypeface(null, android.graphics.Typeface.BOLD);
+            } else {
+                tvUnreadBadge.setVisibility(View.GONE);
+                itemView.setBackgroundColor(ContextCompat.getColor(itemView.getContext(), android.R.color.white));
+                tvName.setTextColor(ContextCompat.getColor(itemView.getContext(), android.R.color.black));
+                tvName.setTypeface(null, android.graphics.Typeface.NORMAL);
+            }
             
             // Load avatar
             String avatar = user.getAvatar();

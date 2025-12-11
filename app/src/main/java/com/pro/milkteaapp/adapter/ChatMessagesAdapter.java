@@ -73,16 +73,17 @@ public class ChatMessagesAdapter extends RecyclerView.Adapter<ChatMessagesAdapte
         h.tvMessage.setText(msg.getMessage() != null ? msg.getMessage() : "");
         h.tvTime.setText(msg.getCreatedAt() != null ? timeFormat.format(msg.getCreatedAt().toDate()) : "");
         
+        // Tính toán isSent trực tiếp từ message
+        boolean isSent = false;
+        if ("admin".equals(currentUserId)) {
+            isSent = "admin".equals(msg.getSenderId());
+        } else {
+            isSent = currentUserId != null && currentUserId.equals(msg.getSenderId());
+        }
+        
         // Luôn hiển thị tên người gửi
         if (h.tvSender != null) {
             String senderName = msg.getSenderName() != null ? msg.getSenderName() : "";
-            // Tính toán isSent trực tiếp từ message thay vì gọi getItemViewType lại
-            boolean isSent = false;
-            if ("admin".equals(currentUserId)) {
-                isSent = "admin".equals(msg.getSenderId());
-            } else {
-                isSent = currentUserId != null && currentUserId.equals(msg.getSenderId());
-            }
             
             if (isSent) {
                 // Tin nhắn đã gửi: hiển thị "Bạn"
@@ -102,6 +103,24 @@ public class ChatMessagesAdapter extends RecyclerView.Adapter<ChatMessagesAdapte
                 h.tvSender.setVisibility(View.VISIBLE);
             }
         }
+        
+        // Hiển thị avatar cho tin nhắn đã nhận (chỉ có trong layout received)
+        if (h.imgAvatar != null) {
+            if (isSent) {
+                // Tin nhắn đã gửi: ẩn avatar (layout sent không có avatar)
+                h.imgAvatar.setVisibility(View.GONE);
+            } else {
+                // Tin nhắn đã nhận: hiển thị avatar
+                h.imgAvatar.setVisibility(View.VISIBLE);
+                if ("admin".equals(msg.getSenderId())) {
+                    // Avatar mặc định cho admin
+                    h.imgAvatar.setImageResource(R.drawable.ic_profile_placeholder);
+                } else {
+                    // Avatar của user (nếu có) hoặc placeholder
+                    h.imgAvatar.setImageResource(R.drawable.ic_profile_placeholder);
+                }
+            }
+        }
     }
 
     @Override
@@ -111,12 +130,14 @@ public class ChatMessagesAdapter extends RecyclerView.Adapter<ChatMessagesAdapte
 
     static class VH extends RecyclerView.ViewHolder {
         TextView tvMessage, tvTime, tvSender;
+        de.hdodenhof.circleimageview.CircleImageView imgAvatar;
 
         VH(@NonNull View itemView) {
             super(itemView);
             tvMessage = itemView.findViewById(R.id.tvMessage);
             tvTime = itemView.findViewById(R.id.tvTime);
             tvSender = itemView.findViewById(R.id.tvSender);
+            imgAvatar = itemView.findViewById(R.id.imgAvatar);
         }
     }
 }

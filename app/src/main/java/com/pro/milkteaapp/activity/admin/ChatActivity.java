@@ -76,7 +76,27 @@ public class ChatActivity extends AppCompatActivity {
             return true;
         });
         
+        // Đánh dấu tất cả tin nhắn từ user là đã đọc khi mở chat
+        markAllMessagesAsRead();
+        
         startListening();
+    }
+
+    private void markAllMessagesAsRead() {
+        if (chatRepository == null || TextUtils.isEmpty(userId)) return;
+        
+        chatRepository.markAllUserMessagesAsRead(userId, new ChatRepository.OnChatSendListener() {
+            @Override
+            public void onSuccess() {
+                // Tin nhắn đã được đánh dấu đã đọc
+            }
+
+            @Override
+            public void onError(@NonNull Exception error) {
+                // Không hiển thị lỗi, chỉ log
+                android.util.Log.e("ChatActivity", "Error marking messages as read: " + error.getMessage());
+            }
+        });
     }
 
     private void startListening() {
