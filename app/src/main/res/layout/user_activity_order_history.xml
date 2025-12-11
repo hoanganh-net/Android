@@ -14,12 +14,9 @@
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            app:title="@string/order_history"
-            app:titleTextAppearance="@style/ToolbarTitleStyle"
             app:navigationIcon="@drawable/ic_arrow_back"
             app:navigationIconTint="@android:color/white"
             android:background="?attr/colorPrimary"
-            app:titleTextColor="@android:color/white"
             app:contentInsetStart="0dp"
             app:contentInsetEnd="0dp"
             app:contentInsetStartWithNavigation="0dp">
@@ -29,19 +26,18 @@
                 android:layout_height="match_parent"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp">
+                android:paddingEnd="0dp">
 
                 <TextView
+                    android:id="@+id/toolbarTitle"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="@string/order_history"
                     android:textColor="@android:color/white"
-                    android:textSize="18sp"
+                    android:textSize="20sp"
                     android:textStyle="bold"
-                    android:gravity="center"
-                    android:paddingStart="0dp" />
+                    android:gravity="center" />
 
                 <ImageButton
                     android:id="@+id/btnFilter"

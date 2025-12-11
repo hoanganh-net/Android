@@ -11,6 +11,7 @@
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         android:background="@color/primary"
+        android:paddingEnd="56dp"
         app:title="CHAT"
         app:titleTextColor="@color/white"
         app:titleTextAppearance="@style/ToolbarTitleStyle"

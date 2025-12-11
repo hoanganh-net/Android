@@ -11,8 +11,10 @@ import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.pro.milkteaapp.constants.FirestoreConstants;
 import com.pro.milkteaapp.models.Combo;
+import com.pro.milkteaapp.models.Product;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -191,6 +193,87 @@ public class ComboRepository {
                 .delete()
                 .addOnSuccessListener(aVoid -> listener.onSuccess())
                 .addOnFailureListener(listener::onError);
+    }
+
+    /**
+     * Tìm tất cả combo chứa productId cụ thể
+     */
+    public void findCombosContainingProduct(@NonNull String productId, @NonNull OnCombosListener listener) {
+        db.collection(FirestoreConstants.COLLECTION_COMBOS)
+                .whereArrayContains(FirestoreConstants.FIELD_COMBO_PRODUCT_IDS, productId)
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    List<Combo> combos = parseCombos(snapshot);
+                    listener.onCombosReceived(combos);
+                })
+                .addOnFailureListener(listener::onError);
+    }
+
+    /**
+     * Tính lại và cập nhật giá combo dựa trên giá mới của các sản phẩm
+     */
+    public void recalculateComboPrice(@NonNull String comboId, @NonNull ProductRepository productRepository, @NonNull OnComboUpdateListener listener) {
+        // Lấy combo
+        fetchComboById(comboId, new OnComboListener() {
+            @Override
+            public void onComboReceived(@NonNull Combo combo) {
+                List<String> productIds = combo.getProductIds();
+                if (productIds == null || productIds.isEmpty()) {
+                    listener.onSuccess();
+                    return;
+                }
+
+                // Lấy giá mới của tất cả sản phẩm
+                final int[] loadedCount = {0};
+                final double[] totalPrice = {0.0};
+                final int totalProducts = productIds.size();
+
+                for (String productId : productIds) {
+                    productRepository.fetchProductById(productId, new ProductRepository.OnSingleProductListener() {
+                        @Override
+                        public void onProductReceived(@NonNull Product product) {
+                            Double price = product.getPrice();
+                            if (price != null) {
+                                totalPrice[0] += price;
+                            }
+                            loadedCount[0]++;
+                            if (loadedCount[0] == totalProducts) {
+                                // Tính lại giá combo
+                                Integer discountPercent = combo.getDiscountPercent();
+                                if (discountPercent == null) {
+                                    discountPercent = 10; // Mặc định 10%
+                                }
+                                
+                                double discountAmount = totalPrice[0] * discountPercent / 100.0;
+                                double newComboPrice = totalPrice[0] - discountAmount;
+
+                                // Cập nhật combo
+                                Map<String, Object> updateData = new java.util.HashMap<>();
+                                updateData.put(FirestoreConstants.FIELD_COMBO_PRICE, newComboPrice);
+                                updateData.put(FirestoreConstants.FIELD_COMBO_ORIGINAL_PRICE, totalPrice[0]);
+                                updateData.put(FirestoreConstants.FIELD_UPDATED_AT, FieldValue.serverTimestamp());
+
+                                updateCombo(comboId, updateData, listener);
+                            }
+                        }
+
+                        @Override
+                        public void onError(@NonNull Exception error) {
+                            loadedCount[0]++;
+                            if (loadedCount[0] == totalProducts) {
+                                // Nếu có lỗi load sản phẩm, vẫn cập nhật với giá hiện tại
+                                listener.onError(new Exception("Failed to load some products for combo: " + error.getMessage()));
+                            }
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onError(@NonNull Exception error) {
+                listener.onError(error);
+            }
+        });
     }
 
     /**

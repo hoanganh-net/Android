@@ -77,8 +77,13 @@ public class AdminOrderDetailActivity extends AppCompatActivity {
             return;
         }
         
-        // Set title ban đầu
-        centerToolbarTitle(b.toolbar, "ĐƠN #" + orderId);
+        // Set title ban đầu vào TextView custom để căn giữa
+        android.widget.TextView titleView = b.toolbar.findViewById(R.id.toolbarTitle);
+        if (titleView != null) {
+            titleView.setText("ĐƠN #" + orderId);
+        } else {
+            b.toolbar.setTitle("ĐƠN #" + orderId);
+        }
 
         b.btnAdminConfirm.setOnClickListener(v -> doConfirm());
         b.btnAdminCancel.setOnClickListener(v -> showCancelDialog());
@@ -189,8 +194,13 @@ public class AdminOrderDetailActivity extends AppCompatActivity {
         if (canceledAt == null) canceledAt = d.getTimestamp("cancelledAt");
         String cancelledBy = s(d.getString("cancelledBy"));
 
-        // UI - Title sẽ được set trong centerToolbarTitle
-        centerToolbarTitle(b.toolbar, "ĐƠN #" + id);
+        // UI - Title sẽ được set vào TextView custom để căn giữa
+        android.widget.TextView titleView = b.toolbar.findViewById(R.id.toolbarTitle);
+        if (titleView != null) {
+            titleView.setText("ĐƠN #" + id);
+        } else {
+            b.toolbar.setTitle("ĐƠN #" + id);
+        }
         b.tvOrderId.setText("#" + id);
         b.tvStatus.setText(statusNow);
 
@@ -617,12 +627,6 @@ public class AdminOrderDetailActivity extends AppCompatActivity {
         };
     }
     
-    private android.widget.TextView customTitleView;
-    
-    private void centerToolbarTitle(com.google.android.material.appbar.MaterialToolbar toolbar, String title) {
-        customTitleView = com.pro.milkteaapp.utils.ToolbarUtils.centerToolbarTitle(
-                toolbar, title, customTitleView, getSupportActionBar());
-    }
     
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

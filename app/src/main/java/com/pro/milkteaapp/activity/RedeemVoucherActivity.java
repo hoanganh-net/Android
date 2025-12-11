@@ -56,12 +56,13 @@ public class RedeemVoucherActivity extends AppCompatActivity {
     private void setupToolbar() {
         setSupportActionBar(binding.toolbar);
         binding.toolbar.setNavigationOnClickListener(v -> finish());
-        centerToolbarTitle(binding.toolbar, "ĐỔI VOUCHER BẰNG ĐIỂM");
-    }
-    
-    private void centerToolbarTitle(com.google.android.material.appbar.MaterialToolbar toolbar, String title) {
-        customTitleView = com.pro.milkteaapp.utils.ToolbarUtils.centerToolbarTitle(
-                toolbar, title, customTitleView, getSupportActionBar());
+        // Set title vào TextView custom để căn giữa
+        android.widget.TextView titleView = binding.toolbar.findViewById(R.id.toolbarTitle);
+        if (titleView != null) {
+            titleView.setText("ĐỔI VOUCHER BẰNG ĐIỂM");
+        } else {
+            binding.toolbar.setTitle("ĐỔI VOUCHER BẰNG ĐIỂM");
+        }
     }
     
 

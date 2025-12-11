@@ -304,7 +304,6 @@ public class AdminMainActivity extends AppCompatActivity {
         return true;
     }
 
-    private android.widget.TextView customTitleView;
     
     private void updateToolbarTitle(@IdRes int menuId) {
         if (binding == null || binding.toolbar == null || getSupportActionBar() == null) return;
@@ -315,8 +314,13 @@ public class AdminMainActivity extends AppCompatActivity {
         else if (menuId == R.id.adminStatistics) titleRes = R.string.admin_title_statistics;
         else if (menuId == R.id.adminManagement) titleRes = R.string.admin_title_management;
         
-        customTitleView = com.pro.milkteaapp.utils.ToolbarUtils.centerToolbarTitle(
-                binding.toolbar, getString(titleRes), customTitleView, getSupportActionBar());
+        // Set title vào TextView custom để căn giữa
+        android.widget.TextView titleView = binding.toolbar.findViewById(R.id.toolbarTitle);
+        if (titleView != null) {
+            titleView.setText(getString(titleRes));
+        } else {
+            binding.toolbar.setTitle(getString(titleRes));
+        }
         
         // Hiển thị icon menu cho tất cả các tab để mở drawer
         if (getSupportActionBar() != null) {

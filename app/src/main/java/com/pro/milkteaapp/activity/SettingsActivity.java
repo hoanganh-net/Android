@@ -19,19 +19,12 @@ public class SettingsActivity extends AppCompatActivity {
         setupToolbar();
     }
 
-    private android.widget.TextView customTitleView;
-    
     private void setupToolbar() {
         setSupportActionBar(binding.toolbar);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
-        centerToolbarTitle(binding.toolbar, "CÀI ĐẶT");
-    }
-    
-    private void centerToolbarTitle(com.google.android.material.appbar.MaterialToolbar toolbar, String title) {
-        customTitleView = com.pro.milkteaapp.utils.ToolbarUtils.centerToolbarTitle(
-                toolbar, title, customTitleView, getSupportActionBar());
+        binding.toolbar.setTitle("CÀI ĐẶT");
     }
 
     @Override

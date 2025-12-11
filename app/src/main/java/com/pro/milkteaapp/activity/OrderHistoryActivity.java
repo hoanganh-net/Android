@@ -19,7 +19,13 @@ public class OrderHistoryActivity extends AppCompatActivity {
 
         setSupportActionBar(b.toolbar);
         b.toolbar.setNavigationOnClickListener(v -> getOnBackPressedDispatcher().onBackPressed());
-        centerToolbarTitle(b.toolbar, getString(R.string.order_history));
+        // Set title vào TextView custom để căn giữa
+        android.widget.TextView titleView = b.toolbar.findViewById(R.id.toolbarTitle);
+        if (titleView != null) {
+            titleView.setText(getString(R.string.order_history));
+        } else {
+            b.toolbar.setTitle(getString(R.string.order_history));
+        }
 
         if (savedInstanceState == null) {
             OrdersFragment fragment = OrdersFragment.newInstance("ALL", false);
@@ -41,10 +47,4 @@ public class OrderHistoryActivity extends AppCompatActivity {
         }
     }
     
-    private android.widget.TextView customTitleView;
-    
-    private void centerToolbarTitle(com.google.android.material.appbar.MaterialToolbar toolbar, String title) {
-        customTitleView = com.pro.milkteaapp.utils.ToolbarUtils.centerToolbarTitle(
-                toolbar, title, customTitleView, getSupportActionBar());
-    }
 }

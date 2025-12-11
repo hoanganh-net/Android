@@ -26,6 +26,7 @@ import com.pro.milkteaapp.repository.UsersRepository;
 import java.util.List;
 
 public class UserChatActivity extends AppCompatActivity {
+    
 
     private RecyclerView recyclerView;
     private EditText etMessage;
@@ -53,11 +54,9 @@ public class UserChatActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            getSupportActionBar().setTitle("Chat với Admin");
         }
-        toolbar.setTitleTextAppearance(this, R.style.ToolbarTitleStyle);
-        toolbar.setTitleTextColor(getResources().getColor(R.color.white, getTheme()));
         toolbar.setNavigationOnClickListener(v -> getOnBackPressedDispatcher().onBackPressed());
+        toolbar.setTitle("Chat với Admin");
         
         btnSend.setOnClickListener(v -> sendMessage());
         

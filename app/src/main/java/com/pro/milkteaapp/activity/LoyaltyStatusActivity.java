@@ -36,7 +36,13 @@ public class LoyaltyStatusActivity extends AppCompatActivity {
 
         setSupportActionBar(b.toolbar);
         b.toolbar.setNavigationOnClickListener(v -> getOnBackPressedDispatcher().onBackPressed());
-        centerToolbarTitle(b.toolbar, "THÀNH VIÊN");
+        // Set title vào TextView custom để căn giữa
+        android.widget.TextView titleView = b.toolbar.findViewById(R.id.toolbarTitle);
+        if (titleView != null) {
+            titleView.setText("THÀNH VIÊN");
+        } else {
+            b.toolbar.setTitle("THÀNH VIÊN");
+        }
 
         usersRepository = new UsersRepository();
 
@@ -48,12 +54,6 @@ public class LoyaltyStatusActivity extends AppCompatActivity {
         loadUser();
     }
     
-    private android.widget.TextView customTitleView;
-    
-    private void centerToolbarTitle(com.google.android.material.appbar.MaterialToolbar toolbar, String title) {
-        customTitleView = com.pro.milkteaapp.utils.ToolbarUtils.centerToolbarTitle(
-                toolbar, title, customTitleView, getSupportActionBar());
-    }
 
     @SuppressLint("SetTextI18n")
     private void loadUser() {

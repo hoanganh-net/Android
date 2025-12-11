@@ -9,12 +9,32 @@
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:title="THÀNH VIÊN"
-        app:titleTextAppearance="@style/ToolbarTitleStyle"
+        android:background="@color/primary"
         app:navigationIcon="@drawable/ic_arrow_back"
         app:navigationIconTint="@color/white"
-        app:titleTextColor="@android:color/white"
-        android:background="@color/primary" />
+        app:contentInsetStart="0dp"
+        app:contentInsetEnd="0dp"
+        app:contentInsetStartWithNavigation="0dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingEnd="52dp">
+
+            <TextView
+                android:id="@+id/toolbarTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="THÀNH VIÊN"
+                android:textColor="@color/white"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:gravity="center" />
+        </LinearLayout>
+    </com.google.android.material.appbar.MaterialToolbar>
 
     <ScrollView
         android:layout_width="match_parent"
@@ -160,7 +180,6 @@
                 style="?android:attr/progressBarStyleLarge"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
-                android:layout_gravity="center"
                 android:visibility="gone"
                 android:layout_marginTop="16dp" />
         </LinearLayout>

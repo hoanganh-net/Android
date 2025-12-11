@@ -132,6 +132,12 @@ public class AdminComboAdapter extends RecyclerView.Adapter<AdminComboAdapter.Co
                 if (listener != null) listener.onDeleteCombo(combo);
             });
         }
+
+        // Ẩn icon featured vì combo không có tính năng này
+        View iconFeatured = holder.itemView.findViewById(R.id.iconFeatured);
+        if (iconFeatured != null) {
+            iconFeatured.setVisibility(View.GONE);
+        }
     }
 
     @Override

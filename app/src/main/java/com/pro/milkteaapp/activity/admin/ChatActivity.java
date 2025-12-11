@@ -22,6 +22,7 @@ import com.pro.milkteaapp.repository.ChatRepository;
 import java.util.List;
 
 public class ChatActivity extends AppCompatActivity {
+    
 
     private MaterialToolbar toolbar;
     private RecyclerView recyclerView;
@@ -60,11 +61,9 @@ public class ChatActivity extends AppCompatActivity {
         if (getSupportActionBar() != null) {
             // Hiển thị nút back
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            getSupportActionBar().setTitle(userName != null ? userName : "CHAT");
         }
-        toolbar.setTitleTextAppearance(this, R.style.ToolbarTitleStyle);
-        toolbar.setTitleTextColor(getResources().getColor(R.color.white, getTheme()));
         toolbar.setNavigationOnClickListener(v -> getOnBackPressedDispatcher().onBackPressed());
+        toolbar.setTitle(userName != null ? userName : "CHAT");
         
         adapter = new ChatMessagesAdapter("admin");
         recyclerView.setLayoutManager(new LinearLayoutManager(this));

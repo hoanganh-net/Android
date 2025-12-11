@@ -82,15 +82,23 @@ public class AdminComboEditorActivity extends AppCompatActivity {
         btnSave.setOnClickListener(v -> onSave());
         btnReset.setOnClickListener(v -> resetForm());
 
+        // Set title vào TextView custom để căn giữa
+        android.widget.TextView titleView = toolbar.findViewById(R.id.toolbarTitle);
         if (isEditMode) {
-            toolbar.setTitle(getString(R.string.edit_combo));
-            toolbar.setTitleTextAppearance(this, R.style.ToolbarTitleStyle);
-            toolbar.setTitleTextColor(getResources().getColor(R.color.white, getTheme()));
+            String title = getString(R.string.edit_combo);
+            if (titleView != null) {
+                titleView.setText(title);
+            } else {
+                toolbar.setTitle(title);
+            }
             loadComboForEdit(comboId);
         } else {
-            toolbar.setTitle(getString(R.string.add_new_combo));
-            toolbar.setTitleTextAppearance(this, R.style.ToolbarTitleStyle);
-            toolbar.setTitleTextColor(getResources().getColor(R.color.white, getTheme()));
+            String title = getString(R.string.add_new_combo);
+            if (titleView != null) {
+                titleView.setText(title);
+            } else {
+                toolbar.setTitle(title);
+            }
         }
     }
 
@@ -124,6 +132,10 @@ public class AdminComboEditorActivity extends AppCompatActivity {
     }
 
     private void setupToolbar() {
+        setSupportActionBar(toolbar);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        }
         toolbar.setNavigationOnClickListener(v -> finish());
     }
 

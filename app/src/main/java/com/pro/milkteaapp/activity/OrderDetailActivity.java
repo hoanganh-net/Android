@@ -52,11 +52,17 @@ public class OrderDetailActivity extends AppCompatActivity {
 
         // Toolbar + Back
         setSupportActionBar(b.toolbar);
-        Objects.requireNonNull(getSupportActionBar()).setTitle(getString(R.string.order_detail_title));
-        b.toolbar.setTitleTextAppearance(this, R.style.ToolbarTitleStyle);
         b.toolbar.setNavigationIcon(com.google.android.material.R.drawable.ic_arrow_back_black_24);
         b.toolbar.setNavigationOnClickListener(v -> getOnBackPressedDispatcher().onBackPressed());
-        centerToolbarTitle(b.toolbar);
+        
+        // Set title vào TextView custom để căn giữa
+        android.widget.TextView titleView = b.toolbar.findViewById(R.id.toolbarTitle);
+        if (titleView != null) {
+            titleView.setText(getString(R.string.order_detail_title));
+        } else {
+            // Fallback nếu không tìm thấy TextView
+            Objects.requireNonNull(getSupportActionBar()).setTitle(getString(R.string.order_detail_title));
+        }
 
         // Items list
         b.rvItems.setLayoutManager(new LinearLayoutManager(this));
@@ -76,12 +82,6 @@ public class OrderDetailActivity extends AppCompatActivity {
         loadOrder(orderId);
     }
     
-    private android.widget.TextView customTitleView;
-    
-    private void centerToolbarTitle(MaterialToolbar toolbar) {
-        customTitleView = com.pro.milkteaapp.utils.ToolbarUtils.centerToolbarTitle(
-                toolbar, "CHI TIẾT ĐƠN HÀNG", customTitleView, getSupportActionBar());
-    }
 
     private void loadOrder(String orderId) {
         b.progress.setVisibility(View.VISIBLE);

@@ -75,12 +75,13 @@ public class EditProfileActivity extends AppCompatActivity {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
         binding.toolbar.setNavigationOnClickListener(v -> finish());
-        centerToolbarTitle(binding.toolbar, getString(R.string.edit_profile));
-    }
-    
-    private void centerToolbarTitle(com.google.android.material.appbar.MaterialToolbar toolbar, String title) {
-        customTitleView = com.pro.milkteaapp.utils.ToolbarUtils.centerToolbarTitle(
-                toolbar, title, customTitleView, getSupportActionBar());
+        // Set title vào TextView custom để căn giữa
+        android.widget.TextView titleView = binding.toolbar.findViewById(R.id.toolbarTitle);
+        if (titleView != null) {
+            titleView.setText(getString(R.string.edit_profile));
+        } else {
+            binding.toolbar.setTitle(getString(R.string.edit_profile));
+        }
     }
 
     private boolean ensureLoginOrFinish() {

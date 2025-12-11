@@ -25,6 +25,7 @@ import com.pro.milkteaapp.activity.MainActivity;
 import com.pro.milkteaapp.generator.ProductsIDGenerator;
 import com.pro.milkteaapp.models.Category;
 import com.pro.milkteaapp.repository.CategoriesRepository;
+import com.pro.milkteaapp.repository.ComboRepository;
 import com.pro.milkteaapp.repository.ProductRepository;
 
 import java.util.ArrayList;
@@ -117,9 +118,14 @@ public class AdminProductEditorActivity extends AppCompatActivity {
         MaterialToolbar toolbar = findViewById(R.id.toolbar);
         if (toolbar != null) {
             toolbar.setNavigationOnClickListener(v -> getOnBackPressedDispatcher().onBackPressed());
-            toolbar.setTitle(isEditMode ? R.string.title_edit_product : R.string.title_add_product);
-            toolbar.setTitleTextAppearance(this, R.style.ToolbarTitleStyle);
-            toolbar.setTitleTextColor(getResources().getColor(R.color.white, getTheme()));
+            String title = isEditMode ? getString(R.string.title_edit_product) : getString(R.string.title_add_product);
+            // Set title vào TextView custom để căn giữa
+            android.widget.TextView titleView = toolbar.findViewById(R.id.toolbarTitle);
+            if (titleView != null) {
+                titleView.setText(title);
+            } else {
+                toolbar.setTitle(title);
+            }
         }
 
         btnSave  = isEditMode
@@ -245,6 +251,9 @@ public class AdminProductEditorActivity extends AppCompatActivity {
             productsRepository.updateProduct(productId, data, new ProductRepository.OnProductUpdateListener() {
                 @Override
                 public void onSuccess() {
+                    // Tự động cập nhật giá combo chứa sản phẩm này
+                    updateCombosContainingProduct(productId);
+                    
                     setLoading(false);
                     toast("Đã cập nhật sản phẩm.");
                     setResult(RESULT_OK);
@@ -337,4 +346,50 @@ public class AdminProductEditorActivity extends AppCompatActivity {
     }
 
     private void toast(String m) { Toast.makeText(this, m, Toast.LENGTH_SHORT).show(); }
+
+    /**
+     * Tự động cập nhật giá của tất cả combo chứa sản phẩm này
+     */
+    private void updateCombosContainingProduct(String productId) {
+        ComboRepository comboRepository = new ComboRepository();
+        ProductRepository productRepo = new ProductRepository();
+        
+        // Tìm tất cả combo chứa productId
+        comboRepository.findCombosContainingProduct(productId, new ComboRepository.OnCombosListener() {
+            @Override
+            public void onCombosReceived(@NonNull List<com.pro.milkteaapp.models.Combo> combos) {
+                if (combos.isEmpty()) {
+                    return; // Không có combo nào chứa sản phẩm này
+                }
+                
+                // Cập nhật giá cho từng combo
+                final int[] updatedCount = {0};
+                final int totalCombos = combos.size();
+                
+                for (com.pro.milkteaapp.models.Combo combo : combos) {
+                    comboRepository.recalculateComboPrice(combo.getId(), productRepo, new ComboRepository.OnComboUpdateListener() {
+                        @Override
+                        public void onSuccess() {
+                            updatedCount[0]++;
+                            if (updatedCount[0] == totalCombos) {
+                                android.util.Log.d("AdminProductEditor", "Đã cập nhật giá cho " + totalCombos + " combo");
+                            }
+                        }
+
+                        @Override
+                        public void onError(@NonNull Exception error) {
+                            updatedCount[0]++;
+                            android.util.Log.e("AdminProductEditor", "Lỗi cập nhật combo " + combo.getId() + ": " + error.getMessage());
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onError(@NonNull Exception error) {
+                android.util.Log.e("AdminProductEditor", "Lỗi tìm combo chứa sản phẩm: " + error.getMessage());
+            }
+        });
+    }
+    
 }

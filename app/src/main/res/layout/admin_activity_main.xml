@@ -11,14 +11,30 @@
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         android:background="@color/primary"
-        app:title="QUẢN TRỊ HỆ THỐNG"
-        app:titleTextColor="@color/white"
-        app:titleTextAppearance="@style/ToolbarTitleStyle"
         app:menu="@menu/menu_admin_toolbar"
         app:iconTint="@color/white"
         app:contentInsetStart="0dp"
         app:contentInsetEnd="0dp"
-        app:contentInsetStartWithNavigation="0dp" />
+        app:contentInsetStartWithNavigation="0dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/toolbarTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="QUẢN TRỊ HỆ THỐNG"
+                android:textColor="@color/white"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:gravity="center" />
+        </LinearLayout>
+    </com.google.android.material.appbar.MaterialToolbar>
 
     <FrameLayout
         android:id="@+id/fragment_container"

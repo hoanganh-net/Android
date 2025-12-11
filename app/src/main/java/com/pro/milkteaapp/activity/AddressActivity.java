@@ -2,6 +2,7 @@ package com.pro.milkteaapp.activity;
 
 import android.annotation.SuppressLint;
 import android.os.Bundle;
+import android.view.View;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -27,6 +28,7 @@ public class AddressActivity extends AppCompatActivity
     private AddressAdapter adapter;
     // ⚠️ Không khởi tạo ở đây để tránh "this" chưa sẵn sàng
     private AddressRepository repo;
+    private UserActivityAddressBinding binding;
 
     // Realtime listener
     private ListenerRegistration addressesReg;
@@ -34,7 +36,7 @@ public class AddressActivity extends AppCompatActivity
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        UserActivityAddressBinding binding = UserActivityAddressBinding.inflate(getLayoutInflater());
+        binding = UserActivityAddressBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
         // Khởi tạo repo với Context để dùng custom userId (USRxxxxx)
@@ -42,9 +44,14 @@ public class AddressActivity extends AppCompatActivity
 
         MaterialToolbar tb = binding.toolbar;
         setSupportActionBar(tb);
-        centerToolbarTitle(tb, getString(R.string.address_book));
-        // Setup navigation icon click sau khi centerToolbarTitle để đảm bảo không bị ghi đè
         tb.setNavigationOnClickListener(v -> finish());
+        // Set title vào TextView custom để căn giữa
+        android.widget.TextView titleView = tb.findViewById(R.id.toolbarTitle);
+        if (titleView != null) {
+            titleView.setText(getString(R.string.address_book));
+        } else {
+            tb.setTitle(getString(R.string.address_book));
+        }
 
         binding.rvAddress.setLayoutManager(new LinearLayoutManager(this));
         adapter = new AddressAdapter(data, this, false);
@@ -53,14 +60,23 @@ public class AddressActivity extends AppCompatActivity
         FloatingActionButton fab = binding.fabAdd;
         fab.setOnClickListener(v -> AddressDialogFragment.newInstance(null)
                 .show(getSupportFragmentManager(), "add_address"));
+        
+        // Setup empty state
+        View emptyState = binding.getRoot().findViewById(R.id.emptyState);
+        if (emptyState != null) {
+            updateEmptyState(emptyState, data.isEmpty());
+        }
     }
     
-    private android.widget.TextView customTitleView;
-    
-    private void centerToolbarTitle(com.google.android.material.appbar.MaterialToolbar toolbar, String title) {
-        customTitleView = com.pro.milkteaapp.utils.ToolbarUtils.centerToolbarTitle(
-                toolbar, title, customTitleView, getSupportActionBar());
+    private void updateEmptyState(View emptyState, boolean isEmpty) {
+        if (emptyState != null) {
+            emptyState.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
+        }
+        if (binding != null && binding.rvAddress != null) {
+            binding.rvAddress.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
+        }
     }
+    
 
     /** Đăng ký lắng nghe realtime khi Activity hiển thị */
     @SuppressLint("NotifyDataSetChanged")
@@ -71,6 +87,11 @@ public class AddressActivity extends AppCompatActivity
             data.clear();
             data.addAll(addresses);
             adapter.notifyDataSetChanged();
+            // Update empty state
+            View emptyState = binding != null ? binding.getRoot().findViewById(R.id.emptyState) : null;
+            if (emptyState != null) {
+                updateEmptyState(emptyState, addresses.isEmpty());
+            }
         }, e -> {
             // TODO: hiển thị lỗi nếu cần (Toast/Snackbar/log)
         });
