@@ -1,87 +1,92 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="12dp"
+    android:layout_margin="8dp"
+    app:cardCornerRadius="12dp"
     app:cardElevation="2dp"
-    app:cardUseCompatPadding="true">
+    app:strokeColor="@color/light_gray"
+    app:strokeWidth="1dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="10dp"
-        android:orientation="vertical">
+        android:padding="12dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
 
+        <!-- Ảnh topping (bên trái) -->
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/toppingImage"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:scaleType="centerCrop"
+            android:contentDescription="@string/app_name"
+            app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.App.Circle"
+            app:strokeWidth="1dp"
+            tools:src="@drawable/milktea" />
+
+        <!-- Thông tin topping -->
         <LinearLayout
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:baselineAligned="false">
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:paddingStart="12dp"
+            android:paddingEnd="8dp">
+
+            <!-- Tên topping và nút Delete nằm cùng hàng -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/tvName"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Trân châu trắng"
+                    android:textStyle="bold"
+                    android:textSize="16sp"/>
+
+                <!-- Nút Delete ở góc trên bên phải -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnDelete"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:gravity="center"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:insetLeft="0dp"
+                    android:insetRight="0dp"
+                    android:padding="8dp"
+                    app:icon="@drawable/ic_delete"
+                    app:iconTint="@color/white"
+                    app:iconSize="18dp"
+                    app:backgroundTint="@color/error_red"
+                    app:cornerRadius="18dp"
+                    style="@style/Widget.Material3.Button.IconButton.Filled"
+                    app:iconPadding="0dp" />
+            </LinearLayout>
 
             <TextView
-                android:id="@+id/tvName"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Trân châu trắng"
-                android:textStyle="bold"
-                android:textSize="16sp"/>
-
-            <com.google.android.material.switchmaterial.SwitchMaterial
-                android:id="@+id/switchActive"
+                android:id="@+id/tvPrice"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Active"/>
-        </LinearLayout>
+                android:text="5.000đ"
+                android:textColor="@android:color/holo_green_dark"
+                android:paddingTop="2dp"/>
 
-        <TextView
-            android:id="@+id/tvPrice"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="5.000đ"
-            android:textColor="@android:color/holo_green_dark"
-            android:paddingTop="2dp"/>
-
-        <TextView
-            android:id="@+id/tvCategories"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Trà sữa, Sữa tươi"
-            android:paddingTop="2dp"/>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="end"
-            android:paddingTop="6dp">
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnEdit"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:insetTop="0dp"
-                android:insetBottom="0dp"
-                app:icon="@drawable/ic_edit"
-                app:iconTint="@color/white"
-                app:backgroundTint="@color/primary"
-                app:iconGravity="end"
-                style="@style/Widget.MaterialComponents.Button.Icon" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnDelete"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:layout_marginStart="8dp"
-                android:insetTop="0dp"
-                android:insetBottom="0dp"
-                app:icon="@drawable/ic_delete"
-                app:iconTint="@color/white"
-                app:iconGravity="end"
-                app:backgroundTint="@color/error_red"
-                style="@style/Widget.MaterialComponents.Button.Icon" />
+            <TextView
+                android:id="@+id/tvCategories"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Trà sữa, Sữa tươi"
+                android:paddingTop="2dp"/>
         </LinearLayout>
     </LinearLayout>
-</androidx.cardview.widget.CardView>
+</com.google.android.material.card.MaterialCardView>

@@ -54,6 +54,7 @@ public class AdminOrderDetailActivity extends AppCompatActivity {
     private String userName;
     private String statusNow;
 
+    @SuppressLint("SetTextI18n")
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

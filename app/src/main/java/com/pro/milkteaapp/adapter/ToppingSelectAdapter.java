@@ -81,7 +81,7 @@ public class ToppingSelectAdapter extends RecyclerView.Adapter<ToppingSelectAdap
         checkedIds.clear();
         if (prechecked != null) {
             for (SelectedTopping st : prechecked) {
-                if (st.id != null) checkedIds.add(st.id);
+                if (st.id() != null) checkedIds.add(st.id());
             }
         }
         notifyDataSetChanged();

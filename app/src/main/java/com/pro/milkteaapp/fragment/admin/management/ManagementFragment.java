@@ -9,7 +9,6 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.view.GravityCompat;
-import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
@@ -180,44 +179,19 @@ public class ManagementFragment extends Fragment implements NavigationView.OnNav
         currentFragment = null;
     }
 
-    /**
-     * Mở drawer từ bên ngoài (ví dụ từ toolbar)
-     */
     public void openDrawer() {
         if (binding != null) {
             binding.drawerLayout.openDrawer(GravityCompat.START);
         }
     }
-    
-    /**
-     * Đóng drawer
-     */
+
     public void closeDrawer() {
         if (binding != null) {
             binding.drawerLayout.closeDrawer(GravityCompat.START);
         }
     }
-    
-    /**
-     * Kiểm tra drawer có đang mở không
-     */
     public boolean isDrawerOpen() {
         return binding != null && binding.drawerLayout.isDrawerOpen(GravityCompat.START);
     }
-    
-    /**
-     * Xử lý click vào item trong drawer từ AdminMainActivity
-     */
-    public void handleDrawerItemClick(int itemId) {
-        if (itemId != currentMenuId) {
-            switchToFragment(itemId);
-        }
-    }
-    
-    /**
-     * Lấy fragment con hiện tại
-     */
-    public Fragment getCurrentChildFragment() {
-        return currentFragment;
-    }
+
 }

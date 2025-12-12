@@ -31,8 +31,7 @@ public class ChatWithAdminBottomSheet extends BottomSheetDialogFragment {
 
     private RecyclerView chatRecyclerView;
     private EditText etChatMessage;
-    private ImageButton btnSendChat;
-    
+
     private ChatRepository chatRepository;
     private ChatMessagesAdapter chatAdapter;
     private ListenerRegistration chatRegistration;
@@ -56,7 +55,7 @@ public class ChatWithAdminBottomSheet extends BottomSheetDialogFragment {
         
         chatRecyclerView = v.findViewById(R.id.chatRecyclerView);
         etChatMessage = v.findViewById(R.id.etChatMessage);
-        btnSendChat = v.findViewById(R.id.btnSendChat);
+        ImageButton btnSendChat = v.findViewById(R.id.btnSendChat);
         
         chatRepository = new ChatRepository();
         UsersRepository usersRepository = new UsersRepository();

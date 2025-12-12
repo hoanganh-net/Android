@@ -4,12 +4,10 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.google.firebase.Timestamp;
-import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
-import com.pro.milkteaapp.constants.FirestoreConstants;
 import com.pro.milkteaapp.models.ChatMessage;
 
 import java.util.ArrayList;
@@ -26,11 +24,6 @@ public class ChatRepository {
 
     public interface OnChatMessagesListener {
         void onMessagesReceived(@NonNull List<ChatMessage> messages);
-        void onError(@NonNull Exception error);
-    }
-
-    public interface OnChatMessageListener {
-        void onMessageReceived(@Nullable ChatMessage message);
         void onError(@NonNull Exception error);
     }
 
@@ -108,17 +101,6 @@ public class ChatRepository {
     }
 
     /**
-     * Đánh dấu tin nhắn đã đọc
-     */
-    public void markAsRead(@NonNull String userId, @NonNull String messageId) {
-        db.collection("chats")
-                .document(userId)
-                .collection("messages")
-                .document(messageId)
-                .update("read", true, "readAt", Timestamp.now());
-    }
-
-    /**
      * Đánh dấu tất cả tin nhắn chưa đọc từ user là đã đọc (khi admin mở chat)
      */
     public void markAllUserMessagesAsRead(@NonNull String userId, @NonNull OnChatSendListener listener) {
@@ -171,32 +153,6 @@ public class ChatRepository {
                     android.util.Log.e("ChatRepository", "Error fetching unread messages: " + e.getMessage());
                     listener.onError(e);
                 });
-    }
-
-    /**
-     * Lấy danh sách users có tin nhắn (cho admin xem danh sách chat)
-     * Lấy từ collection users và kiểm tra xem có collection chats/{userId}/messages không
-     */
-    public void fetchUsersWithChats(@NonNull OnUsersListener listener) {
-        // Lấy tất cả users, sau đó filter những user có tin nhắn
-        db.collection(FirestoreConstants.COLLECTION_USERS)
-                .get()
-                .addOnSuccessListener(querySnapshot -> {
-                    List<String> userIds = new ArrayList<>();
-                    for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
-                        String uid = doc.getString(FirestoreConstants.FIELD_UID);
-                        if (uid != null) {
-                            userIds.add(uid);
-                        }
-                    }
-                    listener.onUsersReceived(userIds);
-                })
-                .addOnFailureListener(listener::onError);
-    }
-
-    public interface OnUsersListener {
-        void onUsersReceived(@NonNull List<String> userIds);
-        void onError(@NonNull Exception error);
     }
 
     /**

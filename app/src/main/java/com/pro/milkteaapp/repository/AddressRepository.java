@@ -193,6 +193,7 @@ public class AddressRepository {
                         .addOnSuccessListener(ref -> { a.setId(ref.getId()); onDone.onSaved(a); })
                         .addOnFailureListener(e -> { if (err != null) err.onError(e); });
             } else {
+                assert a.getId() != null;
                 colRef().document(a.getId()).set(map, SetOptions.merge())
                         .addOnSuccessListener(unused -> onDone.onSaved(a))
                         .addOnFailureListener(e -> { if (err != null) err.onError(e); });
@@ -246,7 +247,8 @@ public class AddressRepository {
         m.put("line2", nz(a.getLine2()));
         m.put("city", nz(a.getCity()));
         m.put("province", nz(a.getProvince()));
-        m.put("postalCode", nz(a.getPostalCode()));
+        // Không lưu postalCode - đã xóa khỏi UI (luôn null cho địa chỉ mới)
+        m.put("postalCode", null);
         m.put("isDefault", a.isDefault());
         return m;
     }

@@ -1,7 +1,7 @@
 package com.pro.milkteaapp.fragment.admin.management;
 
 import android.annotation.SuppressLint;
-import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextUtils;
@@ -11,7 +11,6 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
@@ -19,7 +18,6 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.adapter.admin.AdminToppingAdapter;
-import com.pro.milkteaapp.databinding.DialogToppingEditorBinding;
 import com.pro.milkteaapp.databinding.AdminFragmentToppingsBinding;
 import com.pro.milkteaapp.interfaces.AddActionHandler;
 import com.pro.milkteaapp.models.Topping;
@@ -138,7 +136,7 @@ public class ToppingManageFragment extends Fragment
     // Gọi khi nhấn FAB trong ManagementFragment
     @Override
     public void onAddAction() {
-        openCreateDialog();
+        openToppingEditor(null);
     }
 
     private void setLoading(boolean b) {
@@ -199,25 +197,17 @@ public class ToppingManageFragment extends Fragment
         loadCategoriesThenListenToppings();
     }
 
-    // --- Adapter callbacks ---
     @Override
-    public void onToggleActive(@NonNull Topping t, boolean active) {
-        if (TextUtils.isEmpty(t.getId())) return;
-        toppingsRepository.updateToppingActive(t.getId(), active, new ToppingsRepository.OnToppingUpdateListener() {
-            @Override
-            public void onSuccess() {
-                // Success - không cần thông báo
-            }
-
-            @Override
-            public void onError(@NonNull Exception error) {
-                Toast.makeText(requireContext(), "Lỗi cập nhật: " + error.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        });
+    public void onEdit(@NonNull Topping t) { openToppingEditor(t); }
+    
+    /* ================= Mở Activity chỉnh sửa topping ================= */
+    private void openToppingEditor(@Nullable Topping topping) {
+        Intent intent = new Intent(requireContext(), com.pro.milkteaapp.activity.admin.ToppingEditorActivity.class);
+        if (topping != null && topping.getId() != null) {
+            intent.putExtra(com.pro.milkteaapp.activity.admin.ToppingEditorActivity.EXTRA_TOPPING_ID, topping.getId());
+        }
+        startActivity(intent);
     }
-
-    @Override
-    public void onEdit(@NonNull Topping t) { openEditDialog(t); }
 
     @Override
     public void onDelete(@NonNull Topping t) {
@@ -240,8 +230,6 @@ public class ToppingManageFragment extends Fragment
                 .setNegativeButton("Huỷ", null)
                 .show();
     }
-
-    private void openCreateDialog() { openEditor(null); }
 
     @SuppressLint("NotifyDataSetChanged")
     private void filterToppings() {
@@ -270,118 +258,6 @@ public class ToppingManageFragment extends Fragment
         }
         setEmpty(data.isEmpty());
         adapter.notifyDataSetChanged();
-    }
-    private void openEditDialog(@NonNull Topping t) { openEditor(t); }
-
-    // --- Dialog create/edit ---
-    @SuppressLint("SetTextI18n")
-    private void openEditor(@Nullable Topping t) {
-        DialogToppingEditorBinding eb = DialogToppingEditorBinding.inflate(getLayoutInflater());
-        if (t != null) {
-            eb.edtName.setText(t.getName());
-            eb.edtPrice.setText(String.valueOf(t.getPrice()));
-            eb.switchActive.setChecked(t.getActive());
-            if (t.getCategories() != null && !t.getCategories().isEmpty())
-                eb.txtCategories.setText(TextUtils.join(", ", t.getCategories()));
-            else eb.txtCategories.setText("Chưa chọn");
-        } else {
-            eb.switchActive.setChecked(true);
-            eb.txtCategories.setText("Chưa chọn");
-        }
-
-        eb.btnPickCategories.setOnClickListener(v -> pickCategories(eb.txtCategories));
-
-        AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext())
-                .setTitle(t == null ? "Thêm topping" : "Sửa topping")
-                .setView(eb.getRoot())
-                .setPositiveButton(t == null ? "Thêm" : "Lưu", null)
-                .setNegativeButton("Huỷ", null)
-                .create();
-
-        dialog.setOnShowListener(dlg -> dialog.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener(v -> {
-            String name = safe(eb.edtName.getText());
-            String priceStr = safe(eb.edtPrice.getText());
-            boolean active = eb.switchActive.isChecked();
-
-            if (TextUtils.isEmpty(name)) {
-                eb.edtName.setError("Nhập tên topping");
-                eb.edtName.requestFocus();
-                return;
-            }
-
-            long price;
-            try { price = Long.parseLong(priceStr.replace(".", "").replace(",", "").trim()); }
-            catch (Exception ex) {
-                eb.edtPrice.setError("Giá không hợp lệ");
-                eb.edtPrice.requestFocus();
-                return;
-            }
-
-            List<String> cats = parseCategories(eb.txtCategories.getText().toString());
-            Map<String, Object> data = new HashMap<>();
-            data.put("name", name);
-            data.put("price", price);
-            data.put("categories", cats);
-            data.put("active", active);
-
-            if (t == null) {
-                toppingsRepository.createTopping(data, new ToppingsRepository.OnToppingCreateListener() {
-                    @Override
-                    public void onSuccess(@NonNull String toppingId) {
-                        dialog.dismiss();
-                    }
-
-                    @Override
-                    public void onError(@NonNull Exception error) {
-                        Toast.makeText(requireContext(), "Lỗi thêm: " + error.getMessage(), Toast.LENGTH_SHORT).show();
-                    }
-                });
-            } else {
-                toppingsRepository.updateTopping(t.getId(), data, new ToppingsRepository.OnToppingUpdateListener() {
-                    @Override
-                    public void onSuccess() {
-                        dialog.dismiss();
-                    }
-
-                    @Override
-                    public void onError(@NonNull Exception error) {
-                        Toast.makeText(requireContext(), "Lỗi cập nhật: " + error.getMessage(), Toast.LENGTH_SHORT).show();
-                    }
-                });
-            }
-        }));
-        dialog.show();
-    }
-
-    private void pickCategories(@NonNull android.widget.TextView target) {
-        final String[] items = allCategories.toArray(new String[0]);
-        final boolean[] checked = new boolean[items.length];
-        Set<String> pre = new HashSet<>(parseCategories(target.getText().toString()));
-        for (int i = 0; i < items.length; i++) checked[i] = pre.contains(items[i]);
-
-        new MaterialAlertDialogBuilder(requireContext())
-                .setTitle("Chọn category áp dụng")
-                .setMultiChoiceItems(items, checked, (dialog, which, isChecked) -> {})
-                .setPositiveButton("Xong", (dialog, which) -> {
-                    ArrayList<String> chosen = new ArrayList<>();
-                    for (int i = 0; i < items.length; i++) if (checked[i]) chosen.add(items[i]);
-                    target.setText(chosen.isEmpty() ? "Chưa chọn" : TextUtils.join(", ", chosen));
-                })
-                .setNegativeButton("Huỷ", null)
-                .show();
-    }
-
-    private static String safe(CharSequence cs) { return cs == null ? "" : cs.toString().trim(); }
-
-    private static List<String> parseCategories(String text) {
-        if (TextUtils.isEmpty(text) || "Chưa chọn".equals(text)) return new ArrayList<>();
-        String[] parts = text.split(",");
-        ArrayList<String> list = new ArrayList<>();
-        for (String p : parts) {
-            String v = p.trim();
-            if (!v.isEmpty()) list.add(v);
-        }
-        return list;
     }
 
     @Override

@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import com.pro.milkteaapp.adapter.ProductSectionAdapter;
 import com.pro.milkteaapp.models.Product;
+import com.pro.milkteaapp.utils.StringUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -11,6 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Helper class để xử lý search và filter logic cho ProductFragment.
@@ -37,10 +39,10 @@ public class ProductSearchHelper {
         List<String> orderedCats = orderCategories(categories);
         
         for (String cat : orderedCats) {
-            String catKey = normalize(cat);
+            String catKey = StringUtils.normalize(cat);
             List<Product> underCat = new ArrayList<>();
             for (Product p : allProducts) {
-                String pCatKey = normalize(p.getCategory());
+                String pCatKey = StringUtils.normalize(p.getCategory());
                 if (pCatKey.equals(catKey)) {
                     if (q.isEmpty() || matchesQuery(p, q)) {
                         underCat.add(p);
@@ -78,24 +80,24 @@ public class ProductSearchHelper {
         
         // Build mapping from normalized to original category names
         for (String originalCat : categories) {
-            String normalized = normalize(originalCat);
+            String normalized = StringUtils.normalize(originalCat);
             normalizedToOriginal.put(normalized, originalCat);
         }
         
         for (Product p : productsToShow) {
-            String catNormalized = normalize(safe(p.getCategory()));
+            String catNormalized = StringUtils.normalize(p.getCategory());
             if (catNormalized.isEmpty()) catNormalized = "khác";
             
             // Get original category name
             String catOriginal = normalizedToOriginal.get(catNormalized);
             if (catOriginal == null) {
-                catOriginal = safe(p.getCategory());
+                catOriginal = StringUtils.safeStr(p.getCategory());
                 if (catOriginal.isEmpty()) catOriginal = "Khác";
             }
             
             if (q.isEmpty() || matchesQuery(p, q)) {
                 categoryMap.putIfAbsent(catOriginal, new ArrayList<>());
-                categoryMap.get(catOriginal).add(p);
+                Objects.requireNonNull(categoryMap.get(catOriginal)).add(p);
             }
         }
         
@@ -127,10 +129,10 @@ public class ProductSearchHelper {
             return new ArrayList<>(allProducts);
         }
         
-        String catKey = normalize(category);
+        String catKey = StringUtils.normalize(category);
         List<Product> filtered = new ArrayList<>();
         for (Product p : allProducts) {
-            String pCatKey = normalize(p.getCategory());
+            String pCatKey = StringUtils.normalize(p.getCategory());
             if (pCatKey.equals(catKey)) {
                 filtered.add(p);
             }
@@ -142,9 +144,9 @@ public class ProductSearchHelper {
      * Check if product matches query.
      */
     private static boolean matchesQuery(@NonNull Product p, @NonNull String q) {
-        String name = safe(p.getName()).toLowerCase(Locale.getDefault());
-        String cat = safe(p.getCategory()).toLowerCase(Locale.getDefault());
-        String sname = safe(p.getSearchableName()).toLowerCase(Locale.getDefault());
+        String name = StringUtils.safeStr(p.getName()).toLowerCase(Locale.getDefault());
+        String cat = StringUtils.safeStr(p.getCategory()).toLowerCase(Locale.getDefault());
+        String sname = StringUtils.safeStr(p.getSearchableName()).toLowerCase(Locale.getDefault());
         return name.contains(q) || cat.contains(q) || sname.contains(q);
     }
     
@@ -156,37 +158,26 @@ public class ProductSearchHelper {
         List<String> preferred = java.util.List.of("Trà sữa", "Trà", "Trái cây tươi", "Cà Phê");
         List<String> result = new ArrayList<>();
         result.add(ALL);
-        if (src != null) {
-            for (String p : preferred) {
-                for (String s : src) {
-                    if (normalize(s).equals(normalize(p))) {
-                        result.add(s);
-                        break;
-                    }
-                }
-            }
+        for (String p : preferred) {
             for (String s : src) {
-                boolean already = false;
-                for (String r : result) {
-                    if (normalize(r).equals(normalize(s))) {
-                        already = true;
-                        break;
-                    }
+                if (StringUtils.normalize(s).equals(StringUtils.normalize(p))) {
+                    result.add(s);
+                    break;
                 }
-                if (!already) result.add(s);
             }
+        }
+        for (String s : src) {
+            boolean already = false;
+            for (String r : result) {
+                if (StringUtils.normalize(r).equals(StringUtils.normalize(s))) {
+                    already = true;
+                    break;
+                }
+            }
+            if (!already) result.add(s);
         }
         return result;
     }
     
-    @NonNull
-    private static String safe(@Nullable String s) {
-        return s == null ? "" : s;
-    }
-    
-    @NonNull
-    private static String normalize(@Nullable String s) {
-        return s == null ? "" : s.trim().toLowerCase(Locale.getDefault());
-    }
 }
 

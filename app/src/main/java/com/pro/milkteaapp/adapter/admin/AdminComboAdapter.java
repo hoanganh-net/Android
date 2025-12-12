@@ -1,5 +1,6 @@
 package com.pro.milkteaapp.adapter.admin;
 
+import android.annotation.SuppressLint;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -18,6 +19,7 @@ import com.pro.milkteaapp.models.Combo;
 import com.pro.milkteaapp.models.Product;
 import com.pro.milkteaapp.repository.ProductRepository;
 import com.pro.milkteaapp.utils.MoneyUtils;
+import com.pro.milkteaapp.utils.StringUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -61,11 +63,11 @@ public class AdminComboAdapter extends RecyclerView.Adapter<AdminComboAdapter.Co
 
             @Override
             public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
-                String oldId = safeStr(oldList.get(oldItemPosition).getId());
-                String newId = safeStr(newCopy.get(newItemPosition).getId());
+                String oldId = StringUtils.safeStr(oldList.get(oldItemPosition).getId());
+                String newId = StringUtils.safeStr(newCopy.get(newItemPosition).getId());
                 if (!TextUtils.isEmpty(oldId) && !TextUtils.isEmpty(newId)) return oldId.equals(newId);
-                String ok = safeStr(oldList.get(oldItemPosition).getName()) + "_" + safeDouble(oldList.get(oldItemPosition).getPrice());
-                String nk = safeStr(newCopy.get(newItemPosition).getName()) + "_" + safeDouble(newCopy.get(newItemPosition).getPrice());
+                String ok = StringUtils.safeStr(oldList.get(oldItemPosition).getName()) + "_" + StringUtils.safeDoubleStr(oldList.get(oldItemPosition).getPrice());
+                String nk = StringUtils.safeStr(newCopy.get(newItemPosition).getName()) + "_" + StringUtils.safeDoubleStr(newCopy.get(newItemPosition).getPrice());
                 return ok.equals(nk);
             }
 
@@ -73,8 +75,8 @@ public class AdminComboAdapter extends RecyclerView.Adapter<AdminComboAdapter.Co
             public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
                 Combo o = oldList.get(oldItemPosition);
                 Combo n = newCopy.get(newItemPosition);
-                return Objects.equals(safeStr(o.getName()), safeStr(n.getName())) &&
-                        Objects.equals(safeStr(o.getImageUrl()), safeStr(n.getImageUrl())) &&
+                return Objects.equals(StringUtils.safeStr(o.getName()), StringUtils.safeStr(n.getName())) &&
+                        Objects.equals(StringUtils.safeStr(o.getImageUrl()), StringUtils.safeStr(n.getImageUrl())) &&
                         Objects.equals(o.getPrice(), n.getPrice());
             }
         });
@@ -96,11 +98,11 @@ public class AdminComboAdapter extends RecyclerView.Adapter<AdminComboAdapter.Co
         Combo combo = comboList.get(position);
         if (combo == null) return;
 
-        holder.tvName.setText(safeStr(combo.getName()));
+        holder.tvName.setText(StringUtils.safeStr(combo.getName()));
         holder.tvPrice.setText(MoneyUtils.formatVnd(combo.getPrice()));
 
         // Hiển thị tên sản phẩm và status
-        String status = safeStr(combo.getStatus());
+        String status = StringUtils.safeStr(combo.getStatus());
         String statusText = status.equals("active") ? "Hoạt động" : "Tạm ngưng";
         loadAndDisplayProductNames(holder, combo, statusText);
 
@@ -117,17 +119,21 @@ public class AdminComboAdapter extends RecyclerView.Adapter<AdminComboAdapter.Co
             holder.imgProduct.setImageResource(R.drawable.milktea);
         }
 
-        // Nút Edit
+        // Click vào item để xem chi tiết (không có nút edit/delete trực tiếp)
+        holder.itemView.setOnClickListener(v -> {
+            if (listener != null) listener.onEditCombo(combo);
+        });
+
+        // Ẩn nút Edit
         View btnEdit = holder.itemView.findViewById(R.id.btnEdit);
         if (btnEdit != null) {
-            btnEdit.setOnClickListener(v -> {
-                if (listener != null) listener.onEditCombo(combo);
-            });
+            btnEdit.setVisibility(View.GONE);
         }
 
-        // Nút Delete
+        // Hiển thị nút Delete ở góc trên bên phải
         View btnDelete = holder.itemView.findViewById(R.id.btnDelete);
         if (btnDelete != null) {
+            btnDelete.setVisibility(View.VISIBLE);
             btnDelete.setOnClickListener(v -> {
                 if (listener != null) listener.onDeleteCombo(combo);
             });
@@ -149,18 +155,11 @@ public class AdminComboAdapter extends RecyclerView.Adapter<AdminComboAdapter.Co
     public long getItemId(int position) {
         Combo c = comboList.get(position);
         if (c == null) return RecyclerView.NO_ID;
-        String key = !TextUtils.isEmpty(c.getId()) ? c.getId() : (safeStr(c.getName()) + "_" + safeDouble(c.getPrice()));
+        String key = !TextUtils.isEmpty(c.getId()) ? c.getId() : (StringUtils.safeStr(c.getName()) + "_" + StringUtils.safeDoubleStr(c.getPrice()));
         return key.hashCode();
     }
 
-    private static String safeStr(String s) {
-        return s == null ? "" : s;
-    }
-
-    private static String safeDouble(Double d) {
-        return d == null ? "0" : String.valueOf(d);
-    }
-
+    @SuppressLint("SetTextI18n")
     private void loadAndDisplayProductNames(@NonNull ComboViewHolder holder, @NonNull Combo combo, String statusText) {
         List<String> productIds = combo.getProductIds();
         if (productIds == null || productIds.isEmpty()) {
@@ -171,7 +170,7 @@ public class AdminComboAdapter extends RecyclerView.Adapter<AdminComboAdapter.Co
         // Kiểm tra cache trước
         List<String> cachedNames = new ArrayList<>();
         List<String> missingIds = new ArrayList<>();
-        
+
         for (String productId : productIds) {
             String cachedName = productNameCache.get(productId);
             if (cachedName != null) {
@@ -201,7 +200,7 @@ public class AdminComboAdapter extends RecyclerView.Adapter<AdminComboAdapter.Co
         }
     }
 
-    private void loadMissingProduct(@NonNull ComboViewHolder holder, String comboId, 
+    private void loadMissingProduct(@NonNull ComboViewHolder holder, String comboId,
                                     List<String> missingIds, List<String> existingNames, int totalCount, String statusText) {
         final int[] loadedCount = {0};
         final int totalToLoad = missingIds.size();
@@ -217,7 +216,7 @@ public class AdminComboAdapter extends RecyclerView.Adapter<AdminComboAdapter.Co
                         loadedNames.add(productName);
                     }
                     loadedCount[0]++;
-                    
+
                     // Kiểm tra xem ViewHolder này vẫn đang bind với combo này không
                     if (loadedCount[0] == totalToLoad) {
                         // Cập nhật UI nếu ViewHolder vẫn đang hiển thị combo này
@@ -226,7 +225,7 @@ public class AdminComboAdapter extends RecyclerView.Adapter<AdminComboAdapter.Co
                             if (pos >= 0 && pos < comboList.size()) {
                                 Combo currentCombo = comboList.get(pos);
                                 if (currentCombo != null && comboId.equals(currentCombo.getId())) {
-                                    String currentStatus = safeStr(currentCombo.getStatus());
+                                    String currentStatus = StringUtils.safeStr(currentCombo.getStatus());
                                     String currentStatusText = currentStatus.equals("active") ? "Hoạt động" : "Tạm ngưng";
                                     displayProductNames(holder, loadedNames, totalCount, currentStatusText);
                                 }
@@ -244,7 +243,7 @@ public class AdminComboAdapter extends RecyclerView.Adapter<AdminComboAdapter.Co
                         if (pos >= 0 && pos < comboList.size()) {
                             Combo currentCombo = comboList.get(pos);
                             if (currentCombo != null && comboId.equals(currentCombo.getId())) {
-                                String currentStatus = safeStr(currentCombo.getStatus());
+                                String currentStatus = StringUtils.safeStr(currentCombo.getStatus());
                                 String currentStatusText = currentStatus.equals("active") ? "Hoạt động" : "Tạm ngưng";
                                 displayProductNames(holder, loadedNames, totalCount, currentStatusText);
                             }
@@ -257,7 +256,7 @@ public class AdminComboAdapter extends RecyclerView.Adapter<AdminComboAdapter.Co
 
     private void displayProductNames(@NonNull ComboViewHolder holder, List<String> productNames, int totalCount, String statusText) {
         StringBuilder displayText = new StringBuilder();
-        
+
         if (productNames.isEmpty()) {
             displayText.append(totalCount).append(" sản phẩm");
         } else {
@@ -280,7 +279,7 @@ public class AdminComboAdapter extends RecyclerView.Adapter<AdminComboAdapter.Co
                 displayText.append(" và ").append(remaining).append(" sản phẩm khác");
             }
         }
-        
+
         displayText.append(" • ").append(statusText);
         holder.tvCategory.setText(displayText.toString());
     }

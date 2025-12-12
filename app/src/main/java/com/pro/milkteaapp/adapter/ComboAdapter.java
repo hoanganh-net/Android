@@ -21,6 +21,7 @@ import com.pro.milkteaapp.models.Combo;
 import com.pro.milkteaapp.models.Product;
 import com.pro.milkteaapp.repository.ProductRepository;
 import com.pro.milkteaapp.utils.MoneyUtils;
+import com.pro.milkteaapp.utils.StringUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -57,8 +58,8 @@ public class ComboAdapter extends ListAdapter<Combo, ComboAdapter.ViewHolder> {
                     if (!TextUtils.isEmpty(oldId) && !TextUtils.isEmpty(newId)) {
                         return oldId.equals(newId);
                     }
-                    String oldKey = safe(oldItem.getName()) + "_" + oldItem.getPrice();
-                    String newKey = safe(newItem.getName()) + "_" + newItem.getPrice();
+                    String oldKey = StringUtils.safe(oldItem.getName()) + "_" + oldItem.getPrice();
+                    String newKey = StringUtils.safe(newItem.getName()) + "_" + newItem.getPrice();
                     return oldKey.equals(newKey);
                 }
 
@@ -78,7 +79,7 @@ public class ComboAdapter extends ListAdapter<Combo, ComboAdapter.ViewHolder> {
         if (c == null) return RecyclerView.NO_ID;
         String key = !TextUtils.isEmpty(c.getId())
                 ? c.getId()
-                : (safe(c.getName()) + "_" + c.getPrice());
+                : (StringUtils.safe(c.getName()) + "_" + c.getPrice());
         return key.hashCode();
     }
 
@@ -262,9 +263,6 @@ public class ComboAdapter extends ListAdapter<Combo, ComboAdapter.ViewHolder> {
         holder.binding.comboProductCount.setText(displayText.toString());
     }
 
-    private static String safe(String s) {
-        return s == null ? "" : s;
-    }
 
     static class ViewHolder extends RecyclerView.ViewHolder {
         final ItemComboBinding binding;

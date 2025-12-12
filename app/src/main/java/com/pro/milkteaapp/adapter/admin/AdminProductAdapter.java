@@ -20,6 +20,7 @@ import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.activity.admin.AdminProductEditorActivity;
 import com.pro.milkteaapp.models.Product;
 import com.pro.milkteaapp.utils.ImageUtils;
+import com.pro.milkteaapp.utils.StringUtils;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -57,11 +58,11 @@ public class AdminProductAdapter extends RecyclerView.Adapter<AdminProductAdapte
 
             @Override
             public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
-                String oldId = safeStr(oldList.get(oldItemPosition).getId());
-                String newId = safeStr(newCopy.get(newItemPosition).getId());
+                String oldId = StringUtils.safeStr(oldList.get(oldItemPosition).getId());
+                String newId = StringUtils.safeStr(newCopy.get(newItemPosition).getId());
                 if (!TextUtils.isEmpty(oldId) && !TextUtils.isEmpty(newId)) return oldId.equals(newId);
-                String ok = safeStr(oldList.get(oldItemPosition).getName()) + "_" + safeDouble(oldList.get(oldItemPosition).getPrice());
-                String nk = safeStr(newCopy.get(newItemPosition).getName()) + "_" + safeDouble(newCopy.get(newItemPosition).getPrice());
+                String ok = StringUtils.safeStr(oldList.get(oldItemPosition).getName()) + "_" + StringUtils.safeDoubleStr(oldList.get(oldItemPosition).getPrice());
+                String nk = StringUtils.safeStr(newCopy.get(newItemPosition).getName()) + "_" + StringUtils.safeDoubleStr(newCopy.get(newItemPosition).getPrice());
                 return ok.equals(nk);
             }
 
@@ -70,9 +71,9 @@ public class AdminProductAdapter extends RecyclerView.Adapter<AdminProductAdapte
                 Product o = oldList.get(oldItemPosition);
                 Product n = newCopy.get(newItemPosition);
 
-                return Objects.equals(safeStr(o.getName()), safeStr(n.getName())) &&
-                        Objects.equals(safeStr(o.getCategory()), safeStr(n.getCategory())) &&
-                        Objects.equals(safeStr(o.getImageUrl()), safeStr(n.getImageUrl())) &&
+                return Objects.equals(StringUtils.safeStr(o.getName()), StringUtils.safeStr(n.getName())) &&
+                        Objects.equals(StringUtils.safeStr(o.getCategory()), StringUtils.safeStr(n.getCategory())) &&
+                        Objects.equals(StringUtils.safeStr(o.getImageUrl()), StringUtils.safeStr(n.getImageUrl())) &&
                         Objects.equals(o.getPrice(), n.getPrice());
             }
         });
@@ -86,7 +87,7 @@ public class AdminProductAdapter extends RecyclerView.Adapter<AdminProductAdapte
         if (position < 0 || position >= productList.size()) return RecyclerView.NO_ID;
         String id = productList.get(position).getId();
         if (!TextUtils.isEmpty(id)) return id.hashCode();
-        String key = safeStr(productList.get(position).getName()) + "_" + safeDouble(productList.get(position).getPrice());
+        String key = StringUtils.safeStr(productList.get(position).getName()) + "_" + StringUtils.safeDoubleStr(productList.get(position).getPrice());
         return key.hashCode();
     }
 
@@ -100,7 +101,7 @@ public class AdminProductAdapter extends RecyclerView.Adapter<AdminProductAdapte
 
     @Override
     public void onBindViewHolder(@NonNull ProductViewHolder holder, int position) {
-        holder.bind(productList.get(position));
+        holder.bind(productList.get(position), listener, productList, currencyFormat);
     }
 
     @Override
@@ -108,10 +109,10 @@ public class AdminProductAdapter extends RecyclerView.Adapter<AdminProductAdapte
         return productList == null ? 0 : productList.size();
     }
 
-    public class ProductViewHolder extends RecyclerView.ViewHolder {
+    static class ProductViewHolder extends RecyclerView.ViewHolder {
         private final TextView productName, productCategory, productPrice;
         private final ImageView productImage, iconFeatured;
-        private final View btnEdit, btnDelete;
+        private final View btnDelete;
 
         public ProductViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -120,16 +121,15 @@ public class AdminProductAdapter extends RecyclerView.Adapter<AdminProductAdapte
             productPrice    = itemView.findViewById(R.id.productPrice);
             productImage    = itemView.findViewById(R.id.productImage);
             iconFeatured    = itemView.findViewById(R.id.iconFeatured);
-            btnEdit         = itemView.findViewById(R.id.btnEdit);
             btnDelete       = itemView.findViewById(R.id.btnDelete);
         }
 
-        void bind(Product p) {
-            productName.setText(safeStr(p.getName()));
-            productCategory.setText(safeStr(p.getCategory()));
-            productPrice.setText(formatPrice(p.getPrice()));
+        void bind(Product p, OnProductActionListener listener, List<Product> productList, NumberFormat currencyFormat) {
+            productName.setText(StringUtils.safeStr(p.getName()));
+            productCategory.setText(StringUtils.safeStr(p.getCategory()));
+            productPrice.setText(formatPrice(p.getPrice(), currencyFormat));
 
-            String img = safeStr(p.getImageUrl());
+            String img = StringUtils.safeStr(p.getImageUrl());
             if (isHttpUrl(img)) {
                 RequestOptions opts = new RequestOptions()
                         .placeholder(R.drawable.ic_placeholder)
@@ -146,7 +146,8 @@ public class AdminProductAdapter extends RecyclerView.Adapter<AdminProductAdapte
                 else productImage.setImageResource(resId);
             }
 
-            View.OnClickListener goEdit = v -> {
+            // Click vào item để xem chi tiết (không có nút edit/delete trực tiếp)
+            itemView.setOnClickListener(v -> {
                 int pos = getBindingAdapterPosition();
                 if (pos == RecyclerView.NO_POSITION) return;
                 Product prod = productList.get(pos);
@@ -155,15 +156,14 @@ public class AdminProductAdapter extends RecyclerView.Adapter<AdminProductAdapte
                     listener.onEditProduct(prod);
                 } else {
                     Intent intent = new Intent(itemView.getContext(), AdminProductEditorActivity.class);
-                    intent.putExtra(AdminProductEditorActivity.EXTRA_PRODUCT_ID, safeStr(prod.getId()));
+                    intent.putExtra(AdminProductEditorActivity.EXTRA_PRODUCT_ID, StringUtils.safeStr(prod.getId()));
                     itemView.getContext().startActivity(intent);
                 }
-            };
-
-            itemView.setOnClickListener(goEdit);
-            if (btnEdit != null) btnEdit.setOnClickListener(goEdit);
-
+            });
+            
+            // Hiển thị nút Delete ở góc trên bên phải
             if (btnDelete != null) {
+                btnDelete.setVisibility(View.VISIBLE);
                 btnDelete.setOnClickListener(v -> {
                     int pos = getBindingAdapterPosition();
                     if (pos == RecyclerView.NO_POSITION) return;
@@ -210,14 +210,11 @@ public class AdminProductAdapter extends RecyclerView.Adapter<AdminProductAdapte
 
         }
 
-        private String formatPrice(Double price) {
-            double p = safeDouble(price);
+        private String formatPrice(Double price, NumberFormat currencyFormat) {
+            double p = StringUtils.safeDouble(price);
             return currencyFormat.format(p) + "đ";
         }
     }
-
-    private static String safeStr(String s) { return s == null ? "" : s; }
-    private static double safeDouble(Double d){ return d == null ? 0d : d; }
     private static boolean isHttpUrl(String s) {
         if (TextUtils.isEmpty(s)) return false;
         boolean looksLikeUrl = Patterns.WEB_URL.matcher(s).matches();

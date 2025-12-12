@@ -1,5 +1,6 @@
 package com.pro.milkteaapp.fragment.admin.management;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -17,6 +18,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.pro.milkteaapp.R;
+import com.pro.milkteaapp.activity.admin.VoucherEditorActivity;
 import com.pro.milkteaapp.adapter.VoucherAdapter;
 import com.pro.milkteaapp.models.Voucher;
 import com.pro.milkteaapp.repository.VouchersRepository;
@@ -31,7 +33,6 @@ public class VoucherManageFragment extends Fragment
     private VouchersRepository vouchersRepository;
     private ListenerRegistration listenerRegistration;
     private VoucherAdapter adapter;
-    private TextInputEditText searchEditText;
     private final List<Voucher> allVouchers = new ArrayList<>();
     private String lastSearch = "";
 
@@ -45,14 +46,14 @@ public class VoucherManageFragment extends Fragment
 
         RecyclerView rv = v.findViewById(R.id.rv);
         View fabAdd = v.findViewById(R.id.fabAdd);
-        searchEditText = v.findViewById(R.id.searchEditText);
+        TextInputEditText searchEditText = v.findViewById(R.id.searchEditText);
 
         adapter = new VoucherAdapter(this);
         rv.setLayoutManager(new LinearLayoutManager(requireContext()));
         rv.setAdapter(adapter);
 
         if (fabAdd != null) {
-            fabAdd.setOnClickListener(x -> showUpsertDialog(null, "ORDER_FIXED"));
+            fabAdd.setOnClickListener(x -> openVoucherEditor(null));
         }
 
         // Setup search
@@ -100,34 +101,38 @@ public class VoucherManageFragment extends Fragment
 
     @Override
     public void onAddAction() {
-        showUpsertDialog(null, "ORDER_FIXED");
+        openVoucherEditor(null);
     }
 
-    private void showUpsertDialog(@Nullable Voucher editing, @Nullable String presetType) {
-        com.pro.milkteaapp.fragment.bottomsheet.VoucherFormBottomSheet sheet =
-                com.pro.milkteaapp.fragment.bottomsheet.VoucherFormBottomSheet.newInstance(editing, presetType, false);
-        sheet.show(getParentFragmentManager(), "voucher_form");
+    private void openVoucherEditor(@Nullable Voucher voucher) {
+        Intent intent = new Intent(requireContext(), VoucherEditorActivity.class);
+        if (voucher != null && voucher.getId() != null) {
+            intent.putExtra(VoucherEditorActivity.EXTRA_VOUCHER_ID, voucher.getId());
+        } else {
+            intent.putExtra(VoucherEditorActivity.EXTRA_PRESET_TYPE, "ORDER_FIXED");
+            intent.putExtra(VoucherEditorActivity.EXTRA_IS_POINT_REDEMPTION, false);
+        }
+        startActivity(intent);
     }
 
-    @Override public void onEdit(@NonNull Voucher v) { showUpsertDialog(v, null); }
+    @Override public void onEdit(@NonNull Voucher v) { openVoucherEditor(v); }
 
     @Override
     public void onDelete(@NonNull Voucher v) {
-        new androidx.appcompat.app.AlertDialog.Builder(requireContext())
-                .setMessage("Xóa " + v.getCode() + "?")
-                .setPositiveButton("Xóa", (dlg, w) ->
-                        vouchersRepository.deleteVoucher(v.getId(), new VouchersRepository.OnVoucherUpdateListener() {
-                            @Override
-                            public void onSuccess() {
-                                // Success
-                            }
+        com.pro.milkteaapp.fragment.bottomsheet.VoucherDeleteConfirmBottomSheet sheet =
+                com.pro.milkteaapp.fragment.bottomsheet.VoucherDeleteConfirmBottomSheet.newInstance(v);
+        sheet.setListener(voucher -> vouchersRepository.deleteVoucher(voucher.getId(), new VouchersRepository.OnVoucherUpdateListener() {
+            @Override
+            public void onSuccess() {
+                // Success
+            }
 
-                            @Override
-                            public void onError(@NonNull Exception error) {
-                                Toast.makeText(requireContext(), "Lỗi xóa: " + error.getMessage(), Toast.LENGTH_SHORT).show();
-                            }
-                        }))
-                .setNegativeButton("Hủy", null).show();
+            @Override
+            public void onError(@NonNull Exception error) {
+                Toast.makeText(requireContext(), "Lỗi xóa: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        }));
+        sheet.show(getParentFragmentManager(), "voucher_delete_confirm");
     }
 
     @Override

@@ -1,22 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:orientation="vertical"
-    android:padding="10dp"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="2dp"
+    app:strokeColor="@color/light_gray"
+    app:strokeWidth="1dp">
 
-    <!-- Hàng thông tin + nút thao tác -->
-    <LinearLayout
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:padding="12dp">
 
+        <!-- Content -->
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:paddingEnd="50dp">
 
             <!-- Tên hiển thị -->
             <TextView
@@ -66,49 +69,101 @@
                 android:textColor="@android:color/darker_gray"
                 android:layout_marginTop="1dp" />
 
+            <!-- Role (badge) -->
+            <TextView
+                android:id="@+id/tvRole"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="user"
+                android:textSize="12sp"
+                android:layout_marginTop="4dp" />
+
+            <!-- Trạng thái Active -->
+            <TextView
+                android:id="@+id/tvActiveStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Đã kích hoạt"
+                android:textSize="11sp"
+                android:layout_marginTop="4dp"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp" />
+
+            <!-- Cấp độ thành viên -->
+            <TextView
+                android:id="@+id/tvLoyaltyTier"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Cấp độ: Chưa xếp hạng"
+                android:textSize="12sp"
+                android:textColor="@color/text_secondary"
+                android:layout_marginTop="4dp" />
+
+            <!-- Điểm thành viên và điểm đổi quà -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="2dp">
+
+                <TextView
+                    android:id="@+id/tvLoyaltyPoints"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Điểm tích lũy: 0"
+                    android:textSize="11sp"
+                    android:textColor="@color/text_secondary" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=" • "
+                    android:textSize="11sp"
+                    android:textColor="@color/text_secondary"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginEnd="4dp" />
+
+                <TextView
+                    android:id="@+id/tvRewardPoints"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Điểm đổi quà: 0"
+                    android:textSize="11sp"
+                    android:textColor="@color/text_secondary" />
+
+            </LinearLayout>
+
         </LinearLayout>
 
-        <!-- Cụm nút thao tác -->
+        <!-- Delete button ở góc trên phải -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="end|center_vertical">
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnEdit"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:insetTop="0dp"
-                android:insetBottom="0dp"
-                app:icon="@drawable/ic_edit"
-                app:iconTint="@color/white"
-                app:backgroundTint="@color/primary"
-                app:iconGravity="end"
-                style="@style/Widget.MaterialComponents.Button.Icon" />
+            android:layout_gravity="top|end"
+            android:orientation="vertical">
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnDelete"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:layout_marginStart="8dp"
+                style="@style/Widget.Material3.Button.IconButton.Filled"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:gravity="center"
                 android:insetTop="0dp"
                 android:insetBottom="0dp"
+                android:insetLeft="0dp"
+                android:insetRight="0dp"
+                android:padding="10dp"
                 app:icon="@drawable/ic_delete"
                 app:iconTint="@color/white"
-                app:iconGravity="end"
+                app:iconSize="20dp"
                 app:backgroundTint="@color/error_red"
-                style="@style/Widget.MaterialComponents.Button.Icon" />
+                app:cornerRadius="20dp"
+                app:iconPadding="0dp" />
+
         </LinearLayout>
-    </LinearLayout>
 
-    <!-- Role (badge) -->
-    <TextView
-        android:id="@+id/tvRole"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="user"
-        android:textSize="12sp"
-        android:layout_marginTop="4dp"/>
+    </FrameLayout>
 
-</LinearLayout>
+</com.google.android.material.card.MaterialCardView>

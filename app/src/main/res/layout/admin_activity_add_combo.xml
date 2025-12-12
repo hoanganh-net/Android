@@ -181,27 +181,37 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Nút Thêm -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/buttonAddCombo"
-                style="@style/Widget.Material3.Button.IconButton.Filled"
+            <!-- Các nút Hủy Thay Đổi và Hoàn Thành -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Thêm Combo"
-                android:textSize="18sp"
-                android:backgroundTint="@color/primary"
-                android:layout_marginBottom="12dp" />
+                android:orientation="horizontal"
+                android:layout_marginBottom="16dp"
+                android:weightSum="2"
+                android:gravity="center">
 
-            <!-- Nút Reset -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/buttonReset"
-                style="@style/Widget.Material3.Button.TonalButton"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textColor="@color/white"
-                android:textSize="18sp"
-                android:backgroundTint="@color/primary_dark"
-                android:text="Làm Mới Form" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/buttonReset"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Hủy Thay Đổi"
+                    android:textSize="16sp"
+                    android:layout_marginEnd="8dp"
+                    app:strokeColor="@color/gray_500"
+                    android:textColor="@color/gray_500" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/buttonAddCombo"
+                    style="@style/Widget.Material3.Button"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Hoàn Thành"
+                    android:textSize="16sp"
+                    app:backgroundTint="@color/primary" />
+            </LinearLayout>
 
             <ProgressBar
                 android:id="@+id/progressBar"

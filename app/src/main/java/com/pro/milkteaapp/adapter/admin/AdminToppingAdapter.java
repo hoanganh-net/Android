@@ -7,8 +7,10 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.databinding.AdminItemToppingRowBinding;
 import com.pro.milkteaapp.models.Topping;
+import com.pro.milkteaapp.utils.ImageLoader;
 import com.pro.milkteaapp.utils.MoneyUtils;
 
 import java.util.List;
@@ -16,7 +18,6 @@ import java.util.List;
 public class AdminToppingAdapter extends RecyclerView.Adapter<AdminToppingAdapter.VH> {
 
     public interface Listener {
-        void onToggleActive(@NonNull Topping t, boolean active);
         void onEdit(@NonNull Topping t);
         void onDelete(@NonNull Topping t);
     }
@@ -49,15 +50,28 @@ public class AdminToppingAdapter extends RecyclerView.Adapter<AdminToppingAdapte
         String cats = (t.getCategories() == null || t.getCategories().isEmpty()) ? "—"
                 : TextUtils.join(", ", t.getCategories());
         h.b.tvCategories.setText(cats);
-        h.b.switchActive.setOnCheckedChangeListener(null);
-        h.b.switchActive.setChecked(t.getActive());
 
-        h.b.switchActive.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (listener != null) listener.onToggleActive(t, isChecked);
+        // Load ảnh topping
+        String imageUrl = t.getImageUrl();
+        if (TextUtils.isEmpty(imageUrl)) {
+            h.b.toppingImage.setImageResource(R.drawable.milktea);
+        } else {
+            ImageLoader.load(
+                    h.b.toppingImage,
+                    imageUrl,
+                    R.drawable.milktea
+            );
+        }
+
+        // Click vào item để xem chi tiết và chỉnh sửa
+        h.itemView.setOnClickListener(v -> {
+            if (listener != null) listener.onEdit(t);
         });
-
-        h.b.btnEdit.setOnClickListener(v -> { if (listener != null) listener.onEdit(t); });
-        h.b.btnDelete.setOnClickListener(v -> { if (listener != null) listener.onDelete(t); });
+        
+        // Nút Delete
+        h.b.btnDelete.setOnClickListener(v -> {
+            if (listener != null) listener.onDelete(t);
+        });
     }
 
     @Override public int getItemCount() { return data.size(); }

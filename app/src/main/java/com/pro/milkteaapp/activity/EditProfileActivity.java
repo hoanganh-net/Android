@@ -67,8 +67,6 @@ public class EditProfileActivity extends AppCompatActivity {
         loadCurrentProfile();
     }
 
-    private android.widget.TextView customTitleView;
-    
     private void setupToolbar() {
         setSupportActionBar(binding.toolbar);
         if (getSupportActionBar() != null) {
@@ -322,16 +320,9 @@ public class EditProfileActivity extends AppCompatActivity {
         
         dialog.show();
     }
-    
+
     // Class để lưu thông tin avatar
-    private static class AvatarItem {
-        final String name;
-        final int resId;
-        
-        AvatarItem(String name, int resId) {
-            this.name = name;
-            this.resId = resId;
-        }
+        private record AvatarItem(String name, int resId) {
     }
     
     // Adapter để hiển thị avatar trong grid
@@ -516,12 +507,6 @@ public class EditProfileActivity extends AppCompatActivity {
 
     private String firstNonEmpty(String a, String b) {
         return !TextUtils.isEmpty(a) ? a : (!TextUtils.isEmpty(b) ? b : "");
-    }
-
-    private String firstNonEmpty(String a, String b, String c) {
-        if (!TextUtils.isEmpty(a)) return a;
-        if (!TextUtils.isEmpty(b)) return b;
-        return !TextUtils.isEmpty(c) ? c : "";
     }
 
     @Override

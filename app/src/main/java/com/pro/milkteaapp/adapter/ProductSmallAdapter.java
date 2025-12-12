@@ -20,6 +20,7 @@ import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.databinding.ItemProductSmallBinding;
 import com.pro.milkteaapp.models.Product;
 import com.pro.milkteaapp.utils.MoneyUtils;
+import com.pro.milkteaapp.utils.StringUtils;
 
 import java.util.HashMap;
 import java.util.Locale;
@@ -54,8 +55,8 @@ public class ProductSmallAdapter extends ListAdapter<Product, ProductSmallAdapte
                     if (!TextUtils.isEmpty(oldId) && !TextUtils.isEmpty(newId)) {
                         return oldId.equals(newId);
                     }
-                    String oldKey = safe(oldItem.getName()) + "_" + oldItem.getPrice();
-                    String newKey = safe(newItem.getName()) + "_" + newItem.getPrice();
+                    String oldKey = StringUtils.safe(oldItem.getName()) + "_" + oldItem.getPrice();
+                    String newKey = StringUtils.safe(newItem.getName()) + "_" + newItem.getPrice();
                     return oldKey.equals(newKey);
                 }
 
@@ -76,7 +77,7 @@ public class ProductSmallAdapter extends ListAdapter<Product, ProductSmallAdapte
         if (p == null) return RecyclerView.NO_ID;
         String key = !TextUtils.isEmpty(p.getId())
                 ? p.getId()
-                : (safe(p.getName()) + "_" + p.getPrice());
+                : (StringUtils.safe(p.getName()) + "_" + p.getPrice());
         return key.hashCode();
     }
 
@@ -165,7 +166,6 @@ public class ProductSmallAdapter extends ListAdapter<Product, ProductSmallAdapte
         return x.startsWith("http://") || x.startsWith("https://");
     }
 
-    private static String safe(String s) { return s == null ? "" : s; }
 
     public static class VH extends RecyclerView.ViewHolder {
         final ItemProductSmallBinding b;

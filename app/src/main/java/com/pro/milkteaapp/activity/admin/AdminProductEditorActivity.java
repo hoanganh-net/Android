@@ -5,20 +5,21 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.appbar.MaterialToolbar;
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.MaterialAutoCompleteTextView;
 import com.google.android.material.textfield.TextInputEditText;
-import androidx.annotation.NonNull;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FieldValue;
-import com.google.firebase.firestore.FirebaseFirestore;
 import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.SessionManager;
 import com.pro.milkteaapp.activity.MainActivity;
@@ -47,9 +48,13 @@ public class AdminProductEditorActivity extends AppCompatActivity {
     // Inputs dùng chung
     private TextInputEditText etName, etPrice, etImageUrl, etDescription;
     private MaterialAutoCompleteTextView actCategory;
+    private MaterialButton btnPickDrawable;
+    private ImageView imagePreview;
 
     // Nút theo template
     private Button btnSave, btnReset;
+    // Nút mới: Hủy Thay Đổi, Hoàn Thành
+    private Button btnCancel, btnComplete;
     private ProgressBar progress;
 
     private boolean isEditMode = false;
@@ -59,9 +64,10 @@ public class AdminProductEditorActivity extends AppCompatActivity {
     private final ArrayList<String> categories = new ArrayList<>();
     private ArrayAdapter<String> categoryAdapter;
     private static final boolean REQUIRE_CATEGORY_IN_LIST = true;
+    
+    // Drawable list
+    private final ArrayList<String> drawableList = new ArrayList<>();
 
-    // Firestore + Auth
-    private FirebaseFirestore db;
     private FirebaseAuth auth;
     private CategoriesRepository categoriesRepository;
     private ProductRepository productsRepository;
@@ -87,15 +93,24 @@ public class AdminProductEditorActivity extends AppCompatActivity {
         bindViewsByTemplate();
 
         // Firebase
-        db   = FirebaseFirestore.getInstance();
+        // Firestore + Auth
         auth = FirebaseAuth.getInstance();
         categoriesRepository = new CategoriesRepository();
         productsRepository = new ProductRepository();
 
-        // Dropdown
+        // Dropdown categories
         categoryAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, categories);
         actCategory.setAdapter(categoryAdapter);
         actCategory.setOnClickListener(v -> actCategory.showDropDown());
+        
+        // Button chọn drawable
+        setupDrawableList();
+        if (btnPickDrawable != null) {
+            btnPickDrawable.setOnClickListener(v -> showDrawablePickerDialog());
+        }
+        
+        // Setup image preview listener
+        setupImagePreview();
 
         // Load danh mục, xong nếu edit thì load sản phẩm
         loadCategories(() -> {
@@ -104,6 +119,15 @@ public class AdminProductEditorActivity extends AppCompatActivity {
 
         if (btnSave  != null) btnSave.setOnClickListener(v -> onSave());
         if (btnReset != null) btnReset.setOnClickListener(v -> resetForm());
+        
+        // Setup các nút cho edit mode
+        if (btnCancel != null) {
+            btnCancel.setOnClickListener(v -> finish()); // Hủy thay đổi: quay lại không lưu
+        }
+        
+        if (btnComplete != null) {
+            btnComplete.setOnClickListener(v -> onSave()); // Hoàn thành: lưu thay đổi
+        }
     }
 
     /* ------------------------- Bind theo template ------------------------- */
@@ -114,6 +138,19 @@ public class AdminProductEditorActivity extends AppCompatActivity {
         etImageUrl    = findViewById(R.id.editTextProductImage);
         etDescription = findViewById(R.id.editTextProductDescription);
         progress      = findViewById(R.id.progressBar);
+        
+        // Chỉ bind các view này trong edit mode (chỉ có trong edit layout)
+        if (isEditMode) {
+            View btnPickDrawableView = findViewById(R.id.btnPickDrawable);
+            if (btnPickDrawableView instanceof MaterialButton) {
+                btnPickDrawable = (MaterialButton) btnPickDrawableView;
+            }
+            
+            View imagePreviewView = findViewById(R.id.imagePreview);
+            if (imagePreviewView instanceof ImageView) {
+                imagePreview = (ImageView) imagePreviewView;
+            }
+        }
 
         MaterialToolbar toolbar = findViewById(R.id.toolbar);
         if (toolbar != null) {
@@ -133,6 +170,10 @@ public class AdminProductEditorActivity extends AppCompatActivity {
                 : firstNonNull(findViewById(R.id.buttonAddProduct),   findViewById(R.id.buttonUpdateProduct));
 
         btnReset = findViewById(R.id.buttonReset);
+        
+        // Nút mới cho edit mode
+        btnCancel = findViewById(R.id.buttonCancel);
+        btnComplete = findViewById(R.id.buttonComplete);
     }
 
     @SafeVarargs
@@ -184,9 +225,12 @@ public class AdminProductEditorActivity extends AppCompatActivity {
                 etPrice.setText(formatPrice(price));
                 etImageUrl.setText(imageUrl);
                 etDescription.setText(description);
+                
+                // Preview ảnh
+                updateImagePreview(imageUrl);
 
-                // nếu category trong db đã bị ẩn thì vẫn hiển thị để user thấy
-                if (!category.isEmpty() && !containsIgnoreCase(categories, category)) {
+                // Nếu category trong db đã bị ẩn thì vẫn hiển thị để user thấy
+                if (!category.isEmpty() && containsIgnoreCase(categories, category)) {
                     categories.add(category + " (đã ẩn)");
                     if (categoryAdapter != null) categoryAdapter.notifyDataSetChanged();
                 }
@@ -221,7 +265,7 @@ public class AdminProductEditorActivity extends AppCompatActivity {
         String normalizedCat = categoryUI.replace(" (đã ẩn)", "").trim();
 
         // Nếu bắt buộc chọn trong list mà người dùng gõ tay -> báo lỗi
-        if (REQUIRE_CATEGORY_IN_LIST && !containsIgnoreCase(categories, normalizedCat)) {
+        if (REQUIRE_CATEGORY_IN_LIST && containsIgnoreCase(categories, normalizedCat)) {
             toast("Vui lòng chọn danh mục hợp lệ từ danh sách!");
             actCategory.showDropDown();
             if (btnSave != null) btnSave.setEnabled(true);
@@ -257,6 +301,7 @@ public class AdminProductEditorActivity extends AppCompatActivity {
                     setLoading(false);
                     toast("Đã cập nhật sản phẩm.");
                     setResult(RESULT_OK);
+                    // Hoàn thành: quay lại trang trước
                     finish();
                 }
 
@@ -268,7 +313,7 @@ public class AdminProductEditorActivity extends AppCompatActivity {
                 }
             });
         } else {
-            // ====== CREATE: sinh productId trước, dùng làm documentId luôn ======
+            // CREATE: sinh productId trước, dùng làm documentId luôn
             String uid = (auth.getCurrentUser() != null) ? auth.getCurrentUser().getUid() : null;
             data.put("status", "active");
             data.put("createdByUid", uid);
@@ -276,8 +321,7 @@ public class AdminProductEditorActivity extends AppCompatActivity {
 
             new ProductsIDGenerator().nextProductId()
                     .addOnSuccessListener(newId -> {
-                        // newId ví dụ: PRD00001
-                        data.put("id", newId); // lưu vào trong document để client khác đọc được
+                        data.put("id", newId); // Lưu vào document để client khác đọc được
                         productsRepository.createProduct(newId, data, new ProductRepository.OnProductCreateListener() {
                             @Override
                             public void onSuccess(@NonNull String productId) {
@@ -309,6 +353,9 @@ public class AdminProductEditorActivity extends AppCompatActivity {
         actCategory.setText("", false);
         etImageUrl.setText("");
         etDescription.setText("");
+        if (imagePreview != null) {
+            imagePreview.setImageResource(R.drawable.ic_placeholder);
+        }
         etName.requestFocus();
     }
 
@@ -322,14 +369,13 @@ public class AdminProductEditorActivity extends AppCompatActivity {
     private static String t(TextInputEditText e) {
         return e.getText() != null ? e.getText().toString().trim() : "";
     }
-    private static String ns(String s) { return s == null ? "" : s; }
 
     /** true nếu list có chứa v (bỏ qua hoa thường) */
     private static boolean containsIgnoreCase(ArrayList<String> list, String v) {
         for (String s : list) {
-            if (s.equalsIgnoreCase(v)) return true;
+            if (s.equalsIgnoreCase(v)) return false;
         }
-        return false;
+        return true;
     }
 
     private static String formatPrice(Double price) {
@@ -346,6 +392,99 @@ public class AdminProductEditorActivity extends AppCompatActivity {
     }
 
     private void toast(String m) { Toast.makeText(this, m, Toast.LENGTH_SHORT).show(); }
+    
+    /* ------------------------- Setup Drawable List ------------------------- */
+    private void setupDrawableList() {
+        drawableList.clear();
+        // Danh sách drawable resources phổ biến
+        drawableList.add("milktea_matcha");
+        drawableList.add("milktea_taro");
+        drawableList.add("milktea_olong");
+        drawableList.add("milktea_greenthai");
+        drawableList.add("milktea_strawberry");
+        drawableList.add("milktea_chocolate");
+        drawableList.add("milktea_cheese");
+        drawableList.add("milktea_caramel");
+        drawableList.add("milktea_blueberry");
+        drawableList.add("milktea_mango");
+        drawableList.add("milktea_brownsugar");
+        drawableList.add("milktea");
+        drawableList.add("tea_blacktea");
+        drawableList.add("tea_hongtratac");
+        drawableList.add("tea_tranhaihoa");
+        drawableList.add("tea_tranhaihoakem");
+        drawableList.add("tea_trasuibot");
+        drawableList.add("juice_apple");
+        drawableList.add("juice_orange");
+        drawableList.add("juice_pineapple");
+        drawableList.add("juice_watermelon");
+        drawableList.add("juice_bublecoconut");
+        drawableList.add("juice_mix");
+        drawableList.add("milk_coffe");
+        drawableList.add("black_coffe");
+        drawableList.add("brown_coffe");
+    }
+    
+    /* ------------------------- Show Drawable Picker Dialog ------------------------- */
+    private void showDrawablePickerDialog() {
+        // Chuyển danh sách thành mảng String để dùng với AlertDialog
+        String[] drawableArray = drawableList.toArray(new String[0]);
+        
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("Chọn hình ảnh từ Drawable")
+                .setItems(drawableArray, (dialog, which) -> {
+                    if (which >= 0 && which < drawableList.size()) {
+                        String selectedDrawable = drawableList.get(which);
+                        etImageUrl.setText(selectedDrawable);
+                        updateImagePreview(selectedDrawable);
+                    }
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
+    }
+    
+    /* ------------------------- Setup Image Preview ------------------------- */
+    private void setupImagePreview() {
+        // Listen text change để tự động preview
+        etImageUrl.addTextChangedListener(new android.text.TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            
+            @Override
+            public void afterTextChanged(android.text.Editable s) {
+                String imageUrl = s != null ? s.toString().trim() : "";
+                updateImagePreview(imageUrl);
+            }
+        });
+        
+        // Preview ảnh ban đầu nếu có
+        if (isEditMode && etImageUrl.getText() != null) {
+            String currentImage = etImageUrl.getText().toString().trim();
+            if (!currentImage.isEmpty()) {
+                updateImagePreview(currentImage);
+            }
+        }
+    }
+    
+    /* ------------------------- Update Image Preview ------------------------- */
+    private void updateImagePreview(String imageUrlOrName) {
+        if (imagePreview == null) return;
+        
+        if (imageUrlOrName == null || imageUrlOrName.trim().isEmpty()) {
+            imagePreview.setImageResource(R.drawable.ic_placeholder);
+            return;
+        }
+        
+        // Sử dụng ImageLoader để load ảnh (hỗ trợ cả URL và drawable)
+        com.pro.milkteaapp.utils.ImageLoader.load(
+            imagePreview,
+            imageUrlOrName.trim(),
+            R.drawable.ic_placeholder
+        );
+    }
 
     /**
      * Tự động cập nhật giá của tất cả combo chứa sản phẩm này

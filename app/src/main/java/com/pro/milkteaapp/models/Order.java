@@ -45,7 +45,8 @@ public class Order implements Serializable {
     private Timestamp ratedAt;
     private String photoUrl;     // URL ảnh đánh giá (nếu có)
 
-    public Order() {}
+    public Order() {
+    }
 
     @NonNull
     @SuppressWarnings("unchecked")
@@ -109,12 +110,8 @@ public class Order implements Serializable {
     public double getFinalTotal() { return finalTotal; }
     public double getTotal() { return finalTotal; }
     public double getSubtotal() { return subtotal; }
-    public double getDiscount() { return discount; }
-    public double getShippingFee() { return shippingFee; }
+
     @Nullable public String getAddress() { return address; }
-    @Nullable public String getPaymentMethod() { return paymentMethod; }
-    @Nullable public String getPaymentStatus() { return paymentStatus; }
-    @Nullable public String getTransactionId() { return transactionId; }
 
     @Nullable public Timestamp getCreatedAt() { return createdAt; }
     @Nullable public Timestamp getFinishedAt() { return finishedAt; }
@@ -136,21 +133,15 @@ public class Order implements Serializable {
     @Nullable public String getUserAvatar() { return userAvatar; }
     @Nullable public String getRatedBy() { return ratedBy; }
     @Nullable public Timestamp getRatedAt() { return ratedAt; }
-    @Nullable public String getPhotoUrl() { return photoUrl; }
 
     // ===== setters =====
     public void setId(@NonNull String id) { this.id = id; }
     public void setStatus(@Nullable String status) { this.status = status; }
-    public void setFinalTotal(double finalTotal) { this.finalTotal = finalTotal; }
+
     public void setSubtotal(double subtotal) { this.subtotal = subtotal; }
-    public void setDiscount(double discount) { this.discount = discount; }
-    public void setShippingFee(double shippingFee) { this.shippingFee = shippingFee; }
+
     public void setAddress(@Nullable String address) { this.address = address; }
-    public void setPaymentMethod(@Nullable String paymentMethod) { this.paymentMethod = paymentMethod; }
-    public void setPaymentStatus(@Nullable String paymentStatus) { this.paymentStatus = paymentStatus; }
-    public void setTransactionId(@Nullable String transactionId) { this.transactionId = transactionId; }
+
     public void setCreatedAt(@Nullable Timestamp createdAt) { this.createdAt = createdAt; }
-    public void setFinishedAt(@Nullable Timestamp finishedAt) { this.finishedAt = finishedAt; }
-    public void setCancelledAt(@Nullable Timestamp cancelledAt) { this.cancelledAt = cancelledAt; }
-    public void setCanceledAt(@Nullable Timestamp canceledAt) { this.canceledAt = canceledAt; }
+
 }

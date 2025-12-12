@@ -22,16 +22,14 @@ public class Product implements Serializable {
     private String description;
     private String status;
     private String searchableName;
-    private String createdByUid;
     private Date createdAt;
-    private Date updatedAt;
     private Boolean featured;  // Sản phẩm nổi bật
 
     public Product() {}
 
     public Product(String id, String name, Double price, String category,
                     String imageUrl, String description, String status,
-                    String searchableName, String createdByUid) {
+                    String searchableName) {
         this.id = id;
         this.name = name;
         this.price = price;
@@ -40,7 +38,6 @@ public class Product implements Serializable {
         this.description = description;
         this.status = status;
         this.searchableName = searchableName;
-        this.createdByUid = createdByUid;
     }
 
     // Getters
@@ -52,10 +49,9 @@ public class Product implements Serializable {
     public String getDescription() { return description; }
     public String getStatus() { return status; }
     public String getSearchableName() { return searchableName; }
-    public String getCreatedByUid() { return createdByUid; }
 
     public Date getCreatedAt() { return createdAt; }
-    public Date getUpdatedAt() { return updatedAt; }
+
     public Boolean getFeatured() { return featured; }
 
     // Setters
@@ -67,24 +63,18 @@ public class Product implements Serializable {
     public void setDescription(String description) { this.description = description; }
     public void setStatus(String status) { this.status = status; }
     public void setSearchableName(String searchableName) { this.searchableName = searchableName; }
-    public void setCreatedByUid(String createdByUid) { this.createdByUid = createdByUid; }
 
 
     public void setCreatedAt(Date createdAt) { this.createdAt = createdAt; }
-    public void setUpdatedAt(Date updatedAt) { this.updatedAt = updatedAt; }
+
     public void setFeatured(Boolean featured) { this.featured = featured; }
 
     // ===== Alias cho dữ liệu cũ (nếu tồn tại key khác) =====
     @PropertyName("title")
     public void setTitle(String v) { this.name = v; }
 
-    @PropertyName("imgUrl")
-    public void setImgUrl(String v) { this.imageUrl = v; }
-
     @PropertyName("image")
     public void setImage(String v) { this.imageUrl = v; }
 
-    @PropertyName("categoryName")
-    public void setCategoryName(String v) { this.category = v; }
 }
 

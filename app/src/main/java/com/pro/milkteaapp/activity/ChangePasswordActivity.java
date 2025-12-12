@@ -1,5 +1,6 @@
 package com.pro.milkteaapp.activity;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
@@ -23,8 +24,7 @@ public class ChangePasswordActivity extends AppCompatActivity {
         setupChangePasswordButton();
     }
 
-    private android.widget.TextView customTitleView;
-    
+    @SuppressLint("SetTextI18n")
     private void setupToolbar() {
         setSupportActionBar(binding.toolbar);
         if (getSupportActionBar() != null) {

@@ -77,9 +77,33 @@
             android:exported="false"
             android:theme="@style/Theme.MilkteaApp.NoActionBar" />
 
+        <!-- Admin category editor -->
+        <activity
+            android:name=".activity.admin.CategoryEditorActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MilkteaApp.NoActionBar" />
+
+        <!-- Admin topping editor -->
+        <activity
+            android:name=".activity.admin.ToppingEditorActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MilkteaApp.NoActionBar" />
+
         <!-- Admin combo editor -->
         <activity
             android:name=".activity.admin.AdminComboEditorActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MilkteaApp.NoActionBar" />
+
+        <!-- Admin voucher editor -->
+        <activity
+            android:name=".activity.admin.VoucherEditorActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MilkteaApp.NoActionBar" />
+
+        <!-- Admin user editor -->
+        <activity
+            android:name=".activity.admin.UserEditorActivity"
             android:exported="false"
             android:theme="@style/Theme.MilkteaApp.NoActionBar" />
 
@@ -130,21 +154,6 @@
             android:name=".activity.AddressActivity"
             android:exported="false"
             android:theme="@style/Theme.MilkteaApp.NoActionBar" />
-
-        <!-- Payment Activity -->
-        <activity
-            android:name=".activity.PaymentActivity"
-            android:exported="false"
-            android:launchMode="singleTop"
-            android:theme="@style/Theme.MilkteaApp.NoActionBar">
-            <!-- Deep link để nhận kết quả thanh toán -->
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="milkteaapp" android:host="payment" />
-            </intent-filter>
-        </activity>
 
     </application>
 </manifest>

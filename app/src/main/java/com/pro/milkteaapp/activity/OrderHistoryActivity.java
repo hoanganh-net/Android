@@ -34,16 +34,14 @@ public class OrderHistoryActivity extends AppCompatActivity {
                     .commit();
             
             // Setup nút filter trong toolbar để mở drawer của fragment
-            if (b.btnFilter != null) {
-                b.btnFilter.setOnClickListener(v -> {
-                    // Tìm fragment và gọi method mở drawer
-                    OrdersFragment ordersFragment = (OrdersFragment) getSupportFragmentManager()
-                            .findFragmentById(b.container.getId());
-                    if (ordersFragment != null) {
-                        ordersFragment.openFilterDrawer();
-                    }
-                });
-            }
+            b.btnFilter.setOnClickListener(v -> {
+                // Tìm fragment và gọi method mở drawer
+                OrdersFragment ordersFragment = (OrdersFragment) getSupportFragmentManager()
+                        .findFragmentById(b.container.getId());
+                if (ordersFragment != null) {
+                    ordersFragment.openFilterDrawer();
+                }
+            });
         }
     }
     

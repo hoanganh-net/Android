@@ -17,7 +17,6 @@ import com.pro.milkteaapp.models.ComboCartItem;
 import com.pro.milkteaapp.models.Product;
 import com.pro.milkteaapp.models.SelectedTopping;
 import com.pro.milkteaapp.utils.ImageLoader;
-import com.pro.milkteaapp.utils.ImageUtils;
 import com.pro.milkteaapp.utils.MoneyUtils;
 
 import java.util.List;
@@ -61,7 +60,7 @@ public class CheckoutItemAdapter extends RecyclerView.Adapter<CheckoutItemAdapte
                     .append(ci.getIce()).append("|")
                     .append(ci.getNote()).append("|");
             List<SelectedTopping> ts = ci.getToppings();
-            if (ts != null) for (SelectedTopping t : ts) key.append(t.id).append(",");
+            if (ts != null) for (SelectedTopping t : ts) key.append(t.id()).append(",");
             return key.toString().replace("null","_").hashCode();
         } else {
             int comboPos = position - items.size();

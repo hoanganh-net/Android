@@ -13,9 +13,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
@@ -37,6 +34,7 @@ import com.pro.milkteaapp.models.Voucher;
 import com.pro.milkteaapp.repository.AddressRepository;
 import com.pro.milkteaapp.utils.LoyaltyPolicy;
 import com.pro.milkteaapp.utils.MoneyUtils;
+import com.pro.milkteaapp.utils.StringUtils;
 import com.pro.milkteaapp.utils.VoucherUtils;
 
 import java.io.Serializable;
@@ -133,7 +131,7 @@ public class CheckoutBottomSheet extends BottomSheetDialogFragment {
                 }
             }
             Serializable comboSer = getArguments().getSerializable(ARG_COMBO_ITEMS);
-            if (comboSer != null && comboSer instanceof ArrayList<?>) {
+            if (comboSer instanceof ArrayList<?>) {
                 for (Object o : (ArrayList<?>) comboSer) {
                     if (o instanceof com.pro.milkteaapp.models.ComboCartItem) {
                         comboItems.add((com.pro.milkteaapp.models.ComboCartItem) o);
@@ -203,7 +201,7 @@ public class CheckoutBottomSheet extends BottomSheetDialogFragment {
                     }
                 }
                 selectedVoucher = vSelected;
-                voucherCode = (vSelected != null ? safe(vSelected.getCode()) : "");
+                voucherCode = (vSelected != null ? StringUtils.safeStr(vSelected.getCode()) : "");
                 setText(b.tvVoucherValue, voucherCode.isEmpty() ? "Không áp dụng" : voucherCode);
                 updateSummaryUI();
             });
@@ -230,7 +228,7 @@ public class CheckoutBottomSheet extends BottomSheetDialogFragment {
                     }
                 }
                 selectedRewardVoucher = vSelected;
-                rewardVoucherCode = (vSelected != null ? safe(vSelected.getCode()) : "");
+                rewardVoucherCode = (vSelected != null ? StringUtils.safeStr(vSelected.getCode()) : "");
                 setText(b.tvRewardVoucherValue, rewardVoucherCode.isEmpty() ? "Không áp dụng" : rewardVoucherCode);
                 updateSummaryUI();
             });
@@ -275,17 +273,14 @@ public class CheckoutBottomSheet extends BottomSheetDialogFragment {
 
         if (lastId != null && !lastId.trim().isEmpty()) {
             // Ưu tiên địa chỉ đã chọn lần trước
-            addressRepository.fetchById(lastId, new AddressRepository.OnAddressFetched() {
-                @Override
-                public void onResult(@Nullable Address a) {
-                    if (a != null) {
-                        selectedAddress = a;
-                        setText(b.tvAddressValue, a.displayLine());
-                        updateSummaryUI();
-                    } else {
-                        // Không còn tồn tại -> fallback sang địa chỉ mặc định
-                        fetchDefaultAddress(addressRepository);
-                    }
+            addressRepository.fetchById(lastId, a -> {
+                if (a != null) {
+                    selectedAddress = a;
+                    setText(b.tvAddressValue, a.displayLine());
+                    updateSummaryUI();
+                } else {
+                    // Không còn tồn tại -> fallback sang địa chỉ mặc định
+                    fetchDefaultAddress(addressRepository);
                 }
             }, e -> fetchDefaultAddress(addressRepository));
         } else {
@@ -295,13 +290,10 @@ public class CheckoutBottomSheet extends BottomSheetDialogFragment {
     }
 
     private void fetchDefaultAddress(@NonNull AddressRepository addressRepository) {
-        addressRepository.fetchDefault(new AddressRepository.OnAddressFetched() {
-            @Override
-            public void onResult(@Nullable Address a) {
-                selectedAddress = a;
-                setText(b.tvAddressValue, a != null ? a.displayLine() : "Chọn địa chỉ");
-                updateSummaryUI();
-            }
+        addressRepository.fetchDefault(a -> {
+            selectedAddress = a;
+            setText(b.tvAddressValue, a != null ? a.displayLine() : "Chọn địa chỉ");
+            updateSummaryUI();
         }, e -> setText(b.tvAddressValue, "Chọn địa chỉ"));
     }
 
@@ -358,8 +350,8 @@ public class CheckoutBottomSheet extends BottomSheetDialogFragment {
         long orderDisc = 0L, shipDisc = 0L;
         if (selectedVoucher != null) {
             VoucherUtils.DiscountResult r = VoucherUtils.calc(selectedVoucher, subtotal, shippingFee);
-            orderDisc = r.orderDiscount;
-            shipDisc = r.shippingDiscount;
+            orderDisc = r.orderDiscount();
+            shipDisc = r.shippingDiscount();
         }
         long voucherDiscount = orderDisc + shipDisc;
 
@@ -367,8 +359,8 @@ public class CheckoutBottomSheet extends BottomSheetDialogFragment {
         long rewardOrderDisc = 0L, rewardShipDisc = 0L;
         if (selectedRewardVoucher != null) {
             VoucherUtils.DiscountResult r = VoucherUtils.calc(selectedRewardVoucher, subtotal, shippingFee);
-            rewardOrderDisc = r.orderDiscount;
-            rewardShipDisc = r.shippingDiscount;
+            rewardOrderDisc = r.orderDiscount();
+            rewardShipDisc = r.shippingDiscount();
         }
         long rewardDiscount = rewardOrderDisc + rewardShipDisc;
 
@@ -408,8 +400,8 @@ public class CheckoutBottomSheet extends BottomSheetDialogFragment {
         long orderDisc = 0L, shipDisc = 0L;
         if (selectedVoucher != null) {
             VoucherUtils.DiscountResult r = VoucherUtils.calc(selectedVoucher, subtotal, shippingFee);
-            orderDisc = r.orderDiscount;
-            shipDisc = r.shippingDiscount;
+            orderDisc = r.orderDiscount();
+            shipDisc = r.shippingDiscount();
         }
         long voucherDiscount = orderDisc + shipDisc;
 
@@ -417,8 +409,8 @@ public class CheckoutBottomSheet extends BottomSheetDialogFragment {
         long rewardOrderDisc = 0L, rewardShipDisc = 0L;
         if (selectedRewardVoucher != null) {
             VoucherUtils.DiscountResult r = VoucherUtils.calc(selectedRewardVoucher, subtotal, shippingFee);
-            rewardOrderDisc = r.orderDiscount;
-            rewardShipDisc = r.shippingDiscount;
+            rewardOrderDisc = r.orderDiscount();
+            rewardShipDisc = r.shippingDiscount();
         }
         long rewardDiscount = rewardOrderDisc + rewardShipDisc;
 
@@ -473,7 +465,7 @@ public class CheckoutBottomSheet extends BottomSheetDialogFragment {
         }
 
         // Kiểm tra thời hạn
-        if (!VoucherUtils.isInRangeNow(voucher)) {
+        if (VoucherUtils.isInRangeNow(voucher)) {
             return "Voucher đã hết hạn";
         }
 
@@ -503,10 +495,6 @@ public class CheckoutBottomSheet extends BottomSheetDialogFragment {
         }
 
         return null; // Hợp lệ
-    }
-
-    private static String safe(String s) {
-        return s == null ? "" : s;
     }
 
     /** Lấy userId thống nhất: ưu tiên USRxxxxx từ SessionManager, fallback Firebase UID */

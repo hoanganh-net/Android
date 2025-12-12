@@ -25,21 +25,32 @@ public class User implements Serializable {
 
     // Timestamps
     private Timestamp createdAt;
-    private Timestamp updatedAt;
+    private final Timestamp updatedAt;
 
-    public User() {}
+    // Active status
+    private boolean active = true;
 
-    public User(String uid, String email, String fullName, String role, String phone, String address) {
+    // No-args constructor required by Firestore
+    public User() {
+        this.updatedAt = Timestamp.now();
+    }
+
+    public User(Timestamp updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public User(String uid, String email, String fullName, String role, String phone, String address, Timestamp updatedAt) {
         this.uid = uid;
         this.email = email;
         this.fullName = fullName;
         this.role = role;
         this.phone = phone;
         this.address = address;
+        this.updatedAt = updatedAt;
     }
 
     public User(String uid, String email, String fullName, String role,
-                String phone, String address, String avatar) {
+                String phone, String address, String avatar, Timestamp updatedAt) {
         this.uid = uid;
         this.email = email;
         this.fullName = fullName;
@@ -47,6 +58,7 @@ public class User implements Serializable {
         this.phone = phone;
         this.address = address;
         this.avatar = avatar;
+        this.updatedAt = updatedAt;
     }
 
     public String getUid() { return uid; }
@@ -90,5 +102,8 @@ public class User implements Serializable {
     public void setCreatedAt(Timestamp createdAt) { this.createdAt = createdAt; }
 
     public Timestamp getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(Timestamp updatedAt) { this.updatedAt = updatedAt; }
+
+    // Active status getters/setters
+    public boolean isActive() { return active; }
+    public void setActive(boolean active) { this.active = active; }
 }

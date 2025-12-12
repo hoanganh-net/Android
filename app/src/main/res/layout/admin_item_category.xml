@@ -1,14 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="72dp"
-    android:orientation="horizontal"
-    android:gravity="center_vertical"
-    android:paddingStart="10dp"
-    android:paddingEnd="6dp"
-    android:background="?attr/selectableItemBackground">
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="2dp"
+    app:strokeColor="@color/light_gray"
+    app:strokeWidth="1dp">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="12dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="72dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="10dp"
+        android:paddingEnd="6dp"
+        android:background="?attr/selectableItemBackground">
 
     <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/categoryImage"
@@ -54,21 +68,23 @@
             tools:text="Active" />
     </LinearLayout>
 
-    <ImageButton
-        android:id="@+id/btnEdit"
-        style="?attr/borderlessButtonStyle"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="@string/edit"
-        app:srcCompat="@drawable/ic_edit" />
-
-    <ImageButton
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btnDelete"
-        style="?attr/borderlessButtonStyle"
         android:layout_width="40dp"
         android:layout_height="40dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="@string/delete"
-        app:srcCompat="@drawable/ic_delete" />
-</LinearLayout>
+        android:gravity="center"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        android:insetLeft="0dp"
+        android:insetRight="0dp"
+        android:padding="10dp"
+        app:icon="@drawable/ic_delete"
+        app:iconTint="@color/white"
+        app:iconSize="20dp"
+        app:backgroundTint="@color/error_red"
+        app:cornerRadius="20dp"
+        style="@style/Widget.Material3.Button.IconButton.Filled"
+        app:iconPadding="0dp" />
+    </LinearLayout>
+    </FrameLayout>
+</com.google.android.material.card.MaterialCardView>

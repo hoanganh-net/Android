@@ -23,14 +23,9 @@ import com.pro.milkteaapp.payment.PaymentService;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.function.Consumer;
 
-/**
- * Helper class để tạo order trong Firestore.
- * Tách logic tạo order ra khỏi Activity để giảm độ phức tạp.
- */
 public class OrderCreator {
     
     private static final String TAG = "OrderCreator";
@@ -81,7 +76,7 @@ public class OrderCreator {
         }
         
         // Validate address
-        String address = checkoutInfo.getAddress();
+        String address = checkoutInfo.address();
         if (TextUtils.isEmpty(address)) {
             Toast.makeText(context, context.getString(R.string.please_select_address), Toast.LENGTH_SHORT).show();
             return;
@@ -141,15 +136,15 @@ public class OrderCreator {
         order.put("userId", userId);
         order.put("name", null);
         order.put("phone", null);
-        order.put("address", checkoutInfo.getAddress());
-        order.put("subtotal", (long) checkoutInfo.getSubtotal());
-        order.put("discount", (long) checkoutInfo.getDiscount());
-        order.put("shippingFee", (long) checkoutInfo.getShippingFee());
-        order.put("finalTotal", (long) checkoutInfo.getGrandTotal());
+        order.put("address", checkoutInfo.address());
+        order.put("subtotal", (long) checkoutInfo.subtotal());
+        order.put("discount", (long) checkoutInfo.discount());
+        order.put("shippingFee", (long) checkoutInfo.shippingFee());
+        order.put("finalTotal", (long) checkoutInfo.grandTotal());
         
         PaymentService paymentService = PaymentService.getInstance(context);
-        order.put("paymentMethod", checkoutInfo.getPaymentMethod());
-        order.put("paymentStatus", paymentService.requiresOnlinePayment(checkoutInfo.getPaymentMethod())
+        order.put("paymentMethod", checkoutInfo.paymentMethod());
+        order.put("paymentStatus", paymentService.requiresOnlinePayment(checkoutInfo.paymentMethod())
                 ? (transactionId != null ? "SUCCESS" : "PENDING")
                 : "PENDING");
         
@@ -157,9 +152,9 @@ public class OrderCreator {
             order.put("transactionId", transactionId);
         }
         
-        order.put("shippingLabel", checkoutInfo.getShippingLabel());
-        order.put("voucherCode", TextUtils.isEmpty(checkoutInfo.getVoucherCode()) ? null : checkoutInfo.getVoucherCode());
-        order.put("rewardVoucherCode", TextUtils.isEmpty(checkoutInfo.getRewardVoucherCode()) ? null : checkoutInfo.getRewardVoucherCode());
+        order.put("shippingLabel", checkoutInfo.shippingLabel());
+        order.put("voucherCode", TextUtils.isEmpty(checkoutInfo.voucherCode()) ? null : checkoutInfo.voucherCode());
+        order.put("rewardVoucherCode", TextUtils.isEmpty(checkoutInfo.rewardVoucherCode()) ? null : checkoutInfo.rewardVoucherCode());
         order.put("status", "PENDING");
         order.put("createdAt", FieldValue.serverTimestamp());
         
@@ -197,9 +192,9 @@ public class OrderCreator {
             if (item.getToppings() != null) {
                 for (SelectedTopping st : item.getToppings()) {
                     Map<String, Object> m = new HashMap<>();
-                    m.put("id", st.getId());
-                    m.put("name", st.getName());
-                    m.put("price", st.getPrice());
+                    m.put("id", st.id());
+                    m.put("name", st.name());
+                    m.put("price", st.price());
                     tops.add(m);
                 }
             }

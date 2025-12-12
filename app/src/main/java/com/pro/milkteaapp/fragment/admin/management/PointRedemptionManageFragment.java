@@ -55,7 +55,7 @@ public class PointRedemptionManageFragment extends Fragment
         rv.setAdapter(adapter);
 
         if (fabAdd != null) {
-            fabAdd.setOnClickListener(x -> showUpsertDialog(null, "ORDER_FIXED"));
+            fabAdd.setOnClickListener(x -> openVoucherEditor(null));
         }
 
         // Setup search
@@ -108,16 +108,23 @@ public class PointRedemptionManageFragment extends Fragment
 
     @Override
     public void onAddAction() {
-        showUpsertDialog(null, "ORDER_FIXED");
+        openVoucherEditor(null);
     }
 
-    private void showUpsertDialog(@Nullable Voucher editing, @Nullable String presetType) {
-        com.pro.milkteaapp.fragment.bottomsheet.VoucherFormBottomSheet sheet =
-                com.pro.milkteaapp.fragment.bottomsheet.VoucherFormBottomSheet.newInstance(editing, presetType, true);
-        sheet.show(getParentFragmentManager(), "voucher_form_point_redemption");
+    private void openVoucherEditor(@Nullable Voucher voucher) {
+        android.content.Intent intent = new android.content.Intent(requireContext(), com.pro.milkteaapp.activity.admin.VoucherEditorActivity.class);
+        if (voucher != null && voucher.getId() != null) {
+            intent.putExtra(com.pro.milkteaapp.activity.admin.VoucherEditorActivity.EXTRA_VOUCHER_ID, voucher.getId());
+            // Truyền flag isPointRedemption = true khi edit từ mục đổi điểm
+            intent.putExtra(com.pro.milkteaapp.activity.admin.VoucherEditorActivity.EXTRA_IS_POINT_REDEMPTION, true);
+        } else {
+            intent.putExtra(com.pro.milkteaapp.activity.admin.VoucherEditorActivity.EXTRA_PRESET_TYPE, "ORDER_FIXED");
+            intent.putExtra(com.pro.milkteaapp.activity.admin.VoucherEditorActivity.EXTRA_IS_POINT_REDEMPTION, true);
+        }
+        startActivity(intent);
     }
 
-    @Override public void onEdit(@NonNull Voucher v) { showUpsertDialog(v, null); }
+    @Override public void onEdit(@NonNull Voucher v) { openVoucherEditor(v); }
 
     @Override
     public void onDelete(@NonNull Voucher v) {

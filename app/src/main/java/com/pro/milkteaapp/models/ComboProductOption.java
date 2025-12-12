@@ -2,6 +2,7 @@ package com.pro.milkteaapp.models;
 
 import androidx.annotation.NonNull;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,6 +13,7 @@ import java.util.List;
  * Đá được phục vụ riêng mặc định, không cần chọn
  */
 public class ComboProductOption implements Serializable {
+    @Serial
     private static final long serialVersionUID = 2L;
     
     private String productId;
@@ -19,12 +21,16 @@ public class ComboProductOption implements Serializable {
     private String size; // Small / Medium / Large (hoặc Nhỏ / Vừa / Lớn)
     private String sugar;
     private List<SelectedTopping> toppings;
-    
+
+    // No-args constructor required by Firestore
     public ComboProductOption() {
-        this.size = "Nhỏ"; // Mặc định Nhỏ
+        this.productId = "";
+        this.productName = "";
+        this.size = "Nhỏ";
+        this.sugar = "";
         this.toppings = new ArrayList<>();
     }
-    
+
     public ComboProductOption(@NonNull String productId, @NonNull String productName) {
         this.productId = productId;
         this.productName = productName;
@@ -32,19 +38,10 @@ public class ComboProductOption implements Serializable {
         this.sugar = "";
         this.toppings = new ArrayList<>();
     }
-    
-    public ComboProductOption(@NonNull String productId, @NonNull String productName,
-                             String size, String sugar, List<SelectedTopping> toppings) {
-        this.productId = productId;
-        this.productName = productName;
-        this.size = size != null ? size : "Nhỏ";
-        this.sugar = sugar != null ? sugar : "";
-        this.toppings = toppings != null ? new ArrayList<>(toppings) : new ArrayList<>();
-    }
-    
+
     // Getters
     public String getProductId() { return productId != null ? productId : ""; }
-    public String getProductName() { return productName != null ? productName : ""; }
+    public String getProductName() { return productName; }
     public String getSize() { return size != null ? size : "Nhỏ"; }
     public String getSugar() { return sugar != null ? sugar : ""; }
     public List<SelectedTopping> getToppings() {
@@ -53,7 +50,9 @@ public class ComboProductOption implements Serializable {
     
     // Setters
     public void setProductId(String productId) { this.productId = productId; }
+
     public void setProductName(String productName) { this.productName = productName; }
+
     public void setSize(String size) { this.size = size != null ? size : "Nhỏ"; }
     public void setSugar(String sugar) { this.sugar = sugar != null ? sugar : ""; }
     public void setToppings(List<SelectedTopping> toppings) {

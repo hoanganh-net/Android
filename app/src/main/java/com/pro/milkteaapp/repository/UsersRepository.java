@@ -223,6 +223,7 @@ public class UsersRepository {
                                 user.setLoyaltyPoints(0);
                                 user.setRewardPoints(0);
                                 user.setTotalSpent(0);
+                                user.setActive(true); // Mặc định active
 
                                 // Convert User to Map và thêm authUid
                                 Map<String, Object> userMap = userToMap(user);
@@ -371,6 +372,14 @@ public class UsersRepository {
                 user.setUid(doc.getId());
             }
 
+            // Đảm bảo active field (mặc định true nếu không có)
+            Boolean active = doc.getBoolean("active");
+            if (active == null) {
+                user.setActive(true); // Mặc định active nếu field không tồn tại
+            } else {
+                user.setActive(active);
+            }
+
             return user;
         } catch (Exception e) {
             return null;
@@ -394,6 +403,7 @@ public class UsersRepository {
         map.put("loyaltyPoints", user.getLoyaltyPoints());
         map.put("rewardPoints", user.getRewardPoints());
         map.put("totalSpent", user.getTotalSpent());
+        map.put("active", user.isActive());
         if (user.getCreatedAt() != null) map.put("createdAt", user.getCreatedAt());
         if (user.getUpdatedAt() != null) map.put("updatedAt", user.getUpdatedAt());
         return map;

@@ -8,11 +8,10 @@ public class Message {
     private String orderId;
     private String message;
     private Integer rating;    // optional
-    private String review;     // optional
     private Timestamp createdAt;
-    private Boolean read;
 
-    public Message() {}
+    public Message() {
+    }
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
@@ -24,10 +23,8 @@ public class Message {
     public void setMessage(String message) { this.message = message; }
     public Integer getRating() { return rating; }
     public void setRating(Integer rating) { this.rating = rating; }
-    public String getReview() { return review; }
-    public void setReview(String review) { this.review = review; }
+
     public Timestamp getCreatedAt() { return createdAt; }
     public void setCreatedAt(Timestamp createdAt) { this.createdAt = createdAt; }
-    public Boolean getRead() { return read; }
-    public void setRead(Boolean read) { this.read = read; }
+    public Boolean getRead() { return null; }
 }

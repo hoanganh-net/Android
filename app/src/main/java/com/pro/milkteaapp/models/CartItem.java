@@ -2,21 +2,17 @@ package com.pro.milkteaapp.models;
 
 import androidx.annotation.NonNull;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
-/** CartItem hỗ trợ nhiều topping:
- *  - Size: Medium +3000, Large +6000
- *  - Topping: cộng dồn theo selectedToppings
- *  - Hợp nhất item theo (productId + size + sorted(toppingIds))
- */
 public class CartItem implements Serializable {
+    @Serial
     private static final long serialVersionUID = 2L;
 
     private static final long DELTA_MEDIUM = 3000L;
@@ -73,9 +69,6 @@ public class CartItem implements Serializable {
         return java.util.Collections.unmodifiableList(toppings);
     }
 
-    public void setQuantity(int quantity) {
-        if (quantity > 0) { this.quantity = quantity; recalcTotal(); }
-    }
     public void setSize(String size) { this.size = size; recalcTotal(); }
     public void setToppings(java.util.List<SelectedTopping> list) {
         this.toppings = new ArrayList<>(list != null ? list : java.util.Collections.emptyList());
@@ -108,7 +101,7 @@ public class CartItem implements Serializable {
         else if ("large".equals(s) || "lớn".equals(s)) unit += DELTA_LARGE;
 
         long tops = 0L;
-        for (SelectedTopping t : toppings) tops += Math.max(0L, t.price);
+        for (SelectedTopping t : toppings) tops += Math.max(0L, t.price());
         unit += tops;
 
         return unit;
@@ -121,7 +114,7 @@ public class CartItem implements Serializable {
     }
 
     private void normalizeToppingOrder() {
-        Collections.sort(this.toppings, Comparator.comparing(t -> t.id == null ? "" : t.id));
+        this.toppings.sort(Comparator.comparing(t -> t.id() == null ? "" : t.id()));
     }
 
     // ===== Thông tin cầu nối =====
@@ -135,7 +128,7 @@ public class CartItem implements Serializable {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < toppings.size(); i++) {
             if (i > 0) sb.append(", ");
-            sb.append(toppings.get(i).name);
+            sb.append(toppings.get(i).name());
         }
         return sb.toString();
     }
@@ -179,8 +172,8 @@ public class CartItem implements Serializable {
         if (toppings == null || toppings.isEmpty()) return other == null || other.isEmpty();
         if (other == null || toppings.size() != other.size()) return false;
         for (int i = 0; i < toppings.size(); i++) {
-            String a = toppings.get(i).id == null ? "" : toppings.get(i).id;
-            String b = other.get(i).id == null ? "" : other.get(i).id;
+            String a = toppings.get(i).id() == null ? "" : toppings.get(i).id();
+            String b = other.get(i).id() == null ? "" : other.get(i).id();
             if (!a.equals(b)) return false;
         }
         return true;
@@ -188,7 +181,7 @@ public class CartItem implements Serializable {
     @Override
     public int hashCode() {
         int h = Objects.hash(getProductId(), normalize(size), normalize(sugar), normalize(ice), normalize(note));
-        if (toppings != null) for (SelectedTopping t : toppings) h = 31 * h + (t.id == null ? 0 : t.id.hashCode());
+        if (toppings != null) for (SelectedTopping t : toppings) h = 31 * h + (t.id() == null ? 0 : t.id().hashCode());
         return h;
     }
 }

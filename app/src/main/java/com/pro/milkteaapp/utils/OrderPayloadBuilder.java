@@ -46,22 +46,22 @@ public class OrderPayloadBuilder {
         order.put("status", "PENDING");
         order.put("items", itemMaps);
         
-        order.put("subtotal", info.subtotal);
-        order.put("discount", info.discount);
-        order.put("shippingFee", info.shippingFee);
-        order.put("finalTotal", info.grandTotal);
+        order.put("subtotal", info.subtotal());
+        order.put("discount", info.discount());
+        order.put("shippingFee", info.shippingFee());
+        order.put("finalTotal", info.grandTotal());
         
-        final String shippingAddr = info.address.trim();
+        final String shippingAddr = info.address().trim();
         order.put("address", shippingAddr);
         order.put("shippingAddress", shippingAddr);
         
-        Map<String, Object> addressObj = buildAddressObject(info.addressObj, shippingAddr);
+        Map<String, Object> addressObj = buildAddressObject(info.addressObj(), shippingAddr);
         order.put("addressObj", addressObj);
         
-        order.put("paymentMethod", info.paymentMethod);
-        order.put("voucherCode", info.voucherCode);
-        order.put("rewardVoucherCode", info.rewardVoucherCode);
-        order.put("shippingLabel", info.shippingLabel);
+        order.put("paymentMethod", info.paymentMethod());
+        order.put("voucherCode", info.voucherCode());
+        order.put("rewardVoucherCode", info.rewardVoucherCode());
+        order.put("shippingLabel", info.shippingLabel());
         
         order.put("createdAt", FieldValue.serverTimestamp());
         return order;
@@ -77,7 +77,8 @@ public class OrderPayloadBuilder {
             addressObj.put("line2", address.getLine2());
             addressObj.put("city", address.getCity());
             addressObj.put("province", address.getProvince());
-            addressObj.put("postalCode", address.getPostalCode());
+            // Không lưu postalCode - đã xóa khỏi UI
+            addressObj.put("postalCode", null);
             addressObj.put("display", address.displayLine());
         } else {
             addressObj.put("display", fallback);

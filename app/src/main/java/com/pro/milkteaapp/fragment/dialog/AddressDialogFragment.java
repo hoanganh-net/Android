@@ -1,6 +1,7 @@
 package com.pro.milkteaapp.fragment.dialog;
 
 import android.app.Dialog;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
@@ -41,10 +42,14 @@ public class AddressDialogFragment extends DialogFragment {
         EditText edtLine2 = v.findViewById(R.id.edtLine2);
         EditText edtCity = v.findViewById(R.id.edtCity);
         EditText edtProvince = v.findViewById(R.id.edtProvince);
-        EditText edtPostal = v.findViewById(R.id.edtPostal);
         MaterialButton btnSave = v.findViewById(R.id.btnSave);
 
-        Address editing = getArguments() != null ? getArguments().getParcelable(ARG_ADDRESS, Address.class) : null;
+        Address editing;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            editing = getArguments() != null ? getArguments().getParcelable(ARG_ADDRESS, Address.class) : null;
+        } else {
+            editing = null;
+        }
         if (editing != null) {
             edtName.setText(editing.getFullName());
             edtPhone.setText(editing.getPhone());
@@ -52,7 +57,6 @@ public class AddressDialogFragment extends DialogFragment {
             edtLine2.setText(editing.getLine2());
             edtCity.setText(editing.getCity());
             edtProvince.setText(editing.getProvince());
-            edtPostal.setText(editing.getPostalCode());
         }
 
         // ✅ Khởi tạo repo với Context để lấy userId USRxxxxx từ SessionManager
@@ -86,7 +90,8 @@ public class AddressDialogFragment extends DialogFragment {
             out.setLine2(val(edtLine2));
             out.setCity(city);
             out.setProvince(province);
-            out.setPostalCode(val(edtPostal));
+            // Không lưu mã bưu chính - đã xóa khỏi UI
+            out.setPostalCode(null);
 
             // Nếu là địa chỉ mới (không phải edit), kiểm tra xem đã có địa chỉ nào chưa
             if (editing == null) {

@@ -1,8 +1,8 @@
 package com.pro.milkteaapp.activity.admin;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
-import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ProgressBar;
@@ -79,8 +79,8 @@ public class AdminComboEditorActivity extends AppCompatActivity {
         comboRepository = new ComboRepository();
 
         btnSelectProduct.setOnClickListener(v -> openProductPicker());
-        btnSave.setOnClickListener(v -> onSave());
-        btnReset.setOnClickListener(v -> resetForm());
+        btnSave.setOnClickListener(v -> onSave()); // Hoàn Thành: lưu thay đổi
+        btnReset.setOnClickListener(v -> finish()); // Hủy Thay Đổi: quay lại không lưu
 
         // Set title vào TextView custom để căn giữa
         android.widget.TextView titleView = toolbar.findViewById(R.id.toolbarTitle);
@@ -161,6 +161,7 @@ public class AdminComboEditorActivity extends AppCompatActivity {
         sheet.show(getSupportFragmentManager(), "ComboProductPicker");
     }
 
+    @SuppressLint("SetTextI18n")
     private void updateProductInfo() {
         if (selectedProduct.isEmpty()) {
             ((android.widget.TextView) tvSelectedProduct).setText("Chưa chọn sản phẩm");
@@ -216,6 +217,7 @@ public class AdminComboEditorActivity extends AppCompatActivity {
     private void loadComboForEdit(String id) {
         setLoading(true);
         comboRepository.fetchComboById(id, new ComboRepository.OnComboListener() {
+            @SuppressLint("SetTextI18n")
             @Override
             public void onComboReceived(@NonNull com.pro.milkteaapp.models.Combo combo) {
                 setLoading(false);
@@ -405,25 +407,11 @@ public class AdminComboEditorActivity extends AppCompatActivity {
         }
     }
 
-    private void resetForm() {
-        etName.setText("");
-        etDescription.setText("");
-        etImageUrl.setText("");
-        if (etDiscountPercent != null) {
-            etDiscountPercent.setText("10"); // Reset về 10%
-        }
-        selectedProduct.clear();
-        updateProductInfo();
-    }
-
     private void setLoading(boolean loading) {
         if (progress != null) progress.setVisibility(loading ? View.VISIBLE : View.GONE);
         if (btnSave != null) btnSave.setEnabled(!loading);
         if (btnReset != null) btnReset.setEnabled(!loading);
     }
 
-    private void toast(String msg) {
-        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
-    }
 }
 

@@ -82,20 +82,21 @@ public final class LoyaltyPolicy {
         };
     }
 
-    /* ===== Thông tin hạng kế tiếp cho UI ===== */
-    public static class NextTierInfo {
-        public final String targetTier;       // null nếu đã cao nhất
-        public final long targetPoints;       // mốc điểm cần đạt của hạng kế tiếp
-        public final long remainingPoints;    // còn thiếu bao nhiêu điểm
-        public final List<String> nextTierBenefits; // quyền lợi của hạng kế tiếp
-
-        public NextTierInfo(String targetTier, long targetPoints, long remainingPoints, List<String> nextTierBenefits) {
-            this.targetTier = targetTier;
-            this.targetPoints = targetPoints;
-            this.remainingPoints = remainingPoints;
-            this.nextTierBenefits = nextTierBenefits == null ? new ArrayList<>() : nextTierBenefits;
+    /**
+     * @param targetTier       null nếu đã cao nhất
+     * @param targetPoints     mốc điểm cần đạt của hạng kế tiếp
+     * @param remainingPoints  còn thiếu bao nhiêu điểm
+     * @param nextTierBenefits quyền lợi của hạng kế tiếp
+     */ /* ===== Thông tin hạng kế tiếp cho UI ===== */
+        public record NextTierInfo(String targetTier, long targetPoints, long remainingPoints,
+                                   List<String> nextTierBenefits) {
+            public NextTierInfo(String targetTier, long targetPoints, long remainingPoints, List<String> nextTierBenefits) {
+                this.targetTier = targetTier;
+                this.targetPoints = targetPoints;
+                this.remainingPoints = remainingPoints;
+                this.nextTierBenefits = nextTierBenefits == null ? new ArrayList<>() : nextTierBenefits;
+            }
         }
-    }
 
     /* ===== Tính hạng kế tiếp từ currentPoints ===== */
     public static NextTierInfo nextTier(long currentPoints) {

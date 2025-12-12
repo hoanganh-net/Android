@@ -76,7 +76,7 @@ public class ComboProductOptionAdapter extends RecyclerView.Adapter<ComboProduct
             ? productOptions.get(position) 
             : new ComboProductOption(product.getId(), product.getName());
         
-        h.bind(product, option, position);
+        h.bind(product, option, position, productOptions, onToppingChangeListener, toppingsRepository);
     }
 
     @Override
@@ -84,7 +84,7 @@ public class ComboProductOptionAdapter extends RecyclerView.Adapter<ComboProduct
         return products.size();
     }
 
-    class VH extends RecyclerView.ViewHolder {
+    static class VH extends RecyclerView.ViewHolder {
         private final TextView tvProductName;
         private final RadioGroup rgSize, rgSugar;
         private final RecyclerView rvToppings;
@@ -93,6 +93,10 @@ public class ComboProductOptionAdapter extends RecyclerView.Adapter<ComboProduct
         private final List<Topping> availableToppings = new ArrayList<>();
         private final List<SelectedTopping> selectedToppings = new ArrayList<>();
         private View layoutSugar0, layoutSugar25, layoutSugar50, layoutSugar75, layoutSugar100;
+        // Fields để lưu references từ outer class
+        private List<ComboProductOption> productOptionsRef;
+        private OnToppingChangeListener onToppingChangeListenerRef;
+        private ToppingsRepository toppingsRepositoryRef;
 
         VH(@NonNull View v) {
             super(v);
@@ -121,7 +125,7 @@ public class ComboProductOptionAdapter extends RecyclerView.Adapter<ComboProduct
                 if (checked) {
                     boolean exists = false;
                     for (SelectedTopping st : selectedToppings) {
-                        if (TextUtils.equals(st.id, topping.getId())) {
+                        if (TextUtils.equals(st.id(), topping.getId())) {
                             exists = true;
                             break;
                         }
@@ -135,19 +139,26 @@ public class ComboProductOptionAdapter extends RecyclerView.Adapter<ComboProduct
                     }
                 } else {
                     for (int i = 0; i < selectedToppings.size(); i++) {
-                        if (TextUtils.equals(selectedToppings.get(i).id, topping.getId())) {
+                        if (TextUtils.equals(selectedToppings.get(i).id(), topping.getId())) {
                             selectedToppings.remove(i);
                             break;
                         }
                     }
                 }
-                updateProductOption();
+                updateProductOption(productOptionsRef, onToppingChangeListenerRef);
             });
             rvToppings.setAdapter(toppingAdapter);
         }
 
-        void bind(@NonNull Product product, @NonNull ComboProductOption option, int position) {
+        void bind(@NonNull Product product, @NonNull ComboProductOption option, int position,
+                  List<ComboProductOption> productOptions, OnToppingChangeListener onToppingChangeListener,
+                  ToppingsRepository toppingsRepository) {
             savedPosition = position;
+            // Lưu references để sử dụng trong các methods khác
+            this.productOptionsRef = productOptions;
+            this.onToppingChangeListenerRef = onToppingChangeListener;
+            this.toppingsRepositoryRef = toppingsRepository;
+            
             tvProductName.setText(product.getName());
             
             // Clear listeners trước để tránh trigger khi set checked state
@@ -199,7 +210,7 @@ public class ComboProductOptionAdapter extends RecyclerView.Adapter<ComboProduct
             // Load toppings
             selectedToppings.clear();
             selectedToppings.addAll(option.getToppings());
-            loadToppingsForProduct(product);
+            loadToppingsForProduct(product, toppingsRepository);
             
             // Set listeners sau khi đã set checked state
             rgSize.setOnCheckedChangeListener((group, checkedId) -> {
@@ -241,7 +252,7 @@ public class ComboProductOptionAdapter extends RecyclerView.Adapter<ComboProduct
         }
 
 
-        private void loadToppingsForProduct(@NonNull Product product) {
+        private void loadToppingsForProduct(@NonNull Product product, ToppingsRepository toppingsRepository) {
             String category = product.getCategory();
             if (!TextUtils.isEmpty(category)) {
                 toppingsRepository.fetchToppingsByCategory(category, new ToppingsRepository.OnToppingsListener() {
@@ -280,7 +291,7 @@ public class ComboProductOptionAdapter extends RecyclerView.Adapter<ComboProduct
             }
         }
 
-        private void updateProductOption() {
+        private void updateProductOption(List<ComboProductOption> productOptions, OnToppingChangeListener onToppingChangeListener) {
             if (savedPosition >= 0 && savedPosition < productOptions.size()) {
                 ComboProductOption option = productOptions.get(savedPosition);
                 option.setToppings(new ArrayList<>(selectedToppings));

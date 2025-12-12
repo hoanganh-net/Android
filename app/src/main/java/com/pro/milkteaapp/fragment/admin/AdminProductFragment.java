@@ -31,6 +31,7 @@ import com.pro.milkteaapp.adapter.admin.AdminProductAdapter;
 import com.pro.milkteaapp.interfaces.AddActionHandler;
 import com.pro.milkteaapp.models.Product;
 import com.pro.milkteaapp.repository.ProductRepository;
+import com.pro.milkteaapp.utils.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,7 +43,6 @@ import java.util.Locale;
  */
 public class AdminProductFragment extends Fragment
         implements AdminProductAdapter.OnProductActionListener,
-        AdminMainActivity.ScrollToTop,
         AdminMainActivity.SupportsRefresh,
         AddActionHandler {
 
@@ -195,6 +195,7 @@ public class AdminProductFragment extends Fragment
         productsRepository.fetchAllProduct(new ProductRepository.OnProductListener() {
             @Override
             public void onProductReceived(@NonNull List<Product> products) {
+                if (swipeRefresh != null) swipeRefresh.setRefreshing(false);
                 productList.clear();
                 productList.addAll(products);
                 if (adapter != null) {
@@ -205,6 +206,7 @@ public class AdminProductFragment extends Fragment
 
             @Override
             public void onError(@NonNull Exception error) {
+                if (swipeRefresh != null) swipeRefresh.setRefreshing(false);
                 toast("Lỗi tải dữ liệu: " + error.getMessage());
                 showLoading(false);
             }
@@ -213,17 +215,48 @@ public class AdminProductFragment extends Fragment
 
     // ====== CRUD qua Repository ======
     private void deleteProductById(@NonNull String id) {
+        // Optimistic update: Xóa item khỏi list ngay lập tức
+        int removedIndex = -1;
+        Product removedProduct = null;
+        for (int i = 0; i < productList.size(); i++) {
+            if (productList.get(i).getId() != null && productList.get(i).getId().equals(id)) {
+                removedIndex = i;
+                removedProduct = productList.get(i);
+                productList.remove(i);
+                break;
+            }
+        }
+        
+        // Lưu giá trị vào biến final để dùng trong inner class
+        final int finalRemovedIndex = removedIndex;
+        final Product finalRemovedProduct = removedProduct;
+        
+        // Cập nhật adapter ngay lập tức
+        if (finalRemovedIndex >= 0 && adapter != null) {
+            filterProduct(lastSearch); // Refresh filtered list
+            checkEmptyState();
+        }
+        
         showLoading(true);
         productsRepository.deleteProduct(id, new ProductRepository.OnProductUpdateListener() {
             @Override
             public void onSuccess() {
                 showLoading(false);
                 toast("Đã xóa sản phẩm.");
+                // Reload để đồng bộ với Firestore (trong trường hợp realtime chưa cập nhật)
+                if (swipeRefresh != null) swipeRefresh.setRefreshing(true);
+                loadOnce();
             }
 
             @Override
             public void onError(@NonNull Exception error) {
                 showLoading(false);
+                // Rollback: Thêm lại item nếu xóa thất bại
+                if (finalRemovedProduct != null) {
+                    productList.add(finalRemovedIndex, finalRemovedProduct);
+                    filterProduct(lastSearch);
+                    checkEmptyState();
+                }
                 toast("Lỗi xóa: " + error.getMessage());
             }
         });
@@ -240,8 +273,8 @@ public class AdminProductFragment extends Fragment
         }
         List<Product> filtered = new ArrayList<>();
         for (Product p : productList) {
-            String name = safe(p.getName()).toLowerCase(Locale.ROOT);
-            String cat  = safe(p.getCategory()).toLowerCase(Locale.ROOT);
+            String name = StringUtils.safeStr(p.getName()).toLowerCase(Locale.ROOT);
+            String cat  = StringUtils.safeStr(p.getCategory()).toLowerCase(Locale.ROOT);
             if (name.contains(q) || cat.contains(q)) {
                 filtered.add(p);
             }
@@ -280,13 +313,13 @@ public class AdminProductFragment extends Fragment
 
     @Override
     public void onDeleteProduct(Product product) {
-        if (product == null || safe(product.getId()).isEmpty()) {
+        if (product == null || StringUtils.safeStr(product.getId()).isEmpty()) {
             toast("Không xác định được ID sản phẩm.");
             return;
         }
         new AlertDialog.Builder(requireContext())
                 .setTitle(getString(R.string.delete_product_confirm))
-                .setMessage("Bạn có chắc muốn xóa \"" + safe(product.getName()) + "\"?")
+                .setMessage("Bạn có chắc muốn xóa \"" + StringUtils.safeStr(product.getName()) + "\"?")
                 .setPositiveButton("Xóa", (d, w) -> deleteProductById(product.getId()))
                 .setNegativeButton("Hủy", null)
                 .show();
@@ -294,7 +327,7 @@ public class AdminProductFragment extends Fragment
 
     @Override
     public void onToggleFeatured(@NonNull Product product, boolean featured) {
-        String productId = safe(product.getId());
+        String productId = StringUtils.safeStr(product.getId());
         if (productId.isEmpty()) {
             toast("Lỗi: Không có ID sản phẩm");
             return;
@@ -338,15 +371,10 @@ public class AdminProductFragment extends Fragment
     }
 
     @Override public void refresh() {
-        if (swipeRefresh != null) swipeRefresh.setRefreshing(false);
-        loadOnce();
-    }
-    
-    @Override
-    public void scrollToTop() {
-        if (recyclerView != null) {
-            recyclerView.smoothScrollToPosition(0);
+        if (swipeRefresh != null) {
+            swipeRefresh.setRefreshing(true);
         }
+        loadOnce();
     }
 
     private boolean isAdmin() {
@@ -356,7 +384,6 @@ public class AdminProductFragment extends Fragment
 
     private void toast(String msg) { Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show(); }
 
-    private String safe(String s) { return s == null ? "" : s; }
 
     @Override
     public void onDestroyView() {

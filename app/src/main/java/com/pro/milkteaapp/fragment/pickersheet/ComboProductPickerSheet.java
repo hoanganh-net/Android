@@ -1,7 +1,7 @@
 package com.pro.milkteaapp.fragment.pickersheet;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
-import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,13 +10,10 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 import android.widget.ArrayAdapter;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
-import com.google.android.material.textfield.MaterialAutoCompleteTextView;
-import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.adapter.ProductSelectAdapter;
 import com.pro.milkteaapp.databinding.BottomsheetComboProductPickerBinding;
 import com.pro.milkteaapp.models.Category;
@@ -27,7 +24,6 @@ import com.pro.milkteaapp.repository.ProductRepository;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 
 /**
@@ -208,6 +204,7 @@ public class ComboProductPickerSheet extends BottomSheetDialogFragment {
     }
 
 
+    @SuppressLint("SetTextI18n")
     private void updateSelectedCount() {
         int count = selectedProduct.size();
         binding.tvSelectedCount.setText("Đã chọn: " + count + " sản phẩm");

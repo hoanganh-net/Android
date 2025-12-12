@@ -95,8 +95,10 @@ public class VoucherAdapter extends RecyclerView.Adapter<VoucherAdapter.VH> {
         h.swActive.setChecked(v.isActive());
         h.swActive.setOnCheckedChangeListener((btn, checked) -> listener.onToggle(v, checked));
 
-        // --- Hành động ---
-        h.btnEdit.setOnClickListener(x -> listener.onEdit(v));
+        // Click vào item để xem chi tiết và chỉnh sửa
+        h.itemView.setOnClickListener(x -> listener.onEdit(v));
+        
+        // Nút Delete
         h.btnDelete.setOnClickListener(x -> listener.onDelete(v));
     }
 
@@ -174,7 +176,7 @@ public class VoucherAdapter extends RecyclerView.Adapter<VoucherAdapter.VH> {
         TextView tvCode, tvBenefit, tvExpiry, tvMin, tvPointsRequired;
         ChipGroup chipsChannels;
         SwitchMaterial swActive;
-        View btnEdit, btnDelete;
+        View btnDelete;
 
         VH(@NonNull View v) {
             super(v);
@@ -185,7 +187,6 @@ public class VoucherAdapter extends RecyclerView.Adapter<VoucherAdapter.VH> {
             tvPointsRequired = v.findViewById(R.id.tvPointsRequired);
             chipsChannels = v.findViewById(R.id.chipsChannels);
             swActive = v.findViewById(R.id.swActive);
-            btnEdit = v.findViewById(R.id.btnEdit);
             btnDelete = v.findViewById(R.id.btnDelete);
         }
     }

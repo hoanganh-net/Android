@@ -118,7 +118,17 @@ public class AdminOrdersAdapter extends ListAdapter<Order, AdminOrdersAdapter.VH
             // Nội dung cơ bản
             tvId.setText("#" + o.getId());
             tvTotal.setText(String.format(Locale.getDefault(), "%,.0f₫", o.getFinalTotal()));
-            tvUser.setText(o.getUserId());
+            
+            // Hiển thị tên người dùng: ưu tiên receiverName > userName > userId
+            String displayName = o.getReceiverName();
+            if (displayName == null || displayName.trim().isEmpty()) {
+                displayName = o.getUserName();
+            }
+            if (displayName == null || displayName.trim().isEmpty()) {
+                displayName = o.getUserId(); // Fallback sang userId nếu không có tên
+            }
+            tvUser.setText(displayName);
+            
             tvStatus.setText(o.getStatus());
 
             // Chọn timestamp để hiển thị:

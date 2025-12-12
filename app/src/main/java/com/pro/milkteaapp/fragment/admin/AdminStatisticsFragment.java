@@ -14,9 +14,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.google.android.material.datepicker.CalendarConstraints;
 import com.google.android.material.datepicker.MaterialDatePicker;
-import com.google.android.material.datepicker.MaterialPickerOnPositiveButtonClickListener;
 import com.google.android.material.navigation.NavigationView;
-import com.google.android.material.textfield.TextInputEditText;
 import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.activity.admin.AdminMainActivity;
 import com.pro.milkteaapp.adapter.admin.AdminStatisticAdapter;
@@ -35,7 +33,7 @@ import java.util.*;
  * - Tính doanh thu chỉ từ đơn FINISHED
  */
 public class AdminStatisticsFragment extends Fragment
-        implements AdminMainActivity.ScrollToTop, AdminMainActivity.SupportsRefresh {
+        implements AdminMainActivity.SupportsRefresh {
 
     private SwipeRefreshLayout swipe;
     private RecyclerView recyclerView;
@@ -61,9 +59,7 @@ public class AdminStatisticsFragment extends Fragment
     private NavigationView navigationView;
     private View basicView;
     private View advancedView;
-    
-    // Advanced statistics
-    private Button btnSelectDateRange;
+
     private TextView tvSelectedDateRange;
     private RecyclerView recyclerAdvanced;
     private AdminStatisticAdapter adapterAdvanced;
@@ -221,6 +217,7 @@ public class AdminStatisticsFragment extends Fragment
         }
     }
     
+    @SuppressLint("SetTextI18n")
     private void resetAdvancedStatistics() {
         if (kpi1TitleAdvanced != null) {
             kpi1TitleAdvanced.setText("Doanh thu");
@@ -242,8 +239,9 @@ public class AdminStatisticsFragment extends Fragment
         // Find views from included layout
         View advancedRoot = rootView.findViewById(R.id.advancedView);
         if (advancedRoot == null) return;
-        
-        btnSelectDateRange = advancedRoot.findViewById(R.id.btnSelectDateRange);
+
+        // Advanced statistics
+        Button btnSelectDateRange = advancedRoot.findViewById(R.id.btnSelectDateRange);
         tvSelectedDateRange = advancedRoot.findViewById(R.id.tvSelectedDateRange);
         Button btnLoad = advancedRoot.findViewById(R.id.btnLoadStatistics);
         recyclerAdvanced = advancedRoot.findViewById(R.id.recyclerAdvanced);
@@ -374,6 +372,7 @@ public class AdminStatisticsFragment extends Fragment
         datePicker.show(getParentFragmentManager(), "DATE_RANGE_PICKER");
     }
     
+    @SuppressLint("SetTextI18n")
     private void updateDateDisplay() {
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
         
@@ -553,13 +552,6 @@ public class AdminStatisticsFragment extends Fragment
         });
     }
 
-    @Override
-    public void scrollToTop() {
-        if (recyclerView != null) {
-            recyclerView.smoothScrollToPosition(0);
-        }
-    }
-    
     @SuppressLint("SetTextI18n")
     @Override
     public void refresh() {

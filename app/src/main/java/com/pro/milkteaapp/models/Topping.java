@@ -9,6 +9,7 @@ import java.util.List;
  *  {
  *    name: "Trân châu trắng",
  *    price: 5000,
+ *    imageUrl: "https://..." hoặc "topping_pearl",
  *    categories: ["Trà sữa","Sữa tươi"],
  *    active: true
  *  }
@@ -18,6 +19,7 @@ public class Topping implements Serializable {
     private String id;
     private String name;
     private Long price;
+    private String imageUrl;
     private List<String> categories;
     private Boolean active;
 
@@ -31,6 +33,9 @@ public class Topping implements Serializable {
 
     public long getPrice() { return price == null ? 0L : price; }
     public void setPrice(Long price) { this.price = price; }
+
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
 
     public List<String> getCategories() { return categories; }
     public void   setCategories(List<String> categories) { this.categories = categories; }

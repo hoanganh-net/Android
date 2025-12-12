@@ -3,7 +3,6 @@ package com.pro.milkteaapp.repository;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
@@ -39,27 +38,6 @@ public class ToppingsRepository {
                 .addOnFailureListener(listener::onError);
     }
 
-    /**
-     * Lắng nghe realtime toppings đang active
-     */
-    public ListenerRegistration listenActiveToppings(@NonNull OnToppingsListener listener) {
-        Query query = db.collection(FirestoreConstants.COLLECTION_TOPPINGS)
-                .whereEqualTo(FirestoreConstants.FIELD_ACTIVE, true)
-                .orderBy(FirestoreConstants.FIELD_TOPPING_NAME, Query.Direction.ASCENDING);
-
-        return query.addSnapshotListener((snapshot, error) -> {
-            if (error != null) {
-                listener.onError(error);
-                return;
-            }
-            List<Topping> toppings = parseToppings(snapshot);
-            listener.onToppingsReceived(toppings);
-        });
-    }
-
-    /**
-     * Lấy toppings theo category
-     */
     public void fetchToppingsByCategory(@NonNull String category, @NonNull OnToppingsListener listener) {
         db.collection(FirestoreConstants.COLLECTION_TOPPINGS)
                 .whereEqualTo(FirestoreConstants.FIELD_ACTIVE, true)
@@ -149,9 +127,7 @@ public class ToppingsRepository {
     public void createTopping(@NonNull Map<String, Object> data, @NonNull OnToppingCreateListener listener) {
         db.collection(FirestoreConstants.COLLECTION_TOPPINGS)
                 .add(data)
-                .addOnSuccessListener(documentReference -> {
-                    listener.onSuccess(documentReference.getId());
-                })
+                .addOnSuccessListener(documentReference -> listener.onSuccess(documentReference.getId()))
                 .addOnFailureListener(listener::onError);
     }
 
@@ -166,20 +142,6 @@ public class ToppingsRepository {
                 .addOnFailureListener(listener::onError);
     }
 
-    /**
-     * Cập nhật field active của topping
-     */
-    public void updateToppingActive(@NonNull String toppingId, boolean active, @NonNull OnToppingUpdateListener listener) {
-        db.collection(FirestoreConstants.COLLECTION_TOPPINGS)
-                .document(toppingId)
-                .update(FirestoreConstants.FIELD_ACTIVE, active)
-                .addOnSuccessListener(aVoid -> listener.onSuccess())
-                .addOnFailureListener(listener::onError);
-    }
-
-    /**
-     * Xóa topping
-     */
     public void deleteTopping(@NonNull String toppingId, @NonNull OnToppingUpdateListener listener) {
         db.collection(FirestoreConstants.COLLECTION_TOPPINGS)
                 .document(toppingId)

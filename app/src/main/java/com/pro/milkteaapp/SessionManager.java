@@ -78,10 +78,6 @@ public class SessionManager {
         return prefs.getString(KEY_EMAIL, null);
     }
 
-    public void setDisplayName(@Nullable String name) {
-        prefs.edit().putString(KEY_NAME, name).apply();
-    }
-
     @Nullable
     public String getDisplayName() {
         return prefs.getString(KEY_NAME, null);

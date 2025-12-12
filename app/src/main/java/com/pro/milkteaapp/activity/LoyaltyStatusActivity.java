@@ -28,6 +28,7 @@ public class LoyaltyStatusActivity extends AppCompatActivity {
     private UserActivityLoyaltyStatusBinding b;
     private UsersRepository usersRepository;
 
+    @SuppressLint("SetTextI18n")
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -103,15 +104,15 @@ public class LoyaltyStatusActivity extends AppCompatActivity {
                 b.tvBenefits.setText("• " + android.text.TextUtils.join("\n• ", benefits));
 
                 LoyaltyPolicy.NextTierInfo nxt = LoyaltyPolicy.nextTier(points);
-                if (nxt.targetTier == null) {
+                if (nxt.targetTier() == null) {
                     b.tvNextTier.setText("Bạn đang ở hạng cao nhất.");
                     b.tvNextBenefits.setText("• " + android.text.TextUtils.join("\n• ",
                             LoyaltyPolicy.benefitsForTier(tier)));
                 } else {
-                    b.tvNextTier.setText("Còn " + nxt.remainingPoints + " điểm để lên " + nxt.targetTier);
-                    List<String> nextBenefits = (nxt.nextTierBenefits != null && !nxt.nextTierBenefits.isEmpty())
-                            ? nxt.nextTierBenefits
-                            : LoyaltyPolicy.benefitsForTier(nxt.targetTier);
+                    b.tvNextTier.setText("Còn " + nxt.remainingPoints() + " điểm để lên " + nxt.targetTier());
+                    List<String> nextBenefits = (nxt.nextTierBenefits() != null && !nxt.nextTierBenefits().isEmpty())
+                            ? nxt.nextTierBenefits()
+                            : LoyaltyPolicy.benefitsForTier(nxt.targetTier());
                     b.tvNextBenefits.setText("• " + android.text.TextUtils.join("\n• ", nextBenefits));
                 }
             }

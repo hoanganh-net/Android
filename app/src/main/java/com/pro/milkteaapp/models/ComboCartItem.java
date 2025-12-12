@@ -2,6 +2,7 @@ package com.pro.milkteaapp.models;
 
 import androidx.annotation.NonNull;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -14,6 +15,7 @@ import java.util.Objects;
  * Combo chứa nhiều sản phẩm, mỗi sản phẩm có thể có size, sugar và toppings riêng
  */
 public class ComboCartItem implements Serializable {
+    @Serial
     private static final long serialVersionUID = 4L;
 
     private static final long DELTA_MEDIUM = 3000L;
@@ -22,15 +24,8 @@ public class ComboCartItem implements Serializable {
     private final Combo combo;
     private int quantity;
     private long totalPrice;
-    private List<ComboProductOption> productOptions; // Tùy chọn cho từng sản phẩm trong combo
+    private final List<ComboProductOption> productOptions; // Tùy chọn cho từng sản phẩm trong combo
 
-    public ComboCartItem(@NonNull Combo combo, int quantity) {
-        this.combo = Objects.requireNonNull(combo, "combo không được null");
-        this.quantity = Math.max(1, quantity);
-        this.productOptions = new ArrayList<>();
-        recalcTotal();
-    }
-    
     public ComboCartItem(@NonNull Combo combo, int quantity, List<ComboProductOption> productOptions) {
         this.combo = Objects.requireNonNull(combo, "combo không được null");
         this.quantity = Math.max(1, quantity);
@@ -44,17 +39,6 @@ public class ComboCartItem implements Serializable {
     public long getTotalPrice() { return totalPrice; }
     public List<ComboProductOption> getProductOptions() {
         return productOptions != null ? new ArrayList<>(productOptions) : new ArrayList<>();
-    }
-    public void setProductOptions(List<ComboProductOption> options) {
-        this.productOptions = options != null ? new ArrayList<>(options) : new ArrayList<>();
-        recalcTotal(); // Tính lại giá khi productOptions thay đổi
-    }
-
-    public void setQuantity(int quantity) {
-        if (quantity > 0) {
-            this.quantity = quantity;
-            recalcTotal();
-        }
     }
 
     public void increaseQuantity(int added) {
@@ -105,8 +89,8 @@ public class ComboCartItem implements Serializable {
                     // Cộng giá của toppings
                     if (option.getToppings() != null) {
                         for (SelectedTopping topping : option.getToppings()) {
-                            if (topping != null && topping.price > 0) {
-                                unit += topping.price;
+                            if (topping != null && topping.price() > 0) {
+                                unit += topping.price();
                             }
                         }
                     }
@@ -145,27 +129,33 @@ public class ComboCartItem implements Serializable {
         // Thêm thông tin chi tiết các sản phẩm trong combo
         List<Map<String, Object>> productsList = new ArrayList<>();
         for (ComboProductOption option : getProductOptions()) {
-            Map<String, Object> productMap = new HashMap<>();
-            productMap.put("productId", option.getProductId());
-            productMap.put("productName", option.getProductName());
-            productMap.put("size", option.getSize());
-            productMap.put("sugar", option.getSugar());
-            
-            // Toppings
-            List<Map<String, Object>> toppingsList = new ArrayList<>();
-            for (SelectedTopping topping : option.getToppings()) {
-                Map<String, Object> toppingMap = new HashMap<>();
-                toppingMap.put("id", topping.id);
-                toppingMap.put("name", topping.name);
-                toppingMap.put("price", topping.price);
-                toppingsList.add(toppingMap);
-            }
-            productMap.put("toppings", toppingsList);
+            Map<String, Object> productMap = getStringObjectMap(option);
             productsList.add(productMap);
         }
         m.put("products", productsList);
         
         return m;
+    }
+
+    @NonNull
+    private Map<String, Object> getStringObjectMap(ComboProductOption option) {
+        Map<String, Object> productMap = new HashMap<>();
+        productMap.put("productId", option.getProductId());
+        productMap.put("productName", option.getProductName());
+        productMap.put("size", option.getSize());
+        productMap.put("sugar", option.getSugar());
+
+        // Toppings
+        List<Map<String, Object>> toppingsList = new ArrayList<>();
+        for (SelectedTopping topping : option.getToppings()) {
+            Map<String, Object> toppingMap = new HashMap<>();
+            toppingMap.put("id", topping.id());
+            toppingMap.put("name", topping.name());
+            toppingMap.put("price", topping.price());
+            toppingsList.add(toppingMap);
+        }
+        productMap.put("toppings", toppingsList);
+        return productMap;
     }
 
     // Hợp nhất theo comboId (không phân biệt theo size vì mỗi sản phẩm có size riêng)

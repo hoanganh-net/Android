@@ -47,7 +47,10 @@ public class LoyaltyTierBottomSheet extends BottomSheetDialogFragment {
 
     private TextView tvCurrentTier, tvCurrentPoints, tvNextInfo;
     private TextView tvBenefitsCurrent, tvBenefitsNext;
-    private TextView tvRuleUnrank, tvRuleBronze, tvRuleSilver, tvRuleGold, tvRuleDiamond;
+    private TextView tvRuleUnrank;
+    private TextView tvRuleBronze;
+    private TextView tvRuleSilver;
+    private TextView tvRuleGold;
 
     private long initialPoints = 0L;
     private boolean hasInitial = false;
@@ -78,7 +81,6 @@ public class LoyaltyTierBottomSheet extends BottomSheetDialogFragment {
         tvRuleBronze = v.findViewById(R.id.tvRuleBronze);
         tvRuleSilver = v.findViewById(R.id.tvRuleSilver);
         tvRuleGold   = v.findViewById(R.id.tvRuleGold);
-        tvRuleDiamond = v.findViewById(R.id.tvRuleDiamond);
 
         renderStaticRules();
 
@@ -150,7 +152,7 @@ public class LoyaltyTierBottomSheet extends BottomSheetDialogFragment {
         tvCurrentPoints.setText(points + " điểm tích lũy");
 
         LoyaltyPolicy.NextTierInfo next = LoyaltyPolicy.nextTier(points);
-        if (next.targetTier == null) {
+        if (next.targetTier() == null) {
             tvNextInfo.setText("Bạn đang ở hạng cao nhất.");
             // Ẩn phần "Quyền lợi khi lên hạng kế tiếp" khi đã ở hạng cao nhất
             View benefitsNextLabel = getView() != null ? getView().findViewById(R.id.tvBenefitsNextLabel) : null;
@@ -164,7 +166,7 @@ public class LoyaltyTierBottomSheet extends BottomSheetDialogFragment {
                 dividerBeforeNext.setVisibility(android.view.View.GONE);
             }
         } else {
-            tvNextInfo.setText("Còn " + next.remainingPoints + " điểm để lên " + next.targetTier);
+            tvNextInfo.setText("Còn " + next.remainingPoints() + " điểm để lên " + next.targetTier());
             // Hiển thị phần "Quyền lợi khi lên hạng kế tiếp"
             View benefitsNextLabel = getView() != null ? getView().findViewById(R.id.tvBenefitsNextLabel) : null;
             if (benefitsNextLabel != null) {
@@ -181,12 +183,12 @@ public class LoyaltyTierBottomSheet extends BottomSheetDialogFragment {
         tvBenefitsCurrent.setText("• " + joinLines(curBenefits));
 
         List<String> nextBenefits;
-        if (next.targetTier == null) {
+        if (next.targetTier() == null) {
             nextBenefits = new ArrayList<>(); // Không hiển thị gì khi đã ở hạng cao nhất
-        } else if (!next.nextTierBenefits.isEmpty()) {
-            nextBenefits = next.nextTierBenefits;
+        } else if (!next.nextTierBenefits().isEmpty()) {
+            nextBenefits = next.nextTierBenefits();
         } else {
-            nextBenefits = LoyaltyPolicy.benefitsForTier(next.targetTier);
+            nextBenefits = LoyaltyPolicy.benefitsForTier(next.targetTier());
         }
         tvBenefitsNext.setText("• " + joinLines(nextBenefits));
     }

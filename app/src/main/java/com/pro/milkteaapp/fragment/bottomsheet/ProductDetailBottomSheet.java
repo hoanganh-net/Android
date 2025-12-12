@@ -26,6 +26,7 @@ import com.pro.milkteaapp.models.Product;
 import com.pro.milkteaapp.models.SelectedTopping;
 import com.pro.milkteaapp.models.Topping;
 import com.pro.milkteaapp.repository.ToppingsRepository;
+import com.pro.milkteaapp.utils.StringUtils;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -155,12 +156,12 @@ public class ProductDetailBottomSheet extends BottomSheetDialogFragment {
                 // tránh trùng
                 boolean exists = false;
                 for (SelectedTopping st : selected) {
-                    if (TextUtils.equals(st.id, t.getId())) { exists = true; break; }
+                    if (TextUtils.equals(st.id(), t.getId())) { exists = true; break; }
                 }
                 if (!exists) selected.add(new SelectedTopping(t.getId(), t.getName(), t.getPrice()));
             } else {
                 for (int i = 0; i < selected.size(); i++) {
-                    if (TextUtils.equals(selected.get(i).id, t.getId())) { selected.remove(i); break; }
+                    if (TextUtils.equals(selected.get(i).id(), t.getId())) { selected.remove(i); break; }
                 }
             }
             updateTotal();
@@ -168,7 +169,7 @@ public class ProductDetailBottomSheet extends BottomSheetDialogFragment {
         recyclerToppings.setLayoutManager(new LinearLayoutManager(requireContext()));
         recyclerToppings.setAdapter(toppingAdapter);
 
-        loadToppingsForCategory(safe(product.getCategory()));
+        loadToppingsForCategory(StringUtils.safeStr(product.getCategory()));
 
         // Listeners
         decrementButton.setOnClickListener(v1 -> {
@@ -259,7 +260,7 @@ public class ProductDetailBottomSheet extends BottomSheetDialogFragment {
 
         // Cộng topping
         long top = 0;
-        for (SelectedTopping st : selected) top += Math.max(0, st.price);
+        for (SelectedTopping st : selected) top += Math.max(0, st.price());
         unit += top;
 
         long total = unit * Math.max(1, quantity);
@@ -290,7 +291,6 @@ public class ProductDetailBottomSheet extends BottomSheetDialogFragment {
     }
 
     // Helpers
-    private static String  safe(String v){ return v == null ? "" : v; }
     private static long    safePrice(Double p){ return p == null ? 0L : p.longValue(); }
     private static String  formatVND(long v) { NumberFormat nf = NumberFormat.getInstance(new Locale("vi","VN")); return nf.format(v) + "đ"; }
     private static boolean isHttpUrl(String s) { return s != null && (s.startsWith("http://") || s.startsWith("https://")); }

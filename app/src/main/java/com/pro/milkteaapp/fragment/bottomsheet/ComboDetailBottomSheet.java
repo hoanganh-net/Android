@@ -20,9 +20,7 @@ import com.google.android.material.button.MaterialButton;
 import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.adapter.ComboProductOptionAdapter;
 import com.pro.milkteaapp.models.Combo;
-import com.pro.milkteaapp.models.ComboProductOption;
 import com.pro.milkteaapp.models.Product;
-import com.pro.milkteaapp.models.SelectedTopping;
 import com.pro.milkteaapp.repository.ProductRepository;
 import com.pro.milkteaapp.utils.ImageLoader;
 import com.pro.milkteaapp.utils.MoneyUtils;
@@ -130,7 +128,7 @@ public class ComboDetailBottomSheet extends BottomSheetDialogFragment {
         productsRepository = new ProductRepository();
         productsAdapter = new ComboProductOptionAdapter();
         // Set callback để cập nhật giá khi topping thay đổi
-        productsAdapter.setOnToppingChangeListener(() -> updateTotal());
+        productsAdapter.setOnToppingChangeListener(this::updateTotal);
         rvProduct.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvProduct.setAdapter(productsAdapter);
         rvProduct.setNestedScrollingEnabled(false);
@@ -229,8 +227,8 @@ public class ComboDetailBottomSheet extends BottomSheetDialogFragment {
                         // Cộng giá toppings
                         if (option.getToppings() != null) {
                             for (com.pro.milkteaapp.models.SelectedTopping topping : option.getToppings()) {
-                                if (topping != null && topping.price > 0) {
-                                    price += topping.price;
+                                if (topping != null && topping.price() > 0) {
+                                    price += topping.price();
                                 }
                             }
                         }

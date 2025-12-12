@@ -40,16 +40,12 @@ public class MainActivity extends AppCompatActivity {
             binding = UserActivityMainBinding.inflate(getLayoutInflater());
             setContentView(binding.getRoot());
 
-            // Lắng nghe chọn bottom nav
             binding.bottomNavigationView.setOnItemSelectedListener(onNavSelectedListener);
 
-            // Reselect: ví dụ, về top nếu bấm lại tab hiện tại
             binding.bottomNavigationView.setOnItemReselectedListener(item -> {
-                Fragment f = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
                 // ((HomeFragment) f).scrollToTop();
             });
 
-            // Nếu có intent điều hướng → xử lý; ngược lại lần đầu vào chọn Home
             boolean handled = handleIntent(getIntent());
             if (!handled && savedInstanceState == null) {
                 binding.bottomNavigationView.setSelectedItemId(R.id.navigation_home);
@@ -85,17 +81,6 @@ public class MainActivity extends AppCompatActivity {
         }
         return true;
     }
-
-    public void openHomeTab() {
-        NavigationBarView bottomNav = findViewById(R.id.bottomNavigationView);
-        if (bottomNav != null) {
-            bottomNav.setSelectedItemId(R.id.navigation_home);
-        } else {
-            safeReplaceFragment(new HomeFragment());
-        }
-    }
-
-    // === Public helpers để Fragment gọi chuyển tab ===
 
     public void openProductsTab() {
         NavigationBarView bottomNav = findViewById(R.id.bottomNavigationView);

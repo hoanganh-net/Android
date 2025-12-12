@@ -17,8 +17,6 @@ import com.pro.milkteaapp.R;
 /** Gắn màu & nhãn theo cấp: Chưa xếp hạng / Đồng / Bạc / Vàng */
 public final class TierStyleUtils {
 
-    private void TierStyleUtil() {}
-
     public record TierColors(@ColorInt int bg, @ColorInt int dark, String label) {}
 
     public static @NonNull TierColors resolve(Context c, @NonNull String tier) {

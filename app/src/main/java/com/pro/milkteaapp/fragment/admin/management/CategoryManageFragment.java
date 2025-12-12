@@ -1,6 +1,7 @@
 package com.pro.milkteaapp.fragment.admin.management;
 
 import android.app.AlertDialog;
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -8,7 +9,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -17,7 +17,6 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
-import com.google.android.material.switchmaterial.SwitchMaterial;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.textfield.TextInputEditText;
@@ -27,13 +26,10 @@ import com.pro.milkteaapp.adapter.CategoryAdapter;
 import com.pro.milkteaapp.interfaces.AddActionHandler;
 import com.pro.milkteaapp.models.Category;
 import com.pro.milkteaapp.repository.CategoriesRepository;
-import com.pro.milkteaapp.utils.ImageLoader;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 /**
  * Quản lý danh mục cho admin – bản không dùng ViewModel.
@@ -48,9 +44,7 @@ public class CategoryManageFragment extends Fragment implements
     private LinearProgressIndicator progressBar;
     private SwipeRefreshLayout swipeRefresh;
     private View emptyState;
-    private FloatingActionButton fabAdd;
     private TextInputEditText edtSearch;
-    private Button btnAddFirst;
 
     // Repository
     private CategoriesRepository categoriesRepository;
@@ -79,9 +73,9 @@ public class CategoryManageFragment extends Fragment implements
         progressBar = v.findViewById(R.id.progressBar);
         swipeRefresh = v.findViewById(R.id.swipeRefresh);
         emptyState = v.findViewById(R.id.emptyState);
-        fabAdd = v.findViewById(R.id.fabAdd);
+        FloatingActionButton fabAdd = v.findViewById(R.id.fabAdd);
         edtSearch = v.findViewById(R.id.edtSearch);
-        btnAddFirst = v.findViewById(R.id.btnAddFirst);
+        Button btnAddFirst = v.findViewById(R.id.btnAddFirst);
 
         // adapter (admin mode = true)
         adapter = new CategoryAdapter(this, true);
@@ -188,177 +182,18 @@ public class CategoryManageFragment extends Fragment implements
     /* ================= AddActionHandler ================= */
     @Override
     public void onAddAction() {
-        showCategoryDialog(null);
+        openCategoryEditor(null);
+    }
+    
+    /* ================= Mở Activity chỉnh sửa category ================= */
+    private void openCategoryEditor(@Nullable Category category) {
+        Intent intent = new Intent(requireContext(), com.pro.milkteaapp.activity.admin.CategoryEditorActivity.class);
+        if (category != null && category.getId() != null) {
+            intent.putExtra(com.pro.milkteaapp.activity.admin.CategoryEditorActivity.EXTRA_CATEGORY_ID, category.getId());
+        }
+        startActivity(intent);
     }
 
-    /* ================= Dialog thêm/sửa danh mục ================= */
-    private void showCategoryDialog(@Nullable Category category) {
-        View dialogView = LayoutInflater.from(requireContext())
-                .inflate(R.layout._dialog_category, null);
-
-        TextInputEditText edtName = dialogView.findViewById(R.id.edtName);
-        TextInputEditText edtImageUrl = dialogView.findViewById(R.id.edtImageUrl);
-        ImageView imgPreview = dialogView.findViewById(R.id.imgPreview);
-        SwitchMaterial cbActive = dialogView.findViewById(R.id.cbActive);
-        com.google.android.material.button.MaterialButton btnSave = dialogView.findViewById(R.id.btnSave);
-        com.google.android.material.button.MaterialButton btnCancel = dialogView.findViewById(R.id.btnCancel);
-        com.google.android.material.button.MaterialButton btnPickBuiltinImage = dialogView.findViewById(R.id.btnPickBuiltinImage);
-
-        // nếu sửa
-        if (category != null) {
-            if (edtName != null) edtName.setText(category.getName());
-            if (edtImageUrl != null) edtImageUrl.setText(category.getImageUrl());
-            if (cbActive != null) cbActive.setChecked(category.isActive());
-
-            // dùng ImageLoader để support cả url và tên drawable
-            ImageLoader.load(
-                    imgPreview,
-                    category.getImageUrl(),
-                    R.drawable.milktea
-            );
-        } else {
-            imgPreview.setImageResource(R.drawable.milktea);
-            if (cbActive != null) cbActive.setChecked(true);
-        }
-
-        // preview ảnh khi gõ
-        if (edtImageUrl != null) {
-            edtImageUrl.addTextChangedListener(new TextWatcher() {
-                @Override
-                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                }
-
-                @Override
-                public void afterTextChanged(Editable s) {
-                }
-
-                @Override
-                public void onTextChanged(CharSequence s, int start, int before, int count) {
-                    String val = s == null ? "" : s.toString().trim();
-                    if (val.isEmpty()) {
-                        imgPreview.setImageResource(R.drawable.milktea);
-                    } else {
-                        ImageLoader.load(
-                                imgPreview,
-                                val,
-                                R.drawable.milktea
-                        );
-                    }
-                }
-            });
-        }
-
-        // ====== PICK ẢNH CÓ SẴN (giống edit profile) ======
-        if (btnPickBuiltinImage != null) {
-            btnPickBuiltinImage.setOnClickListener(v -> {
-                // mảng ảnh demo – anh có thể nối thêm tùy ý
-                final String[] CATE_IMAGES = new String[]{
-                        "milktea_brownsugar",
-                        "milktea_matcha",
-                        "milktea_taro",
-                        "milktea_olong",
-                        "milktea_greenthai",
-                        "milktea_strawberry",
-                        "milktea_chocolate",
-                        "milktea_caramel",
-                        "milktea_mango",
-                        "tea_blacktea",
-                        "ic_milk_tea",
-                        "milktea"
-                };
-
-                new AlertDialog.Builder(requireContext())
-                        .setTitle("Chọn ảnh danh mục")
-                        .setItems(CATE_IMAGES, (d, which) -> {
-                            String name = CATE_IMAGES[which];
-                            if (edtImageUrl != null) {
-                                edtImageUrl.setText(name);
-                            }
-                            ImageLoader.load(
-                                    imgPreview,
-                                    name,
-                                    R.drawable.milktea
-                            );
-                        })
-                        .setNegativeButton(android.R.string.cancel, null)
-                        .show();
-            });
-        }
-
-        AlertDialog dialog = new AlertDialog.Builder(requireContext())
-                .setView(dialogView)
-                .setCancelable(false)
-                .create();
-
-        if (btnCancel != null) btnCancel.setOnClickListener(v -> dialog.dismiss());
-
-        if (btnSave != null) {
-            AlertDialog finalDialog = dialog;
-            btnSave.setOnClickListener(v -> {
-                String name = edtName != null && edtName.getText() != null
-                        ? edtName.getText().toString().trim()
-                        : "";
-                String imageUrl = edtImageUrl != null && edtImageUrl.getText() != null
-                        ? edtImageUrl.getText().toString().trim()
-                        : "";
-                boolean active = cbActive != null && cbActive.isChecked();
-
-                if (name.isEmpty()) {
-                    toast("Vui lòng nhập tên danh mục");
-                    return;
-                }
-                if (imageUrl.isEmpty()) imageUrl = null;
-
-                Map<String, Object> data = new HashMap<>();
-                data.put("name", name);
-                data.put("imageUrl", imageUrl);
-                data.put("active", active);
-                data.put("searchableName", name.toLowerCase(Locale.ROOT));
-
-                if (category == null) {
-                    // thêm mới
-                    addCategory(data, finalDialog);
-                } else {
-                    // cập nhật
-                    updateCategory(category.getId(), data, finalDialog);
-                }
-            });
-        }
-
-        dialog.show();
-    }
-
-    /* ================= CRUD qua Repository ================= */
-
-    private void addCategory(Map<String, Object> data, AlertDialog dialog) {
-        categoriesRepository.createCategory(data, new CategoriesRepository.OnCategoryCreateListener() {
-            @Override
-            public void onSuccess(@NonNull String categoryId) {
-                toast("Đã thêm danh mục");
-                dialog.dismiss();
-            }
-
-            @Override
-            public void onError(@NonNull Exception error) {
-                toast("Lỗi thêm: " + error.getMessage());
-            }
-        });
-    }
-
-    private void updateCategory(String id, Map<String, Object> data, AlertDialog dialog) {
-        categoriesRepository.updateCategory(id, data, new CategoriesRepository.OnCategoryUpdateListener() {
-            @Override
-            public void onSuccess() {
-                toast("Đã cập nhật danh mục");
-                dialog.dismiss();
-            }
-
-            @Override
-            public void onError(@NonNull Exception error) {
-                toast("Lỗi cập nhật: " + error.getMessage());
-            }
-        });
-    }
 
     private void deleteCategory(String id) {
         categoriesRepository.deleteCategory(id, new CategoriesRepository.OnCategoryUpdateListener() {
@@ -378,7 +213,7 @@ public class CategoryManageFragment extends Fragment implements
 
     @Override
     public void onEdit(Category category) {
-        showCategoryDialog(category);
+        openCategoryEditor(category);
     }
 
     @Override

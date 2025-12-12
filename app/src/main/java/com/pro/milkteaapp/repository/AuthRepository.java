@@ -76,7 +76,14 @@ public class AuthRepository {
 
                 @Override
                 public void onFailure(Exception e) {
-                    Log.w(TAG, "fetchRoleByCustomId failed in autoLogin: " + e.getMessage());
+                    String errorMsg = e.getMessage();
+                    if (errorMsg != null && errorMsg.contains("vô hiệu hóa")) {
+                        // User bị vô hiệu hóa, đăng xuất và báo lỗi
+                        sessionManager.setLoggedIn(false);
+                        callback.onError(errorMsg);
+                        return;
+                    }
+                    Log.w(TAG, "fetchRoleByCustomId failed in autoLogin: " + errorMsg);
                     // Không lấy được role vẫn cho vào user
                     sessionManager.saveUserSession(cachedCustomId, null, null, "user");
                     callback.onSuccess("user");
@@ -166,7 +173,13 @@ public class AuthRepository {
 
                                 @Override
                                 public void onFailure(Exception e) {
-                                    Log.w(TAG, "fetchRoleByCustomId failed in login: " + e.getMessage());
+                                    String errorMsg = e.getMessage();
+                                    if (errorMsg != null && errorMsg.contains("vô hiệu hóa")) {
+                                        // User bị vô hiệu hóa
+                                        callback.onError(errorMsg);
+                                        return;
+                                    }
+                                    Log.w(TAG, "fetchRoleByCustomId failed in login: " + errorMsg);
                                     // Fallback legacy
                                     fetchRoleByLegacyUid(fbUser.getUid(), new RoleCallback() {
                                         @Override
@@ -177,6 +190,12 @@ public class AuthRepository {
 
                                         @Override
                                         public void onFailure(Exception ex) {
+                                            String exMsg = ex.getMessage();
+                                            if (exMsg != null && exMsg.contains("vô hiệu hóa")) {
+                                                // User bị vô hiệu hóa
+                                                callback.onError(exMsg);
+                                                return;
+                                            }
                                             // Nếu DB hoàn toàn không có gì, vẫn cho vào user
                                             sessionManager.saveUserSession(fbUser.getUid(), fbUser.getEmail(), null, "user");
                                             callback.onSuccess("user");
@@ -193,6 +212,12 @@ public class AuthRepository {
 
                                 @Override
                                 public void onFailure(Exception ex) {
+                                    String exMsg = ex.getMessage();
+                                    if (exMsg != null && exMsg.contains("vô hiệu hóa")) {
+                                        // User bị vô hiệu hóa
+                                        callback.onError(exMsg);
+                                        return;
+                                    }
                                     sessionManager.saveUserSession(fbUser.getUid(), fbUser.getEmail(), null, "user");
                                     callback.onSuccess("user");
                                 }
@@ -272,9 +297,21 @@ public class AuthRepository {
                                      @NonNull RoleCallback callback) {
         db.collection("users").document(customId).get()
                 .addOnSuccessListener(snap -> {
-                    String role = (snap != null && snap.exists() && snap.getString("role") != null)
-                            ? snap.getString("role") : "user";
-                    String displayName = snap != null ? snap.getString("fullName") : null;
+                    if (snap == null || !snap.exists()) {
+                        callback.onFailure(new Exception("User not found"));
+                        return;
+                    }
+                    
+                    // Kiểm tra active status
+                    Boolean active = snap.getBoolean("active");
+                    if (active != null && !active) {
+                        // User bị vô hiệu hóa
+                        callback.onFailure(new Exception("Tài khoản đã bị vô hiệu hóa"));
+                        return;
+                    }
+                    
+                    String role = snap.getString("role") != null ? snap.getString("role") : "user";
+                    String displayName = snap.getString("fullName");
                     callback.onSuccess(customId, normalizeRole(role), displayName);
                 })
                 .addOnFailureListener(e -> {
@@ -288,9 +325,21 @@ public class AuthRepository {
                                       @NonNull RoleCallback callback) {
         db.collection("users").document(legacyUid).get()
                 .addOnSuccessListener(snap -> {
-                    String role = (snap != null && snap.exists() && snap.getString("role") != null)
-                            ? snap.getString("role") : "user";
-                    String displayName = snap != null ? snap.getString("fullName") : null;
+                    if (snap == null || !snap.exists()) {
+                        callback.onFailure(new Exception("User not found"));
+                        return;
+                    }
+                    
+                    // Kiểm tra active status
+                    Boolean active = snap.getBoolean("active");
+                    if (active != null && !active) {
+                        // User bị vô hiệu hóa
+                        callback.onFailure(new Exception("Tài khoản đã bị vô hiệu hóa"));
+                        return;
+                    }
+                    
+                    String role = snap.getString("role") != null ? snap.getString("role") : "user";
+                    String displayName = snap.getString("fullName");
                     callback.onSuccess(legacyUid, normalizeRole(role), displayName);
                 })
                 .addOnFailureListener(e -> {

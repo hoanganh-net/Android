@@ -56,7 +56,15 @@ public class RewardPointsRepository {
     }
 
     /**
-     * Trừ điểm đổi quà khi user đổi voucher
+     * Trừ điểm đổi quà khi user đổi voucher.
+     * 
+     * Lưu ý: Voucher đổi điểm có thể đổi nhiều lần, miễn là voucher còn active và user có đủ điểm.
+     * perUserLimit chỉ áp dụng khi SỬ DỤNG voucher (checkout), không áp dụng khi ĐỔI voucher.
+     * 
+     * @param userId User ID
+     * @param pointsToDeduct Số điểm cần trừ
+     * @param voucherId ID của voucher được đổi
+     * @param listener Callback listener
      */
     public void redeemRewardPoints(@NonNull String userId, long pointsToDeduct, 
                                    @NonNull String voucherId, @NonNull OnRewardPointsListener listener) {

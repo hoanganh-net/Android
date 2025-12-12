@@ -27,9 +27,7 @@ public class PaymentMethodPickerSheet extends BottomSheetDialogFragment {
         b.btnMomo.setOnClickListener(v1 -> pick(PaymentService.METHOD_MOMO));
         
         // Thêm nút thẻ nếu có trong layout
-        if (b.btnCard != null) {
-            b.btnCard.setOnClickListener(v1 -> pick(PaymentService.METHOD_CARD));
-        }
+        b.btnCard.setOnClickListener(v1 -> pick(PaymentService.METHOD_CARD));
     }
 
     private void pick(String m) { if (listener!=null) listener.onPicked(m); dismiss(); }

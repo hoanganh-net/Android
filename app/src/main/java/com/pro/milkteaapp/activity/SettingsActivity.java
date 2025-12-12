@@ -3,7 +3,6 @@ package com.pro.milkteaapp.activity;
 import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.databinding.UserActivitySettingsBinding;
 
 public class SettingsActivity extends AppCompatActivity {

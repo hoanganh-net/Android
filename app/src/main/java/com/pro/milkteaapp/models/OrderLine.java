@@ -186,8 +186,8 @@ public class OrderLine implements Serializable {
     
     // Combo getters
     public boolean isCombo() { return isCombo; }
-    @NonNull public String getComboId() { return comboId == null ? "" : comboId; }
-    @NonNull public List<ComboProductDetail> getComboProducts() { 
+
+    @NonNull public List<ComboProductDetail> getComboProducts() {
         return comboProducts == null ? new ArrayList<>() : comboProducts; 
     }
 
@@ -220,22 +220,8 @@ public class OrderLine implements Serializable {
             
             StringBuilder comboDetail = new StringBuilder();
             for (int i = 0; i < products.size(); i++) {
-                ComboProductDetail product = products.get(i);
-                comboDetail.append(product.productName);
-                
-                // Thêm size, đường, topping
-                List<String> options = new ArrayList<>();
-                if (!product.size.isEmpty()) options.add("Size: " + product.size);
-                if (!product.sugar.isEmpty()) options.add("Đường: " + product.sugar);
-                if (!product.toppings.isEmpty()) {
-                    StringBuilder toppingStr = new StringBuilder("Topping: ");
-                    for (int j = 0; j < product.toppings.size(); j++) {
-                        toppingStr.append(product.toppings.get(j).getName());
-                        if (j < product.toppings.size() - 1) toppingStr.append(", ");
-                    }
-                    options.add(toppingStr.toString());
-                }
-                
+                List<String> options = getStrings(products, i, comboDetail);
+
                 if (!options.isEmpty()) {
                     comboDetail.append(" (").append(String.join(" • ", options)).append(")");
                 }
@@ -278,7 +264,27 @@ public class OrderLine implements Serializable {
 
         return sb.toString().trim();  // trim để tránh xuống dòng thừa cuối cùng
     }
-    
+
+    @NonNull
+    private List<String> getStrings(List<ComboProductDetail> products, int i, StringBuilder comboDetail) {
+        ComboProductDetail product = products.get(i);
+        comboDetail.append(product.productName);
+
+        // Thêm size, đường, topping
+        List<String> options = new ArrayList<>();
+        if (!product.size.isEmpty()) options.add("Size: " + product.size);
+        if (!product.sugar.isEmpty()) options.add("Đường: " + product.sugar);
+        if (!product.toppings.isEmpty()) {
+            StringBuilder toppingStr = new StringBuilder("Topping: ");
+            for (int j = 0; j < product.toppings.size(); j++) {
+                toppingStr.append(product.toppings.get(j).getName());
+                if (j < product.toppings.size() - 1) toppingStr.append(", ");
+            }
+            options.add(toppingStr.toString());
+        }
+        return options;
+    }
+
     // Inner class để lưu thông tin chi tiết sản phẩm trong combo
     public static class ComboProductDetail implements Serializable {
         public String productName;

@@ -92,7 +92,7 @@ public class ProductSectionAdapter extends RecyclerView.Adapter<RecyclerView.Vie
 
     /* ======================= ViewHolders ======================= */
 
-    static class HeaderVH extends RecyclerView.ViewHolder {
+    private static class HeaderVH extends RecyclerView.ViewHolder {
         TextView tvHeader;
         HeaderVH(@NonNull View itemView) {
             super(itemView);
@@ -103,7 +103,7 @@ public class ProductSectionAdapter extends RecyclerView.Adapter<RecyclerView.Vie
         }
     }
 
-    static class ProductVH extends RecyclerView.ViewHolder {
+    private static class ProductVH extends RecyclerView.ViewHolder {
         ImageView milkTeaImage;
         TextView milkTeaName, milkTeaPrice;
 

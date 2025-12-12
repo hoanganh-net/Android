@@ -235,31 +235,7 @@ public class RegisterActivity extends AppCompatActivity {
             return;
         }
 
-        // Parse địa chỉ đơn giản: giả sử format là "Số nhà, Đường, Quận/Huyện, Tỉnh/TP"
-        // Hoặc có thể chỉ là một dòng địa chỉ đơn giản
-        Address address = new Address();
-        address.setFullName(fullName);
-        address.setPhone(phone != null ? phone : "");
-        
-        // Tách địa chỉ thành các phần (nếu có dấu phẩy)
-        String[] parts = addressText.split(",");
-        if (parts.length >= 1) {
-            address.setLine1(parts[0].trim());
-        }
-        if (parts.length >= 2) {
-            address.setLine2(parts[1].trim());
-        }
-        if (parts.length >= 3) {
-            address.setCity(parts[2].trim());
-        }
-        if (parts.length >= 4) {
-            address.setProvince(parts[3].trim());
-        }
-        // Nếu không có dấu phẩy, coi toàn bộ là line1
-        if (parts.length == 1) {
-            address.setLine1(addressText.trim());
-        }
-        
+        Address address = createAddressFromText(addressText, fullName, phone);
         address.setDefault(true); // Địa chỉ đăng ký là mặc định
 
         // Lưu địa chỉ vào Firestore
@@ -280,6 +256,40 @@ public class RegisterActivity extends AppCompatActivity {
             Log.w("Register", "Failed to create default address: " + e.getMessage());
             handleRegistrationSuccess(userId);
         });
+    }
+
+    /**
+     * Tạo đối tượng Address từ chuỗi địa chỉ text
+     * @param addressText Chuỗi địa chỉ (có thể chứa dấu phẩy để phân tách các phần)
+     * @param fullName Tên đầy đủ
+     * @param phone Số điện thoại
+     * @return Đối tượng Address đã được điền thông tin
+     */
+    private Address createAddressFromText(String addressText, String fullName, String phone) {
+        Address address = new Address();
+        address.setFullName(fullName);
+        address.setPhone(phone != null ? phone : "");
+
+        // Tách địa chỉ thành các phần (nếu có dấu phẩy)
+        String[] parts = addressText.split(",");
+        if (parts.length >= 1) {
+            address.setLine1(parts[0].trim());
+        }
+        if (parts.length >= 2) {
+            address.setLine2(parts[1].trim());
+        }
+        if (parts.length >= 3) {
+            address.setCity(parts[2].trim());
+        }
+        if (parts.length >= 4) {
+            address.setProvince(parts[3].trim());
+        }
+        // Nếu không có dấu phẩy, coi toàn bộ là line1
+        if (parts.length == 1) {
+            address.setLine1(addressText.trim());
+        }
+
+        return address;
     }
 
     private void handleRegistrationSuccess(String userId) {

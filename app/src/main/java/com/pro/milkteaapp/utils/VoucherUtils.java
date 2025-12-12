@@ -9,14 +9,10 @@ public final class VoucherUtils {
 
     private VoucherUtils(){}
 
-    /** Kết quả giảm tách bạch: giảm đơn và giảm ship */
-    public static class DiscountResult {
-        public final long orderDiscount;
-        public final long shippingDiscount;
-        public DiscountResult(long orderDiscount, long shippingDiscount){
-            this.orderDiscount = orderDiscount;
-            this.shippingDiscount = shippingDiscount;
-        }
+    /**
+     * Kết quả giảm tách bạch: giảm đơn và giảm ship
+     */
+        public record DiscountResult(long orderDiscount, long shippingDiscount) {
     }
 
     /** Trong khung thời gian [startAt, endAt] (endAt inclusive) */
@@ -24,9 +20,8 @@ public final class VoucherUtils {
         Timestamp now = Timestamp.now();
         Timestamp start = v.getStartAt();
         Timestamp end   = v.getEndAt();
-        if (start != null && now.compareTo(start) < 0) return false;
-        if (end != null && now.compareTo(end) > 0) return false;
-        return true;
+        if (start != null && now.compareTo(start) < 0) return true;
+        return end != null && now.compareTo(end) > 0;
     }
 
     /**

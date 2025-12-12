@@ -115,21 +115,17 @@ public class AdminMainActivity extends AppCompatActivity {
                 // xử lý intent điều hướng sang tab cụ thể
                 if (!handleIntent(getIntent())) {
                     // mặc định chọn đơn hàng
-                    if (binding.bottomNavigationView != null) {
-                        binding.bottomNavigationView.setSelectedItemId(R.id.adminOrders);
-                    }
+                    binding.bottomNavigationView.setSelectedItemId(R.id.adminOrders);
                     switchTo(R.id.adminOrders);
                 }
             } else {
-                if (binding.bottomNavigationView != null) {
-                    binding.bottomNavigationView.setSelectedItemId(currentTabId);
-                }
+                binding.bottomNavigationView.setSelectedItemId(currentTabId);
                 switchTo(currentTabId);
             }
         } catch (Exception e) {
             // Lỗi khởi tạo fragment -> fallback về tab đơn hàng
             Toast.makeText(this, getString(R.string.init_error, e.getMessage()), Toast.LENGTH_SHORT).show();
-            if (binding != null && binding.bottomNavigationView != null) {
+            if (binding != null) {
                 binding.bottomNavigationView.setSelectedItemId(R.id.adminOrders);
             }
         }
@@ -193,7 +189,7 @@ public class AdminMainActivity extends AppCompatActivity {
     }
 
     private void setupToolbar() {
-        if (binding == null || binding.toolbar == null) return;
+        if (binding == null) return;
         
         setSupportActionBar(binding.toolbar);
         updateToolbarTitle(currentTabId);
@@ -204,7 +200,7 @@ public class AdminMainActivity extends AppCompatActivity {
         // Đổi màu menu icon (3 chấm dọc) thành trắng
         // Sử dụng post để đảm bảo menu đã được inflate
         binding.toolbar.post(() -> {
-            if (binding != null && binding.toolbar != null && binding.toolbar.getOverflowIcon() != null) {
+            if (binding != null && binding.toolbar.getOverflowIcon() != null) {
                 binding.toolbar.getOverflowIcon().setTint(getResources().getColor(R.color.white, getTheme()));
             }
         });
@@ -306,7 +302,7 @@ public class AdminMainActivity extends AppCompatActivity {
 
     
     private void updateToolbarTitle(@IdRes int menuId) {
-        if (binding == null || binding.toolbar == null || getSupportActionBar() == null) return;
+        if (binding == null || getSupportActionBar() == null) return;
         
         int titleRes = R.string.app_name;
         if (menuId == R.id.adminOrders)          titleRes = R.string.admin_title_orders;
@@ -337,7 +333,7 @@ public class AdminMainActivity extends AppCompatActivity {
     }
 
     private boolean handleIntent(Intent intent) {
-        if (intent == null || binding == null || binding.bottomNavigationView == null) return false;
+        if (intent == null || binding == null) return false;
         
         String target = intent.getStringExtra(EXTRA_ADMIN_TARGET);
         if (target == null) return false;
@@ -401,7 +397,7 @@ public class AdminMainActivity extends AppCompatActivity {
                 
                 // back về tab Đơn hàng nếu đang ở tab khác
                 if (currentTabId != R.id.adminOrders) {
-                    if (binding != null && binding.bottomNavigationView != null) {
+                    if (binding != null) {
                         binding.bottomNavigationView.setSelectedItemId(R.id.adminOrders);
                     }
                     switchTo(R.id.adminOrders);
@@ -479,6 +475,5 @@ public class AdminMainActivity extends AppCompatActivity {
     }
 
     // interface để fragment nào thích thì implement
-    public interface ScrollToTop { void scrollToTop(); }
     public interface SupportsRefresh { void refresh(); }
 }

@@ -6,7 +6,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
@@ -16,17 +15,14 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.view.GravityCompat;
-import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Lifecycle;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.SimpleItemAnimator;
-import com.google.android.material.navigation.NavigationView;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.SessionManager;
@@ -37,7 +33,6 @@ import com.pro.milkteaapp.constants.FirestoreConstants;
 import com.pro.milkteaapp.generator.OrdersIDGenerator;
 import com.pro.milkteaapp.databinding.FragmentCartBinding;
 import com.pro.milkteaapp.fragment.bottomsheet.CheckoutBottomSheet;
-import com.pro.milkteaapp.models.Address;
 import com.pro.milkteaapp.models.CartItem;
 import com.pro.milkteaapp.models.CheckoutInfo;
 import com.pro.milkteaapp.repository.VouchersRepository;
@@ -46,7 +41,6 @@ import com.pro.milkteaapp.utils.CartFilterHelper;
 import com.pro.milkteaapp.utils.MoneyUtils;
 import com.pro.milkteaapp.utils.OrderPayloadBuilder;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -124,11 +118,7 @@ public class CartFragment extends Fragment
         // Setup drawer button click
         View btnDrawer = binding.getRoot().findViewById(R.id.btnDrawer);
         if (btnDrawer != null) {
-            btnDrawer.setOnClickListener(v -> {
-                if (binding.drawerLayout != null) {
-                    binding.drawerLayout.openDrawer(GravityCompat.END);
-                }
-            });
+            btnDrawer.setOnClickListener(v -> binding.drawerLayout.openDrawer(GravityCompat.END));
         }
     }
     
@@ -136,37 +126,33 @@ public class CartFragment extends Fragment
         if (binding == null || getContext() == null) return;
         
         // Setup drawer menu click
-        if (binding.navigationView != null) {
-            // Set default selection là ALL (sau khi menu đã được inflate)
-            binding.navigationView.post(() -> {
-                if (binding.navigationView != null && isAdded()) {
-                    binding.navigationView.setCheckedItem(R.id.menu_all);
-                }
-            });
-            
-            binding.navigationView.setNavigationItemSelectedListener(item -> {
-                int itemId = item.getItemId();
-                String filter = getString(R.string.filter_all);
-                
-                if (itemId == R.id.menu_all) {
-                    filter = getString(R.string.filter_all);
-                } else if (itemId == R.id.menu_products) {
-                    filter = getString(R.string.filter_products);
-                } else if (itemId == R.id.menu_combo) {
-                    filter = getString(R.string.filter_combo);
-                }
-                
-                // Cập nhật checked state
-                binding.navigationView.setCheckedItem(item.getItemId());
-                
-                filterCartItems(filter);
-                
-                if (binding.drawerLayout != null) {
-                    binding.drawerLayout.closeDrawer(GravityCompat.END);
-                }
-                return true;
-            });
-        }
+        // Set default selection là ALL (sau khi menu đã được inflate)
+        binding.navigationView.post(() -> {
+            if (isAdded()) {
+                binding.navigationView.setCheckedItem(R.id.menu_all);
+            }
+        });
+
+        binding.navigationView.setNavigationItemSelectedListener(item -> {
+            int itemId = item.getItemId();
+            String filter = getString(R.string.filter_all);
+
+            if (itemId == R.id.menu_all) {
+                filter = getString(R.string.filter_all);
+            } else if (itemId == R.id.menu_products) {
+                filter = getString(R.string.filter_products);
+            } else if (itemId == R.id.menu_combo) {
+                filter = getString(R.string.filter_combo);
+            }
+
+            // Cập nhật checked state
+            binding.navigationView.setCheckedItem(item.getItemId());
+
+            filterCartItems(filter);
+
+            binding.drawerLayout.closeDrawer(GravityCompat.END);
+            return true;
+        });
     }
     
     private void filterCartItems(@NonNull String filter) {
@@ -244,7 +230,7 @@ public class CartFragment extends Fragment
             if (!binding.checkoutButton.isEnabled()) return;
             if (!isAdded() || getContext() == null) return;
 
-            if (cartManager.isEmpty()) {
+            if (cartManager.getCartItems().isEmpty() && cartManager.getComboCartItems().isEmpty()) {
                 Toast.makeText(requireContext(), R.string.empty_cart, Toast.LENGTH_SHORT).show();
                 return;
             }
@@ -293,9 +279,10 @@ public class CartFragment extends Fragment
         for (CartItem item : cartManager.getCartItems()) total += item.getTotalPrice();
         for (com.pro.milkteaapp.models.ComboCartItem comboItem : cartManager.getComboCartItems()) total += comboItem.getTotalPrice();
         binding.totalTextView.setText(MoneyUtils.formatVnd(total));
-        binding.checkoutButton.setEnabled(!cartManager.isEmpty());
+        binding.checkoutButton.setEnabled(!cartManager.getCartItems().isEmpty() || !cartManager.getComboCartItems().isEmpty());
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     @Override public void onResume() {
         super.onResume();
         // KHÔNG gọi notifyDataSetChanged() để tránh chớp toàn list
@@ -390,7 +377,7 @@ public class CartFragment extends Fragment
     // ====== callback từ CheckoutBottomSheet ======
     @Override
     public void onCheckoutConfirmed(@NonNull CheckoutInfo info) {
-        Log.d(TAG, "Checkout address = " + info.address);
+        Log.d(TAG, "Checkout address = " + info.address());
         placeOrder(info);
     }
 
@@ -430,7 +417,7 @@ public class CartFragment extends Fragment
                         FirebaseFirestore.getInstance().collection(FirestoreConstants.COLLECTION_ORDERS).document(orderId).set(payload)
                                 .addOnSuccessListener(aVoid -> recordVoucherUsageIfNeeded(
                                         effectiveUserId, // ✅ đồng bộ với users/{USRxxxxx}
-                                        info.voucherCode,
+                                        info.voucherCode(),
                                         () -> {
                                             cartManager.clearAll();
                                             Toast.makeText(app, app.getString(R.string.order_placed_successfully), Toast.LENGTH_SHORT).show();

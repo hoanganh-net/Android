@@ -1,5 +1,6 @@
 package com.pro.milkteaapp.fragment.pickersheet;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -108,6 +109,7 @@ public class VoucherListPickerSheet extends BottomSheetDialogFragment {
 
     @Override public void onStart() {
         super.onStart();
+        assert getDialog() != null;
         View view = getDialog().findViewById(com.google.android.material.R.id.design_bottom_sheet);
         if (view != null) {
             view.getLayoutParams().height = (int) (getResources().getDisplayMetrics().heightPixels * 0.66f);
@@ -130,7 +132,7 @@ public class VoucherListPickerSheet extends BottomSheetDialogFragment {
                     if (v.getPointsRequired() != null && v.getPointsRequired() > 0) continue;
 
                     // Kiểm tra thời hạn
-                    if (!VoucherUtils.isInRangeNow(v)) continue;
+                    if (VoucherUtils.isInRangeNow(v)) continue;
                     if (v.getEndAt() != null && v.getEndAt().toDate().before(today0)) continue;
 
                     // Kiểm tra minOrder
@@ -184,8 +186,8 @@ public class VoucherListPickerSheet extends BottomSheetDialogFragment {
                     Iterator<Voucher> it = all.iterator();
                     while (it.hasNext()){
                         Voucher v = it.next();
-                        Long lim = (long) v.getPerUserLimit();
-                        if(lim != null && lim > 0){
+                        long lim = v.getPerUserLimit();
+                        if(lim > 0){
                             long cnt = used.getOrDefault(v.getId(), 0L);
                             if(cnt >= lim){
                                 it.remove();
@@ -198,6 +200,7 @@ public class VoucherListPickerSheet extends BottomSheetDialogFragment {
     }
 
     /** Áp dụng lọc theo chip loại */
+    @SuppressLint("NotifyDataSetChanged")
     private void applyFilter(){
         String type = null;
         int checked = chipGroup.getCheckedChipId();
@@ -268,18 +271,20 @@ public class VoucherListPickerSheet extends BottomSheetDialogFragment {
 
         private String buildBenefit(@NonNull Voucher v){
             String type = nz(v.getType());
-            if ("ORDER_FIXED".equals(type)) {
-                return "Giảm " + MoneyUtils.formatVnd(nzl(v.getAmount()));
-            }
-            if ("ORDER_PERCENT".equals(type)) {
-                long percent = nzl(v.getPercent());
-                long max = nzl(v.getMaxDiscount());
-                String s = "Giảm " + percent + "% tổng đơn";
-                if (max > 0) s += " (tối đa " + MoneyUtils.formatVnd(max) + ")";
-                return s;
-            }
-            if ("SHIPPING_FIXED".equals(type)) {
-                return "Giảm phí ship " + MoneyUtils.formatVnd(nzl(v.getAmount()));
+            switch (type) {
+                case "ORDER_FIXED" -> {
+                    return "Giảm " + MoneyUtils.formatVnd(nzl(v.getAmount()));
+                }
+                case "ORDER_PERCENT" -> {
+                    long percent = nzl(v.getPercent());
+                    long max = nzl(v.getMaxDiscount());
+                    String s = "Giảm " + percent + "% tổng đơn";
+                    if (max > 0) s += " (tối đa " + MoneyUtils.formatVnd(max) + ")";
+                    return s;
+                }
+                case "SHIPPING_FIXED" -> {
+                    return "Giảm phí ship " + MoneyUtils.formatVnd(nzl(v.getAmount()));
+                }
             }
             return "Ưu đãi";
         }

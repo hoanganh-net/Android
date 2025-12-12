@@ -3,7 +3,6 @@ package com.pro.milkteaapp.repository;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -30,38 +29,6 @@ public class CategoriesRepository {
     public void fetchActiveCategories(@NonNull OnCategoriesListener listener) {
         db.collection(FirestoreConstants.COLLECTION_CATEGORIES)
                 .whereEqualTo(FirestoreConstants.FIELD_ACTIVE, true)
-                .orderBy(FirestoreConstants.FIELD_NAME, Query.Direction.ASCENDING)
-                .get()
-                .addOnSuccessListener(snapshot -> {
-                    List<Category> categories = parseCategories(snapshot);
-                    listener.onCategoriesReceived(categories);
-                })
-                .addOnFailureListener(listener::onError);
-    }
-
-    /**
-     * Lắng nghe realtime tất cả categories đang active
-     */
-    public ListenerRegistration listenActiveCategories(@NonNull OnCategoriesListener listener) {
-        Query query = db.collection(FirestoreConstants.COLLECTION_CATEGORIES)
-                .whereEqualTo(FirestoreConstants.FIELD_ACTIVE, true)
-                .orderBy(FirestoreConstants.FIELD_NAME, Query.Direction.ASCENDING);
-
-        return query.addSnapshotListener((snapshot, error) -> {
-            if (error != null) {
-                listener.onError(error);
-                return;
-            }
-            List<Category> categories = parseCategories(snapshot);
-            listener.onCategoriesReceived(categories);
-        });
-    }
-
-    /**
-     * Lấy tất cả categories (bao gồm cả inactive)
-     */
-    public void fetchAllCategories(@NonNull OnCategoriesListener listener) {
-        db.collection(FirestoreConstants.COLLECTION_CATEGORIES)
                 .orderBy(FirestoreConstants.FIELD_NAME, Query.Direction.ASCENDING)
                 .get()
                 .addOnSuccessListener(snapshot -> {
@@ -136,9 +103,7 @@ public class CategoriesRepository {
         
         db.collection(FirestoreConstants.COLLECTION_CATEGORIES)
                 .add(data)
-                .addOnSuccessListener(documentReference -> {
-                    listener.onSuccess(documentReference.getId());
-                })
+                .addOnSuccessListener(documentReference -> listener.onSuccess(documentReference.getId()))
                 .addOnFailureListener(listener::onError);
     }
 

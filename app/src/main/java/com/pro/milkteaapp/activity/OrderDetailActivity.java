@@ -13,7 +13,6 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
-import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.Timestamp;
@@ -200,13 +199,13 @@ public class OrderDetailActivity extends AppCompatActivity {
             String line2 = s(addressObj.get("line2"));
             String city = s(addressObj.get("city"));
             String province = s(addressObj.get("province"));
-            String postal = s(addressObj.get("postalCode"));
             String display = s(addressObj.get("display"));
 
             b.tvReceiver.setText(join(" • ", name, phone));
+            // Không hiển thị postalCode - đã xóa khỏi UI
             b.tvAddressLines.setText(!TextUtils.isEmpty(display)
                     ? display
-                    : join(", ", line1, line2, city, province, postal));
+                    : join(", ", line1, line2, city, province));
         } else {
             b.tvReceiver.setText("—");
             b.tvAddressLines.setText(!TextUtils.isEmpty(addressStr) ? addressStr : getString(R.string.no_address));
@@ -312,21 +311,6 @@ public class OrderDetailActivity extends AppCompatActivity {
                 b.progress.setVisibility(View.GONE);
             }
         });
-    }
-
-    private void bindCancelBlockOnly(DocumentSnapshot d) {
-        if (d == null) return;
-        String reason = d.getString("cancelReason");
-        Timestamp canceledAt = d.getTimestamp("canceledAt");
-        b.cardCancelInfo.setVisibility(View.VISIBLE);
-        b.tvCancelReason.setText(!TextUtils.isEmpty(reason) ? reason : "—");
-        if (canceledAt != null) {
-            String timeStr = DateFormat.getMediumDateFormat(this).format(canceledAt.toDate())
-                    + " " + DateFormat.getTimeFormat(this).format(canceledAt.toDate());
-            b.tvCanceledAt.setText(String.format(Locale.getDefault(), "Thời gian hủy: %s", timeStr));
-        } else {
-            b.tvCanceledAt.setText("");
-        }
     }
 
     private static String s(Object o) { return o == null ? "" : String.valueOf(o).trim(); }

@@ -1,6 +1,6 @@
 package com.pro.milkteaapp.activity;
 
-import android.content.Intent;
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.widget.Toast;
@@ -8,7 +8,6 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.SessionManager;
@@ -51,8 +50,7 @@ public class RedeemVoucherActivity extends AppCompatActivity {
         loadRedeemableVouchers();
     }
 
-    private android.widget.TextView customTitleView;
-    
+    @SuppressLint("SetTextI18n")
     private void setupToolbar() {
         setSupportActionBar(binding.toolbar);
         binding.toolbar.setNavigationOnClickListener(v -> finish());
@@ -97,6 +95,7 @@ public class RedeemVoucherActivity extends AppCompatActivity {
         }
 
         rewardRepo.getRewardPoints(userId, new RewardPointsRepository.OnRewardPointsListener() {
+            @SuppressLint("SetTextI18n")
             @Override
             public void onSuccess(long totalPoints) {
                 currentRewardPoints = totalPoints;
@@ -114,12 +113,18 @@ public class RedeemVoucherActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Load danh sách voucher có thể đổi bằng điểm.
+     * Lưu ý: Voucher đổi điểm có thể đổi nhiều lần, miễn là voucher còn active và user có đủ điểm.
+     * perUserLimit chỉ áp dụng khi SỬ DỤNG voucher (checkout), không áp dụng khi ĐỔI voucher.
+     */
     private void loadRedeemableVouchers() {
         vouchersRepo.fetchActiveVouchers(new VouchersRepository.OnVouchersListener() {
             @Override
             public void onVouchersReceived(@NonNull List<Voucher> vouchers) {
                 redeemableVouchers.clear();
                 // Chỉ hiển thị các voucher có thể đổi bằng điểm (có field pointsRequired > 0)
+                // Không kiểm tra perUserLimit ở đây vì perUserLimit chỉ áp dụng khi sử dụng voucher, không phải khi đổi
                 for (Voucher v : vouchers) {
                     if (v.getPointsRequired() != null && v.getPointsRequired() > 0) {
                         redeemableVouchers.add(v);
@@ -140,6 +145,15 @@ public class RedeemVoucherActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Đổi voucher bằng điểm.
+     * Logic: Voucher đổi điểm có thể đổi nhiều lần, chỉ cần:
+     * - Voucher còn active (đã được kiểm tra trong loadRedeemableVouchers)
+     * - User có đủ điểm (đã được kiểm tra trước khi gọi method này)
+     * <p>
+     * perUserLimit KHÔNG được kiểm tra ở đây vì nó chỉ áp dụng khi SỬ DỤNG voucher (checkout),
+     * không áp dụng khi ĐỔI voucher.
+     */
     private void redeemVoucher(@NonNull Voucher voucher, long pointsRequired) {
         String userId = session.getUid();
         if (TextUtils.isEmpty(userId)) {
@@ -149,6 +163,7 @@ public class RedeemVoucherActivity extends AppCompatActivity {
 
         rewardRepo.redeemRewardPoints(userId, pointsRequired, voucher.getId(), 
                 new RewardPointsRepository.OnRewardPointsListener() {
+            @SuppressLint("SetTextI18n")
             @Override
             public void onSuccess(long remainingPoints) {
                 currentRewardPoints = remainingPoints;

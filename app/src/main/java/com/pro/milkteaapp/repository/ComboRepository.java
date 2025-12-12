@@ -14,7 +14,6 @@ import com.pro.milkteaapp.models.Combo;
 import com.pro.milkteaapp.models.Product;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -103,37 +102,6 @@ public class ComboRepository {
                     } else {
                         listener.onError(new Exception("Combo not found"));
                     }
-                })
-                .addOnFailureListener(listener::onError);
-    }
-
-    /**
-     * Tìm kiếm combos theo tên (searchableName)
-     */
-    public void searchCombos(@NonNull String query, @NonNull OnCombosListener listener) {
-        String searchQuery = query.toLowerCase().trim();
-        db.collection(FirestoreConstants.COLLECTION_COMBOS)
-                .whereGreaterThanOrEqualTo(FirestoreConstants.FIELD_COMBO_SEARCHABLE_NAME, searchQuery)
-                .whereLessThanOrEqualTo(FirestoreConstants.FIELD_COMBO_SEARCHABLE_NAME, searchQuery + "\uf8ff")
-                .get()
-                .addOnSuccessListener(snapshot -> {
-                    List<Combo> combos = parseCombos(snapshot);
-                    listener.onCombosReceived(combos);
-                })
-                .addOnFailureListener(listener::onError);
-    }
-
-    /**
-     * Lấy top combos (limit số lượng)
-     */
-    public void fetchTopCombos(int limit, @NonNull OnCombosListener listener) {
-        db.collection(FirestoreConstants.COLLECTION_COMBOS)
-                .whereEqualTo(FirestoreConstants.FIELD_COMBO_STATUS, FirestoreConstants.STATUS_ACTIVE)
-                .limit(limit)
-                .get()
-                .addOnSuccessListener(snapshot -> {
-                    List<Combo> combos = parseCombos(snapshot);
-                    listener.onCombosReceived(combos);
                 })
                 .addOnFailureListener(listener::onError);
     }

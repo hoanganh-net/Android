@@ -1,5 +1,6 @@
 package com.pro.milkteaapp.fragment.pickersheet;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -28,12 +29,8 @@ import com.pro.milkteaapp.utils.VoucherUtils;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 /**
  * Bottom sheet để chọn voucher đã đổi từ reward points
@@ -79,7 +76,7 @@ public class RewardVoucherPickerSheet extends BottomSheetDialogFragment {
     // ===== Repository =====
     private VouchersRepository vouchersRepository;
     private ListenerRegistration reg;
-    private FirebaseFirestore db = FirebaseFirestore.getInstance();
+    private final FirebaseFirestore db = FirebaseFirestore.getInstance();
 
     @Nullable @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle s) {
@@ -111,6 +108,7 @@ public class RewardVoucherPickerSheet extends BottomSheetDialogFragment {
 
     @Override public void onStart() {
         super.onStart();
+        assert getDialog() != null;
         View view = getDialog().findViewById(com.google.android.material.R.id.design_bottom_sheet);
         if (view != null) {
             view.getLayoutParams().height = (int) (getResources().getDisplayMetrics().heightPixels * 0.66f);
@@ -182,7 +180,7 @@ public class RewardVoucherPickerSheet extends BottomSheetDialogFragment {
                 @Override
                 public void onVoucherReceived(@NonNull Voucher voucher) {
                     // Kiểm tra điều kiện: thời hạn, min order, kênh thanh toán
-                    if (!VoucherUtils.isInRangeNow(voucher)) {
+                    if (VoucherUtils.isInRangeNow(voucher)) {
                         loadedCount[0]++;
                         if (loadedCount[0] == totalCount) applyFilter();
                         return;
@@ -233,6 +231,7 @@ public class RewardVoucherPickerSheet extends BottomSheetDialogFragment {
     }
 
     /** Áp dụng lọc theo chip loại */
+    @SuppressLint("NotifyDataSetChanged")
     private void applyFilter(){
         String type = null;
         int checked = chipGroup.getCheckedChipId();
@@ -303,18 +302,20 @@ public class RewardVoucherPickerSheet extends BottomSheetDialogFragment {
 
         private String buildBenefit(@NonNull Voucher v){
             String type = nz(v.getType());
-            if ("ORDER_FIXED".equals(type)) {
-                return "Giảm " + MoneyUtils.formatVnd(nzl(v.getAmount()));
-            }
-            if ("ORDER_PERCENT".equals(type)) {
-                long percent = nzl(v.getPercent());
-                long max = nzl(v.getMaxDiscount());
-                String s = "Giảm " + percent + "% tổng đơn";
-                if (max > 0) s += " (tối đa " + MoneyUtils.formatVnd(max) + ")";
-                return s;
-            }
-            if ("SHIPPING_FIXED".equals(type)) {
-                return "Giảm phí ship " + MoneyUtils.formatVnd(nzl(v.getAmount()));
+            switch (type) {
+                case "ORDER_FIXED" -> {
+                    return "Giảm " + MoneyUtils.formatVnd(nzl(v.getAmount()));
+                }
+                case "ORDER_PERCENT" -> {
+                    long percent = nzl(v.getPercent());
+                    long max = nzl(v.getMaxDiscount());
+                    String s = "Giảm " + percent + "% tổng đơn";
+                    if (max > 0) s += " (tối đa " + MoneyUtils.formatVnd(max) + ")";
+                    return s;
+                }
+                case "SHIPPING_FIXED" -> {
+                    return "Giảm phí ship " + MoneyUtils.formatVnd(nzl(v.getAmount()));
+                }
             }
             return "Ưu đãi";
         }

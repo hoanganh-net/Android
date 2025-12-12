@@ -1,5 +1,6 @@
 package com.pro.milkteaapp.utils;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.net.Uri;
 import android.text.TextUtils;
@@ -87,7 +88,7 @@ public final class ImageLoader {
                     .replace(' ', '_')
                     .replace('-', '_');
             
-            int resId = ctx.getResources().getIdentifier(drawableName, "drawable", ctx.getPackageName());
+            @SuppressLint("DiscouragedApi") int resId = ctx.getResources().getIdentifier(drawableName, "drawable", ctx.getPackageName());
             if (resId != 0) {
                 Glide.with(ctx)
                         .load(resId)

@@ -22,6 +22,7 @@ import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.databinding.ItemProductBinding;
 import com.pro.milkteaapp.models.Product;
 import com.pro.milkteaapp.utils.MoneyUtils;
+import com.pro.milkteaapp.utils.StringUtils;
 
 import java.util.Locale;
 import java.util.Objects;
@@ -74,15 +75,15 @@ public class ProductAdapter extends ListAdapter<Product, ProductAdapter.ViewHold
                     if (!TextUtils.isEmpty(oldId) && !TextUtils.isEmpty(newId)) {
                         return oldId.equals(newId);
                     }
-                    String oldKey = safe(oldItem.getName()) + "_" + oldItem.getPrice();
-                    String newKey = safe(newItem.getName()) + "_" + newItem.getPrice();
+                    String oldKey = StringUtils.safe(oldItem.getName()) + "_" + oldItem.getPrice();
+                    String newKey = StringUtils.safe(newItem.getName()) + "_" + newItem.getPrice();
                     return oldKey.equals(newKey);
                 }
 
                 @Override
                 public boolean areContentsTheSame(@NonNull Product oldItem, @NonNull Product newItem) {
                     return Objects.equals(oldItem.getName(), newItem.getName())
-                            && oldItem.getPrice() == newItem.getPrice()
+                            && Objects.equals(oldItem.getPrice(), newItem.getPrice())
                             && Objects.equals(oldItem.getImageUrl(), newItem.getImageUrl())
                             && Objects.equals(oldItem.getDescription(), newItem.getDescription())
                             && Objects.equals(oldItem.getCategory(), newItem.getCategory());
@@ -95,7 +96,7 @@ public class ProductAdapter extends ListAdapter<Product, ProductAdapter.ViewHold
         if (p == null) return RecyclerView.NO_ID;
         String key = !TextUtils.isEmpty(p.getId())
                 ? p.getId()
-                : (safe(p.getName()) + "_" + p.getPrice());
+                : (StringUtils.safe(p.getName()) + "_" + p.getPrice());
         return key.hashCode();
     }
 
@@ -271,7 +272,6 @@ public class ProductAdapter extends ListAdapter<Product, ProductAdapter.ViewHold
         return null;
     }
 
-    private static String safe(String s) { return s == null ? "" : s; }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         final ItemProductBinding binding;

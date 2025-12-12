@@ -34,6 +34,7 @@ import com.pro.milkteaapp.models.Product;
 import com.pro.milkteaapp.repository.CategoriesRepository;
 import com.pro.milkteaapp.repository.ProductRepository;
 import com.pro.milkteaapp.utils.ProductSearchHelper;
+import com.pro.milkteaapp.utils.StringUtils;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -169,18 +170,12 @@ public class ProductFragment extends Fragment implements ProductSectionAdapter.O
         });
     }
 
-    // Method này không còn cần thiết vì Repository đã parse sẵn
-    // Giữ lại để tương thích nếu có code khác gọi
-    @Deprecated
-    private void fillProductFromSnapshot(@Nullable Object snapshot) {
-        // Không còn sử dụng, logic đã được chuyển vào Repository
-    }
 
     private void ensureCategoriesIfEmpty() {
         if (!categories.isEmpty()) return;
         LinkedHashMap<String, Boolean> seen = new LinkedHashMap<>();
         for (Product p : allProduct) {
-            String cat = norm(safe(p.getCategory()));
+            String cat = StringUtils.normalize(p.getCategory());
             if (!cat.isEmpty() && !seen.containsKey(cat)) seen.put(cat, true);
         }
         categories.addAll(seen.keySet());
@@ -307,7 +302,7 @@ public class ProductFragment extends Fragment implements ProductSectionAdapter.O
         if (categories != null) {
             for (String p : preferred) {
                 for (String s : categories) {
-                    if (norm(s).equals(norm(p))) {
+                    if (StringUtils.normalize(s).equals(StringUtils.normalize(p))) {
                         result.add(s);
                         break;
                     }
@@ -316,7 +311,7 @@ public class ProductFragment extends Fragment implements ProductSectionAdapter.O
             for (String s : categories) {
                 boolean already = false;
                 for (String r : result) {
-                    if (norm(r).equals(norm(s))) {
+                    if (StringUtils.normalize(r).equals(StringUtils.normalize(s))) {
                         already = true;
                         break;
                     }
@@ -382,7 +377,4 @@ public class ProductFragment extends Fragment implements ProductSectionAdapter.O
         sheet.show(getParentFragmentManager(), "product_detail_sheet");
     }
 
-    // ===== Combo Section =====
-    private static String safe(String s){ return s == null ? "" : s; }
-    private static String norm(String s) { return s == null ? "" : s.trim().toLowerCase(Locale.getDefault()); }
 }

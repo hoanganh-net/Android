@@ -25,21 +25,6 @@ public class OrdersRepository {
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
 
     /**
-     * Lấy tất cả orders của một user
-     */
-    public void fetchOrdersByUserId(@NonNull String userId, @NonNull OnOrdersListener listener) {
-        db.collection(FirestoreConstants.COLLECTION_ORDERS)
-                .whereEqualTo(FirestoreConstants.FIELD_USER_ID, userId)
-                .orderBy(FirestoreConstants.FIELD_CREATED_AT, Query.Direction.DESCENDING)
-                .get()
-                .addOnSuccessListener(snapshot -> {
-                    List<Order> orders = parseOrders(snapshot);
-                    listener.onOrdersReceived(orders);
-                })
-                .addOnFailureListener(listener::onError);
-    }
-
-    /**
      * Lắng nghe realtime orders của một user
      */
     public ListenerRegistration listenOrdersByUserId(@NonNull String userId, @NonNull OnOrdersListener listener) {
@@ -55,37 +40,6 @@ public class OrdersRepository {
             List<Order> orders = parseOrders(snapshot);
             listener.onOrdersReceived(orders);
         });
-    }
-
-    /**
-     * Lấy orders theo status
-     */
-    public void fetchOrdersByStatus(@NonNull String status, @NonNull OnOrdersListener listener) {
-        db.collection(FirestoreConstants.COLLECTION_ORDERS)
-                .whereEqualTo(FirestoreConstants.FIELD_ORDER_STATUS, status)
-                .orderBy(FirestoreConstants.FIELD_CREATED_AT, Query.Direction.DESCENDING)
-                .get()
-                .addOnSuccessListener(snapshot -> {
-                    List<Order> orders = parseOrders(snapshot);
-                    listener.onOrdersReceived(orders);
-                })
-                .addOnFailureListener(listener::onError);
-    }
-
-    /**
-     * Lấy orders của user theo status
-     */
-    public void fetchUserOrdersByStatus(@NonNull String userId, @NonNull String status, @NonNull OnOrdersListener listener) {
-        db.collection(FirestoreConstants.COLLECTION_ORDERS)
-                .whereEqualTo(FirestoreConstants.FIELD_USER_ID, userId)
-                .whereEqualTo(FirestoreConstants.FIELD_ORDER_STATUS, status)
-                .orderBy(FirestoreConstants.FIELD_CREATED_AT, Query.Direction.DESCENDING)
-                .get()
-                .addOnSuccessListener(snapshot -> {
-                    List<Order> orders = parseOrders(snapshot);
-                    listener.onOrdersReceived(orders);
-                })
-                .addOnFailureListener(listener::onError);
     }
 
     /**
@@ -106,20 +60,6 @@ public class OrdersRepository {
                     } else {
                         listener.onError(new Exception("Order not found"));
                     }
-                })
-                .addOnFailureListener(listener::onError);
-    }
-
-    /**
-     * Lấy tất cả orders (dành cho admin)
-     */
-    public void fetchAllOrders(@NonNull OnOrdersListener listener) {
-        db.collection(FirestoreConstants.COLLECTION_ORDERS)
-                .orderBy(FirestoreConstants.FIELD_CREATED_AT, Query.Direction.DESCENDING)
-                .get()
-                .addOnSuccessListener(snapshot -> {
-                    List<Order> orders = parseOrders(snapshot);
-                    listener.onOrdersReceived(orders);
                 })
                 .addOnFailureListener(listener::onError);
     }
@@ -232,21 +172,6 @@ public class OrdersRepository {
                 .addOnSuccessListener(aVoid -> listener.onSuccess())
                 .addOnFailureListener(listener::onError);
     }
-
-    /**
-     * Cập nhật status của order
-     */
-    public void updateOrderStatus(@NonNull String orderId, @NonNull String status, @NonNull OnOrderUpdateListener listener) {
-        db.collection(FirestoreConstants.COLLECTION_ORDERS)
-                .document(orderId)
-                .update(FirestoreConstants.FIELD_ORDER_STATUS, status)
-                .addOnSuccessListener(aVoid -> listener.onSuccess())
-                .addOnFailureListener(listener::onError);
-    }
-
-    /**
-     * Hủy order (cập nhật status, cancelReason, canceledAt)
-     */
     public void cancelOrder(@NonNull String orderId, @Nullable String cancelReason, @NonNull OnOrderUpdateListener listener) {
         db.collection(FirestoreConstants.COLLECTION_ORDERS)
                 .document(orderId)

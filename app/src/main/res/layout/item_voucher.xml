@@ -100,43 +100,30 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
+                android:paddingEnd="50dp"
                 app:singleSelection="false"
                 app:singleLine="true"
                 app:chipSpacingHorizontal="4dp"
                 app:chipSpacingVertical="0dp" />
 
-            <!-- Actions xếp dọc -->
-            <LinearLayout
-                android:orientation="vertical"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp">
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnEdit"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp"
-                    app:icon="@drawable/ic_edit"
-                    app:iconTint="@color/white"
-                    app:backgroundTint="@color/primary"
-                    app:iconGravity="start"
-                    style="@style/Widget.MaterialComponents.Button.Icon" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnDelete"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_marginTop="4dp"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp"
-                    app:icon="@drawable/ic_delete"
-                    app:iconTint="@color/white"
-                    app:iconGravity="start"
-                    app:backgroundTint="@color/error_red"
-                    style="@style/Widget.MaterialComponents.Button.Icon" />
-            </LinearLayout>
+            <!-- Nút Delete ở góc trên bên phải -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnDelete"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:gravity="center"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:insetLeft="0dp"
+                android:insetRight="0dp"
+                android:padding="10dp"
+                app:icon="@drawable/ic_delete"
+                app:iconTint="@color/white"
+                app:iconSize="20dp"
+                app:backgroundTint="@color/error_red"
+                app:cornerRadius="20dp"
+                style="@style/Widget.Material3.Button.IconButton.Filled"
+                app:iconPadding="0dp" />
         </LinearLayout>
 
     </LinearLayout>

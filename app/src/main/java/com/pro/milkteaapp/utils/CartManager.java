@@ -48,10 +48,6 @@ public class CartManager {
         }
     }
     
-    public void clearCartItems() {
-        cartItems.clear();
-    }
-    
     public int getCartItemsCount() {
         return cartItems.size();
     }
@@ -73,23 +69,8 @@ public class CartManager {
         }
     }
     
-    public void clearComboCartItems() {
-        comboCartItems.clear();
-    }
-    
     public int getComboCartItemsCount() {
         return comboCartItems.size();
-    }
-    
-    // ===== Combined Operations =====
-    
-    public boolean isEmpty() {
-        return cartItems.isEmpty() && comboCartItems.isEmpty();
-    }
-    
-    public void clearAll() {
-        cartItems.clear();
-        comboCartItems.clear();
     }
     
     /**
@@ -116,6 +97,16 @@ public class CartManager {
             }
         }
         return -1;
+    }
+    
+    // ===== Combined Operations =====
+    
+    /**
+     * Xóa tất cả items trong cart (cả cart items và combo cart items)
+     */
+    public void clearAll() {
+        cartItems.clear();
+        comboCartItems.clear();
     }
 }
 

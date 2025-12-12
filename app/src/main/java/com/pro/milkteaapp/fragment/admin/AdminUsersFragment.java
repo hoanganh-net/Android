@@ -1,7 +1,9 @@
 package com.pro.milkteaapp.fragment.admin;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.text.Editable;
@@ -12,7 +14,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -37,17 +38,15 @@ import com.pro.milkteaapp.activity.admin.AdminMainActivity;
 import com.pro.milkteaapp.interfaces.AddActionHandler;
 import com.pro.milkteaapp.models.User;
 import com.pro.milkteaapp.repository.UsersRepository;
+import com.pro.milkteaapp.utils.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
 
 public class AdminUsersFragment extends Fragment
-        implements AdminMainActivity.ScrollToTop, AdminMainActivity.SupportsRefresh, AddActionHandler {
+        implements AdminMainActivity.SupportsRefresh, AddActionHandler {
 
     // Views
     private SwipeRefreshLayout swipe;
@@ -228,7 +227,7 @@ public class AdminUsersFragment extends Fragment
         for (User u : fullList) {
             // Filter by role first
             if (!"Tất cả".equals(selectedRole)) {
-                String userRole = safe(u.getRole());
+                String userRole = StringUtils.normalize(u.getRole());
                 if (!selectedRole.equalsIgnoreCase(userRole)) {
                     continue;
                 }
@@ -238,11 +237,11 @@ public class AdminUsersFragment extends Fragment
             if (qq.isEmpty()) {
                 filtered.add(u);
             } else {
-                String name = safe(u.getFullName());
-                String email = safe(u.getEmail());
-                String role = safe(u.getRole());
-                String phone = safe(u.getPhone());
-                String address = safe(u.getAddress());
+                String name = StringUtils.normalize(u.getFullName());
+                String email = StringUtils.normalize(u.getEmail());
+                String role = StringUtils.normalize(u.getRole());
+                String phone = StringUtils.normalize(u.getPhone());
+                String address = StringUtils.normalize(u.getAddress());
                 if (name.contains(qq) || email.contains(qq) || role.contains(qq) || phone.contains(qq) || address.contains(qq)) {
                     filtered.add(u);
                 }
@@ -264,97 +263,12 @@ public class AdminUsersFragment extends Fragment
         if (empty != null) empty.setVisibility(View.GONE);
     }
 
-    @Override
-    public void scrollToTop() {
-        if (recycler != null) recycler.smoothScrollToPosition(0);
-    }
-
-    // ===== Edit dialog =====
-    private void showEditDialog(User u) {
-        if (!isAdded()) return;
-
-        View content = LayoutInflater.from(requireContext()).inflate(R.layout._dialog_edit_user, null, false);
-        com.google.android.material.textfield.TextInputEditText etName    = content.findViewById(R.id.etName);
-        com.google.android.material.textfield.TextInputEditText etEmail   = content.findViewById(R.id.etEmail);
-        com.google.android.material.textfield.TextInputEditText etPhone   = content.findViewById(R.id.etPhone);
-        com.google.android.material.textfield.TextInputEditText etAddress = content.findViewById(R.id.etAddress);
-        Spinner spRole     = content.findViewById(R.id.spRole);
-
-        // Prefill
-        etName.setText(safeShow(u.getFullName()));
-        etName.setSelection(Objects.requireNonNull(etName.getText()).length());
-        etName.setFilters(new InputFilter[]{ new InputFilter.LengthFilter(60) });
-
-        etEmail.setText(safeShow(u.getEmail()));
-        etPhone.setText(safeShow(u.getPhone()));
-        etAddress.setText(safeShow(u.getAddress()));
-
-        List<String> roles = Arrays.asList("admin", "user", "manager", "staff");
-        ArrayAdapter<String> roleAdapter = new ArrayAdapter<>(requireContext(),
-                android.R.layout.simple_spinner_dropdown_item, roles);
-        spRole.setAdapter(roleAdapter);
-
-        int idx = roles.indexOf(safeShow(u.getRole()).toLowerCase(Locale.ROOT));
-        if (idx < 0) idx = roles.indexOf("user");
-        spRole.setSelection(idx);
-
-        new AlertDialog.Builder(requireContext())
-                .setTitle("Sửa người dùng")
-                .setView(content)
-                .setPositiveButton("Lưu", (d, which) -> {
-                    String newName    = getTextOrEmpty(etName);
-                    String newEmail   = getTextOrEmpty(etEmail);
-                    String newPhone   = getTextOrEmpty(etPhone);
-                    String newAddress = getTextOrEmpty(etAddress);
-                    String newRole    = roles.get(spRole.getSelectedItemPosition());
-
-                    if (TextUtils.isEmpty(newName)) {
-                        toast("Tên không được để trống");
-                        return;
-                    }
-                    if (!TextUtils.isEmpty(newEmail) && !android.util.Patterns.EMAIL_ADDRESS.matcher(newEmail).matches()) {
-                        toast("Email không hợp lệ");
-                        return;
-                    }
-                    updateUser(u.getUid(), newName, newEmail, newPhone, newAddress, newRole);
-                })
-                .setNegativeButton("Hủy", null)
-                .show();
-    }
-
-    private void updateUser(String userId,
-                            String newName,
-                            String newEmail,
-                            String newPhone,
-                            String newAddress,
-                            String newRole) {
-        if (TextUtils.isEmpty(userId)) {
-            toast("ID không hợp lệ");
-            return;
-        }
-        showLoading(true);
-
-        Map<String, Object> data = new HashMap<>();
-        data.put("fullName", newName);
-        data.put("email", newEmail);   // đổi ở Firestore, không đổi Firebase Auth
-        data.put("phone", newPhone);
-        data.put("address", newAddress);
-        data.put("role", newRole);
-
-        showLoading(true);
-        usersRepository.updateUser(userId, data, new UsersRepository.OnUserUpdateListener() {
-            @Override
-            public void onSuccess() {
-                showLoading(false);
-                toast("Đã cập nhật người dùng");
-            }
-
-            @Override
-            public void onError(@NonNull Exception error) {
-                showLoading(false);
-                toast("Cập nhật thất bại: " + error.getMessage());
-            }
-        });
+    // ===== Open User Editor =====
+    private void openUserEditor(User u) {
+        if (!isAdded() || u == null || TextUtils.isEmpty(u.getUid())) return;
+        Intent intent = new Intent(requireContext(), com.pro.milkteaapp.activity.admin.UserEditorActivity.class);
+        intent.putExtra(com.pro.milkteaapp.activity.admin.UserEditorActivity.EXTRA_USER_ID, u.getUid());
+        startActivity(intent);
     }
 
     private void confirmDelete(User u) {
@@ -396,9 +310,7 @@ public class AdminUsersFragment extends Fragment
         }
     }
 
-    private String safe(String s) { return (s == null ? "" : s).trim().toLowerCase(Locale.ROOT); }
     private String safeShow(String s) { return s == null ? "" : s; }
-    private String getTextOrEmpty(EditText et) { return et.getText() == null ? "" : et.getText().toString().trim(); }
 
     // ====== Search debounce ======
     private final Runnable searchRunnable = () -> {
@@ -436,7 +348,11 @@ public class AdminUsersFragment extends Fragment
                         safeShow(oldItem.getEmail()).equals(safeShow(newItem.getEmail())) &&
                         safeShow(oldItem.getRole()).equals(safeShow(newItem.getRole())) &&
                         safeShow(oldItem.getPhone()).equals(safeShow(newItem.getPhone())) &&
-                        safeShow(oldItem.getAddress()).equals(safeShow(newItem.getAddress()));
+                        safeShow(oldItem.getAddress()).equals(safeShow(newItem.getAddress())) &&
+                        oldItem.isActive() == newItem.isActive() &&
+                        oldItem.getLoyaltyPoints() == newItem.getLoyaltyPoints() &&
+                        oldItem.getRewardPoints() == newItem.getRewardPoints() &&
+                        safeShow(oldItem.getLoyaltyTier()).equals(safeShow(newItem.getLoyaltyTier()));
             }
         };
 
@@ -474,7 +390,8 @@ public class AdminUsersFragment extends Fragment
     private class UserVH extends RecyclerView.ViewHolder {
         private final TextView tvDisplayName, tvEmail, tvRole;
         private final TextView tvPhone, tvAddress;
-        private final View btnEdit, btnDelete;
+        private final TextView tvActiveStatus, tvLoyaltyTier, tvLoyaltyPoints, tvRewardPoints;
+        private final View btnDelete;
 
         public UserVH(@NonNull View itemView) {
             super(itemView);
@@ -483,10 +400,14 @@ public class AdminUsersFragment extends Fragment
             tvRole = itemView.findViewById(R.id.tvRole);
             tvPhone = itemView.findViewById(R.id.tvPhone);
             tvAddress = itemView.findViewById(R.id.tvAddress);
-            btnEdit = itemView.findViewById(R.id.btnEdit);
+            tvActiveStatus = itemView.findViewById(R.id.tvActiveStatus);
+            tvLoyaltyTier = itemView.findViewById(R.id.tvLoyaltyTier);
+            tvLoyaltyPoints = itemView.findViewById(R.id.tvLoyaltyPoints);
+            tvRewardPoints = itemView.findViewById(R.id.tvRewardPoints);
             btnDelete = itemView.findViewById(R.id.btnDelete);
         }
 
+        @SuppressLint("SetTextI18n")
         void bind(User u) {
             final Context ctx = itemView.getContext();
 
@@ -521,7 +442,45 @@ public class AdminUsersFragment extends Fragment
             int hPad = dp(ctx, 8), vPad = dp(ctx, 4);
             tvRole.setPadding(hPad, vPad, hPad, vPad);
 
-            btnEdit.setOnClickListener(v -> showEditDialog(u));
+            // Trạng thái Active
+            boolean isActive = u.isActive();
+            if (tvActiveStatus != null) {
+                if (isActive) {
+                    tvActiveStatus.setText("Đã kích hoạt");
+                    tvActiveStatus.setTextColor(ContextCompat.getColor(ctx, R.color.success_color));
+                    tvActiveStatus.setBackground(ContextCompat.getDrawable(ctx, R.drawable.bg_role_user));
+                } else {
+                    tvActiveStatus.setText("Đã vô hiệu hóa");
+                    tvActiveStatus.setTextColor(ContextCompat.getColor(ctx, R.color.error_red));
+                    tvActiveStatus.setBackground(ContextCompat.getDrawable(ctx, R.drawable.bg_role_other));
+                }
+                int statusPad = dp(ctx, 6);
+                tvActiveStatus.setPadding(statusPad, dp(ctx, 2), statusPad, dp(ctx, 2));
+            }
+
+            // Cấp độ thành viên
+            String loyaltyTier = safeShow(u.getLoyaltyTier());
+            if (TextUtils.isEmpty(loyaltyTier)) {
+                loyaltyTier = "Chưa xếp hạng";
+            }
+            if (tvLoyaltyTier != null) {
+                tvLoyaltyTier.setText("Cấp độ: " + loyaltyTier);
+            }
+
+            // Điểm thành viên
+            long loyaltyPoints = u.getLoyaltyPoints();
+            if (tvLoyaltyPoints != null) {
+                tvLoyaltyPoints.setText("Điểm tích lũy: " + loyaltyPoints);
+            }
+
+            // Điểm đổi quà
+            long rewardPoints = u.getRewardPoints();
+            if (tvRewardPoints != null) {
+                tvRewardPoints.setText("Điểm đổi quà: " + rewardPoints);
+            }
+
+            // Item click để mở editor
+            itemView.setOnClickListener(v -> openUserEditor(u));
             btnDelete.setOnClickListener(v -> confirmDelete(u));
         }
 

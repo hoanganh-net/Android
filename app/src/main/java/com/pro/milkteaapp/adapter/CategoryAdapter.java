@@ -7,6 +7,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+import com.google.android.material.button.MaterialButton;
 
 import androidx.annotation.LayoutRes;
 import androidx.annotation.NonNull;
@@ -17,6 +18,7 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.models.Category;
+import com.pro.milkteaapp.utils.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -51,15 +53,15 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.VH> {
             @Override public int getOldListSize() { return old.size(); }
             @Override public int getNewListSize() { return copy.size(); }
             @Override public boolean areItemsTheSame(int i, int j) {
-                String a = safe(old.get(i).getId());
-                String b = safe(copy.get(j).getId());
+                String a = StringUtils.safe(old.get(i).getId());
+                String b = StringUtils.safe(copy.get(j).getId());
                 return !TextUtils.isEmpty(a) && a.equals(b);
             }
             @Override public boolean areContentsTheSame(int i, int j) {
                 Category A = old.get(i), B = copy.get(j);
-                return Objects.equals(safe(A.getName()), safe(B.getName()))
+                return Objects.equals(StringUtils.safe(A.getName()), StringUtils.safe(B.getName()))
                         && A.isActive() == B.isActive()
-                        && Objects.equals(safe(A.getImageUrl()), safe(B.getImageUrl()));
+                        && Objects.equals(StringUtils.safe(A.getImageUrl()), StringUtils.safe(B.getImageUrl()));
             }
         });
         this.list = copy;
@@ -72,7 +74,7 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.VH> {
     public long getItemId(int position) {
         if (position < 0 || position >= list.size()) return RecyclerView.NO_ID;
         String id = list.get(position).getId();
-        return !TextUtils.isEmpty(id) ? id.hashCode() : safe(list.get(position).getName()).hashCode();
+        return !TextUtils.isEmpty(id) ? id.hashCode() : StringUtils.safe(list.get(position).getName()).hashCode();
     }
 
     @Override
@@ -91,7 +93,7 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.VH> {
     @Override
     public void onBindViewHolder(@NonNull VH h, int position) {
         Category c = list.get(position);
-        h.bind(c);
+        h.bind(c, listener);
     }
 
     @Override
@@ -99,12 +101,12 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.VH> {
 
     /* =================================================== */
 
-    class VH extends RecyclerView.ViewHolder {
+    static class VH extends RecyclerView.ViewHolder {
         TextView tvName;
         ImageView img;
         // Admin-only
         TextView tvActive;
-        ImageView btnEdit, btnDelete;
+        MaterialButton btnDelete;
         final boolean admin;
 
         VH(@NonNull View itemView, boolean admin) {
@@ -114,15 +116,17 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.VH> {
             img    = itemView.findViewById(R.id.categoryImage);
             if (admin) {
                 tvActive = itemView.findViewById(R.id.tvActive);
-                btnEdit  = itemView.findViewById(R.id.btnEdit);
-                btnDelete= itemView.findViewById(R.id.btnDelete);
+                View deleteView = itemView.findViewById(R.id.btnDelete);
+                if (deleteView instanceof MaterialButton) {
+                    btnDelete = (MaterialButton) deleteView;
+                }
             }
         }
 
-        void bind(Category c) {
-            tvName.setText(safe(c.getName()));
+        void bind(Category c, OnCategoryActionListener listener) {
+            tvName.setText(StringUtils.safe(c.getName()));
 
-            String key = safe(c.getImageUrl());
+            String key = StringUtils.safe(c.getImageUrl());
             if (key.isEmpty()) {
                 img.setImageResource(R.drawable.milktea);
             } else if (isUrl(key)) {
@@ -147,15 +151,11 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.VH> {
             if (admin) {
                 tvActive.setText(c.isActive() ? "Active" : "Inactive");
 
-                if (btnEdit != null)
-                    btnEdit.setOnClickListener(v -> {
-                        if (listener != null) listener.onEdit(c);
-                    });
-
-                if (btnDelete != null)
+                if (btnDelete != null) {
                     btnDelete.setOnClickListener(v -> {
                         if (listener != null) listener.onDelete(c);
                     });
+                }
 
                 itemView.setOnClickListener(v -> {
                     if (listener != null) listener.onEdit(c);
@@ -180,6 +180,4 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.VH> {
             return n;
         }
     }
-
-    private static String safe(String s) { return s == null ? "" : s; }
 }

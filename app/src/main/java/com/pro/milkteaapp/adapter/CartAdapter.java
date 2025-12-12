@@ -17,6 +17,7 @@ import com.pro.milkteaapp.models.CartItem;
 import com.pro.milkteaapp.models.Product;
 import com.pro.milkteaapp.utils.ImageLoader;
 import com.pro.milkteaapp.utils.MoneyUtils;
+import com.pro.milkteaapp.utils.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -48,15 +49,15 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
         StringBuilder toppingsKey = new StringBuilder();
         if (ci.getToppings() != null) {
             for (int i = 0; i < ci.getToppings().size(); i++) {
-                toppingsKey.append(ci.getToppings().get(i).name);
+                toppingsKey.append(ci.getToppings().get(i).name());
                 if (i < ci.getToppings().size() - 1) toppingsKey.append(",");
             }
         }
-        String key = (safe(ci.getProductId()) + "|" +
-                safe(ci.getSize()) + "|" +
-                safe(ci.getSugar()) + "|" +
-                safe(ci.getIce()) + "|" +
-                safe(ci.getNote()) + "|" +
+        String key = (StringUtils.safe(ci.getProductId()) + "|" +
+                StringUtils.safe(ci.getSize()) + "|" +
+                StringUtils.safe(ci.getSugar()) + "|" +
+                StringUtils.safe(ci.getIce()) + "|" +
+                StringUtils.safe(ci.getNote()) + "|" +
                 toppingsKey);
         return key.hashCode();
     }
@@ -125,7 +126,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
         if (item.getToppings() != null && !item.getToppings().isEmpty()) {
             StringBuilder sb = new StringBuilder("Topping: ");
             for (int i = 0; i < item.getToppings().size(); i++) {
-                sb.append(item.getToppings().get(i).name);
+                sb.append(item.getToppings().get(i).name());
                 if (i < item.getToppings().size() - 1) sb.append(", ");
             }
             h.cartItemTopping.setText(sb.toString());
@@ -166,9 +167,6 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.ViewHolder> {
         return cartItems != null ? cartItems.size() : 0;
     }
 
-    private static String safe(String s) {
-        return s == null ? "" : s;
-    }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
 

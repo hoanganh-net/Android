@@ -34,13 +34,12 @@ import com.pro.milkteaapp.utils.ImageLoader;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
 public class AdminChatFragment extends Fragment
-        implements AdminMainActivity.ScrollToTop, AdminMainActivity.SupportsRefresh {
+        implements AdminMainActivity.SupportsRefresh {
 
     private SwipeRefreshLayout swipeRefresh;
     private RecyclerView recyclerView;
@@ -325,10 +324,9 @@ public class AdminChatFragment extends Fragment
         
         final int[] loadedCount = {0};
         final int totalUsers = allUsers.size();
-        
-        // Reset loadedCount nếu đang refresh
+
         loadedCount[0] = 0;
-        
+
         for (UserChatInfo info : allUsers) {
             String userId = info.user.getUid();
             if (userId == null || userId.isEmpty()) {
@@ -378,13 +376,6 @@ public class AdminChatFragment extends Fragment
         attachListener();
     }
     
-    @Override
-    public void scrollToTop() {
-        if (recyclerView != null) {
-            recyclerView.smoothScrollToPosition(0);
-        }
-    }
-
     private void toggleEmpty(boolean showEmpty) {
         if (loadingState != null) loadingState.setVisibility(View.GONE);
         if (emptyState != null) emptyState.setVisibility(showEmpty ? View.VISIBLE : View.GONE);
@@ -460,7 +451,8 @@ public class AdminChatFragment extends Fragment
             imgAvatar = itemView.findViewById(R.id.imgAvatar);
         }
 
-        void bind(@NonNull UserChatInfo info, ChatUsersAdapter.OnUserClick onClick, 
+        @SuppressLint("SetTextI18n")
+        void bind(@NonNull UserChatInfo info, ChatUsersAdapter.OnUserClick onClick,
                   SimpleDateFormat timeFormat, SimpleDateFormat dateFormat) {
             User user = info.user;
             

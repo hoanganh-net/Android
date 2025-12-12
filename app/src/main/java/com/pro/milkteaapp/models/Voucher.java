@@ -8,22 +8,41 @@ import java.io.Serializable;
 import java.util.List;
 
 public class Voucher implements Serializable {
-    private String id;                 // Firestore docId (set thủ công sau khi toObjects)
-    private String code;               // TRASUA15K
-    private String type;               // ORDER_FIXED | ORDER_PERCENT | SHIPPING_FIXED
-    private long amount;               // cho ORDER_FIXED/SHIPPING_FIXED
-    private int percent;               // cho ORDER_PERCENT
-    @Nullable private Long maxDiscount;// trần cho ORDER_PERCENT (nullable)
-    private long minOrder;             // điều kiện đơn tối thiểu
-    @Nullable private Timestamp startAt; // auto now khi tạo
-    @Nullable private Timestamp endAt;   // đến cuối ngày
-    private int perUserLimit;          // mỗi KH được dùng tối đa
+    private String id;
+    private String code;
+    private String type;
+    private long amount;
+    private int percent;
+    @Nullable private Long maxDiscount;
+    private long minOrder;
+    @Nullable private Timestamp startAt;
+    @Nullable private Timestamp endAt;
+    private int perUserLimit;
     private boolean active;
-    @Nullable private List<String> allowedChannels; // ["COD","MOMO","CARD"]
+    @Nullable private List<String> allowedChannels;
     @Nullable private String description;
-    @Nullable private Long pointsRequired; // Số điểm cần để đổi voucher này (nullable, chỉ có khi voucher có thể đổi bằng điểm)
+    @Nullable private Long pointsRequired;
 
-    public Voucher() {}
+    // No-args constructor required by Firestore
+    public Voucher() {
+        this.amount = 0;
+        this.percent = 0;
+        this.minOrder = 0;
+        this.perUserLimit = 0;
+    }
+
+    public Voucher(long amount, int percent, @Nullable Long maxDiscount, long minOrder, @Nullable Timestamp startAt, @Nullable Timestamp endAt, int perUserLimit, @Nullable List<String> allowedChannels, @Nullable String description, @Nullable Long pointsRequired) {
+        this.amount = amount;
+        this.percent = percent;
+        this.maxDiscount = maxDiscount;
+        this.minOrder = minOrder;
+        this.startAt = startAt;
+        this.endAt = endAt;
+        this.perUserLimit = perUserLimit;
+        this.allowedChannels = allowedChannels;
+        this.description = description;
+        this.pointsRequired = pointsRequired;
+    }
 
     // ===== getters/setters =====
     public String getId() { return id; }
@@ -45,15 +64,7 @@ public class Voucher implements Serializable {
 
     public void setCode(String code) { this.code = code; }
     public void setType(String type) { this.type = type; }
-    public void setAmount(long amount) { this.amount = amount; }
-    public void setPercent(int percent) { this.percent = percent; }
-    public void setMaxDiscount(@Nullable Long maxDiscount) { this.maxDiscount = maxDiscount; }
-    public void setMinOrder(long minOrder) { this.minOrder = minOrder; }
-    public void setStartAt(@Nullable Timestamp startAt) { this.startAt = startAt; }
-    public void setEndAt(@Nullable Timestamp endAt) { this.endAt = endAt; }
-    public void setPerUserLimit(int perUserLimit) { this.perUserLimit = perUserLimit; }
+
     public void setActive(boolean active) { this.active = active; }
-    public void setAllowedChannels(@Nullable List<String> allowedChannels) { this.allowedChannels = allowedChannels; }
-    public void setDescription(@Nullable String description) { this.description = description; }
-    public void setPointsRequired(@Nullable Long pointsRequired) { this.pointsRequired = pointsRequired; }
+
 }

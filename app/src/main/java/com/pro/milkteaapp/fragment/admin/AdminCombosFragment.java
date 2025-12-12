@@ -1,5 +1,6 @@
 package com.pro.milkteaapp.fragment.admin;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
@@ -31,6 +32,7 @@ import com.pro.milkteaapp.adapter.admin.AdminComboAdapter;
 import com.pro.milkteaapp.interfaces.AddActionHandler;
 import com.pro.milkteaapp.models.Combo;
 import com.pro.milkteaapp.repository.ComboRepository;
+import com.pro.milkteaapp.utils.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,7 +42,7 @@ import java.util.Locale;
  * Fragment quản trị combo
  */
 public class AdminCombosFragment extends Fragment
-        implements AdminMainActivity.ScrollToTop,
+        implements
         AdminMainActivity.SupportsRefresh,
         AddActionHandler {
 
@@ -99,6 +101,7 @@ public class AdminCombosFragment extends Fragment
         return view;
     }
 
+    @SuppressLint("SetTextI18n")
     private void bindViews(View v) {
         recyclerView = v.findViewById(R.id.productsRecyclerView);
         emptyState = v.findViewById(R.id.emptyState);
@@ -261,7 +264,7 @@ public class AdminCombosFragment extends Fragment
         }
         List<Combo> filtered = new ArrayList<>();
         for (Combo c : comboList) {
-            String name = safe(c.getName()).toLowerCase(Locale.ROOT);
+            String name = StringUtils.safeStr(c.getName()).toLowerCase(Locale.ROOT);
             if (name.contains(q)) {
                 filtered.add(c);
             }
@@ -292,20 +295,14 @@ public class AdminCombosFragment extends Fragment
         openAddCombo();
     }
 
-    public void onEditCombo(Combo combo) {
-        Intent it = new Intent(requireContext(), AdminComboEditorActivity.class);
-        it.putExtra(AdminComboEditorActivity.EXTRA_COMBO_ID, combo.getId());
-        startActivity(it);
-    }
-
     public void onDeleteCombo(Combo combo) {
-        if (combo == null || safe(combo.getId()).isEmpty()) {
+        if (combo == null || StringUtils.safeStr(combo.getId()).isEmpty()) {
             toast("Không xác định được ID combo.");
             return;
         }
         new AlertDialog.Builder(requireContext())
                 .setTitle("Xóa combo")
-                .setMessage("Bạn có chắc muốn xóa \"" + safe(combo.getName()) + "\"?")
+                .setMessage("Bạn có chắc muốn xóa \"" + StringUtils.safeStr(combo.getName()) + "\"?")
                 .setPositiveButton("Xóa", (d, w) -> deleteComboById(combo.getId()))
                 .setNegativeButton("Hủy", null)
                 .show();
@@ -316,13 +313,6 @@ public class AdminCombosFragment extends Fragment
         if (swipeRefresh != null) swipeRefresh.setRefreshing(false);
         loadOnce();
     }
-    
-    @Override
-    public void scrollToTop() {
-        if (recyclerView != null) {
-            recyclerView.smoothScrollToPosition(0);
-        }
-    }
 
     private boolean isAdmin() {
         SharedPreferences p = requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
@@ -331,10 +321,6 @@ public class AdminCombosFragment extends Fragment
 
     private void toast(String msg) {
         Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show();
-    }
-
-    private String safe(String s) {
-        return s == null ? "" : s;
     }
 
     @Override

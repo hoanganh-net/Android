@@ -31,7 +31,6 @@ public class RatingManageFragment extends Fragment {
     private UsersRepository usersRepository;
     private ListenerRegistration reg;
     private AdminRatingsAdapter adapter;
-    private TextInputEditText searchEditText;
     private final List<AdminRatingsAdapter.Item> allItems = new ArrayList<>();
     private String lastSearch = "";
 
@@ -52,7 +51,7 @@ public class RatingManageFragment extends Fragment {
         adapter = new AdminRatingsAdapter(this::onDeleteClicked);
         b.recycler.setAdapter(adapter);
 
-        searchEditText = b.getRoot().findViewById(R.id.searchEditText);
+        TextInputEditText searchEditText = b.getRoot().findViewById(R.id.searchEditText);
         if (searchEditText != null) {
             searchEditText.addTextChangedListener(new TextWatcher() {
                 @Override

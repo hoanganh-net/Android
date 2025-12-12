@@ -54,7 +54,7 @@ public class Address implements Serializable, Parcelable {
         append(sb, line2);
         append(sb, city);
         append(sb, province);
-        if (postalCode != null && !postalCode.trim().isEmpty()) append(sb, "Mã " + postalCode.trim());
+        // Không hiển thị mã bưu chính - đã xóa khỏi UI
         return sb.toString();
     }
 

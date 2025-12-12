@@ -22,19 +22,16 @@ import com.pro.milkteaapp.repository.ChatRepository;
 import java.util.List;
 
 public class ChatActivity extends AppCompatActivity {
-    
 
-    private MaterialToolbar toolbar;
+
     private RecyclerView recyclerView;
     private EditText etMessage;
-    private ImageButton btnSend;
-    
+
     private ChatRepository chatRepository;
     private ChatMessagesAdapter adapter;
     private ListenerRegistration listener;
     
     private String userId;
-    private String userName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,7 +39,7 @@ public class ChatActivity extends AppCompatActivity {
         setContentView(R.layout.user_activity_chat);
         
         userId = getIntent().getStringExtra("userId");
-        userName = getIntent().getStringExtra("userName");
+        String userName = getIntent().getStringExtra("userName");
         
         if (TextUtils.isEmpty(userId)) {
             Toast.makeText(this, "Lỗi: Không có thông tin người dùng", Toast.LENGTH_SHORT).show();
@@ -51,11 +48,11 @@ public class ChatActivity extends AppCompatActivity {
         }
         
         chatRepository = new ChatRepository();
-        
-        toolbar = findViewById(R.id.toolbar);
+
+        MaterialToolbar toolbar = findViewById(R.id.toolbar);
         recyclerView = findViewById(R.id.recyclerView);
         etMessage = findViewById(R.id.etMessage);
-        btnSend = findViewById(R.id.btnSend);
+        ImageButton btnSend = findViewById(R.id.btnSend);
         
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {

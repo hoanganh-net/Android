@@ -97,7 +97,7 @@ public class ComboCartAdapter extends RecyclerView.Adapter<ComboCartAdapter.View
                 if (option.getToppings() != null && !option.getToppings().isEmpty()) {
                     StringBuilder toppingStr = new StringBuilder("Topping: ");
                     for (int j = 0; j < option.getToppings().size(); j++) {
-                        toppingStr.append(option.getToppings().get(j).name);
+                        toppingStr.append(option.getToppings().get(j).name());
                         if (j < option.getToppings().size() - 1) toppingStr.append(", ");
                     }
                     options.add(toppingStr.toString());

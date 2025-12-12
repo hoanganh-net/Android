@@ -72,7 +72,7 @@ public class AddressActivity extends AppCompatActivity
         if (emptyState != null) {
             emptyState.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
         }
-        if (binding != null && binding.rvAddress != null) {
+        if (binding != null) {
             binding.rvAddress.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
         }
     }

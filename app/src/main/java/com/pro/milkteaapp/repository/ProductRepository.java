@@ -57,24 +57,6 @@ public class ProductRepository {
                 .addOnFailureListener(listener::onError);
     }
 
-    /**
-     * Lấy products theo category
-     */
-    public void fetchProductByCategory(@NonNull String category, @NonNull OnProductListener listener) {
-        db.collection(FirestoreConstants.COLLECTION_PRODUCTS)
-                .whereEqualTo(FirestoreConstants.FIELD_CATEGORY, category)
-                .orderBy(FirestoreConstants.FIELD_NAME, Query.Direction.ASCENDING)
-                .get()
-                .addOnSuccessListener(snapshot -> {
-                    List<Product> products = parseProducts(snapshot);
-                    listener.onProductReceived(products);
-                })
-                .addOnFailureListener(listener::onError);
-    }
-
-    /**
-     * Lấy products theo status
-     */
     public void fetchProductByStatus(@NonNull String status, @NonNull OnProductListener listener) {
         db.collection(FirestoreConstants.COLLECTION_PRODUCTS)
                 .whereEqualTo(FirestoreConstants.FIELD_STATUS, status)
@@ -87,9 +69,6 @@ public class ProductRepository {
                 .addOnFailureListener(listener::onError);
     }
 
-    /**
-     * Lấy một product theo ID
-     */
     public void fetchProductById(@NonNull String productId, @NonNull OnSingleProductListener listener) {
         db.collection(FirestoreConstants.COLLECTION_PRODUCTS)
                 .document(productId)
@@ -97,6 +76,7 @@ public class ProductRepository {
                 .addOnSuccessListener(document -> {
                     if (document != null && document.exists()) {
                         Product product = parseProduct(document);
+                        assert product != null;
                         listener.onProductReceived(product);
                     } else {
                         listener.onError(new Exception("Product not found"));
@@ -105,43 +85,7 @@ public class ProductRepository {
                 .addOnFailureListener(listener::onError);
     }
 
-    /**
-     * Tìm kiếm products theo tên (searchableName)
-     */
-    public void searchProduct(@NonNull String query, @NonNull OnProductListener listener) {
-        String searchQuery = query.toLowerCase().trim();
-        db.collection(FirestoreConstants.COLLECTION_PRODUCTS)
-                .whereGreaterThanOrEqualTo(FirestoreConstants.FIELD_SEARCHABLE_NAME, searchQuery)
-                .whereLessThanOrEqualTo(FirestoreConstants.FIELD_SEARCHABLE_NAME, searchQuery + "\uf8ff")
-                .get()
-                .addOnSuccessListener(snapshot -> {
-                    List<Product> products = parseProducts(snapshot);
-                    listener.onProductReceived(products);
-                })
-                .addOnFailureListener(listener::onError);
-    }
-
-    /**
-     * Lấy top products (có thể mở rộng với logic sorting)
-     */
-    public void fetchTopProduct(int limit, @NonNull OnProductListener listener) {
-        db.collection(FirestoreConstants.COLLECTION_PRODUCTS)
-                .whereEqualTo(FirestoreConstants.FIELD_STATUS, FirestoreConstants.STATUS_ACTIVE)
-                .limit(limit)
-                .get()
-                .addOnSuccessListener(snapshot -> {
-                    List<Product> products = parseProducts(snapshot);
-                    listener.onProductReceived(products);
-                })
-                .addOnFailureListener(listener::onError);
-    }
-
-    /**
-     * Lấy sản phẩm nổi bật (featured)
-     * Nếu query với whereEqualTo featured = true thất bại (do thiếu index), sẽ fetch all active rồi filter ở client
-     */
     public void fetchFeaturedProduct(int limit, @NonNull OnProductListener listener) {
-        // Thử query trực tiếp trước
         db.collection(FirestoreConstants.COLLECTION_PRODUCTS)
                 .whereEqualTo(FirestoreConstants.FIELD_STATUS, FirestoreConstants.STATUS_ACTIVE)
                 .whereEqualTo(FirestoreConstants.FIELD_FEATURED, true)
@@ -151,7 +95,6 @@ public class ProductRepository {
                 .addOnSuccessListener(snapshot -> {
                     List<Product> products = parseProducts(snapshot);
                     if (products.isEmpty()) {
-                        // Nếu không có kết quả, thử fetch all active rồi filter
                         fetchAllActiveAndFilterFeatured(limit, listener);
                     } else {
                         listener.onProductReceived(products);
@@ -194,29 +137,6 @@ public class ProductRepository {
                 .addOnFailureListener(listener::onError);
     }
 
-    /**
-     * Lắng nghe realtime sản phẩm nổi bật
-     */
-    public ListenerRegistration listenFeaturedProduct(int limit, @NonNull OnProductListener listener) {
-        Query query = db.collection(FirestoreConstants.COLLECTION_PRODUCTS)
-                .whereEqualTo(FirestoreConstants.FIELD_STATUS, FirestoreConstants.STATUS_ACTIVE)
-                .whereEqualTo(FirestoreConstants.FIELD_FEATURED, true)
-                .orderBy(FirestoreConstants.FIELD_NAME, Query.Direction.ASCENDING)
-                .limit(limit);
-
-        return query.addSnapshotListener((snapshot, error) -> {
-            if (error != null) {
-                listener.onError(error);
-                return;
-            }
-            List<Product> products = parseProducts(snapshot);
-            listener.onProductReceived(products);
-        });
-    }
-
-    /**
-     * Toggle trạng thái featured của sản phẩm
-     */
     public void toggleFeatured(@NonNull String productId, boolean featured, @NonNull OnProductUpdateListener listener) {
         java.util.Map<String, Object> data = new java.util.HashMap<>();
         data.put(FirestoreConstants.FIELD_FEATURED, featured);

@@ -4,7 +4,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.google.firebase.Timestamp;
-import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
@@ -61,23 +60,6 @@ public class VouchersRepository {
         });
     }
 
-    /**
-     * Lấy tất cả vouchers (dành cho admin)
-     */
-    public void fetchAllVouchers(@NonNull OnVouchersListener listener) {
-        db.collection(FirestoreConstants.COLLECTION_VOUCHERS)
-                .orderBy(FirestoreConstants.FIELD_VOUCHER_CODE, Query.Direction.ASCENDING)
-                .get()
-                .addOnSuccessListener(snapshot -> {
-                    List<Voucher> vouchers = parseVouchers(snapshot);
-                    listener.onVouchersReceived(vouchers);
-                })
-                .addOnFailureListener(listener::onError);
-    }
-
-    /**
-     * Lấy voucher theo code
-     */
     public void fetchVoucherByCode(@NonNull String code, @NonNull OnVoucherListener listener) {
         db.collection(FirestoreConstants.COLLECTION_VOUCHERS)
                 .whereEqualTo(FirestoreConstants.FIELD_VOUCHER_CODE, code.toUpperCase())
@@ -160,9 +142,7 @@ public class VouchersRepository {
     public void createVoucher(@NonNull Map<String, Object> data, @NonNull OnVoucherCreateListener listener) {
         db.collection(FirestoreConstants.COLLECTION_VOUCHERS)
                 .add(data)
-                .addOnSuccessListener(documentReference -> {
-                    listener.onSuccess(documentReference.getId());
-                })
+                .addOnSuccessListener(documentReference -> listener.onSuccess(documentReference.getId()))
                 .addOnFailureListener(listener::onError);
     }
 
