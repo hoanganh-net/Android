@@ -196,15 +196,33 @@ public class CategoryManageFragment extends Fragment implements
 
 
     private void deleteCategory(String id) {
-        categoriesRepository.deleteCategory(id, new CategoriesRepository.OnCategoryUpdateListener() {
+        // Tìm category để lấy tên
+        categoriesRepository.fetchCategoryById(id, new CategoriesRepository.OnCategoryListener() {
             @Override
-            public void onSuccess() {
-                toast("Đã xóa danh mục");
+            public void onCategoryReceived(@NonNull com.pro.milkteaapp.models.Category category) {
+                String categoryName = category.getName();
+                if (categoryName == null || categoryName.trim().isEmpty()) {
+                    toast("Không thể xác định tên danh mục");
+                    return;
+                }
+                
+                // Xóa category và tất cả sản phẩm trong danh mục
+                categoriesRepository.deleteCategory(id, categoryName, new CategoriesRepository.OnCategoryUpdateListener() {
+                    @Override
+                    public void onSuccess() {
+                        toast("Đã xóa danh mục và tất cả sản phẩm trong danh mục");
+                    }
+
+                    @Override
+                    public void onError(@NonNull Exception error) {
+                        toast("Lỗi xóa: " + error.getMessage());
+                    }
+                });
             }
 
             @Override
             public void onError(@NonNull Exception error) {
-                toast("Lỗi xóa: " + error.getMessage());
+                toast("Lỗi lấy thông tin danh mục: " + error.getMessage());
             }
         });
     }
@@ -218,9 +236,11 @@ public class CategoryManageFragment extends Fragment implements
 
     @Override
     public void onDelete(Category category) {
+        String categoryName = category.getName() != null ? category.getName() : "";
         new AlertDialog.Builder(requireContext())
                 .setTitle("Xóa danh mục")
-                .setMessage("Bạn có chắc muốn xóa \"" + (category.getName() == null ? "" : category.getName()) + "\" không?")
+                .setMessage("Bạn có chắc muốn xóa danh mục \"" + categoryName + "\"?\n\n" +
+                           "⚠️ Lưu ý: Tất cả sản phẩm trong danh mục này cũng sẽ bị xóa!")
                 .setPositiveButton("Xóa", (d, w) -> deleteCategory(category.getId()))
                 .setNegativeButton("Hủy", null)
                 .show();

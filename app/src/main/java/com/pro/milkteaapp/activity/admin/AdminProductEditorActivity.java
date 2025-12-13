@@ -50,6 +50,7 @@ public class AdminProductEditorActivity extends AppCompatActivity {
     private MaterialAutoCompleteTextView actCategory;
     private MaterialButton btnPickDrawable;
     private ImageView imagePreview;
+    private com.google.android.material.switchmaterial.SwitchMaterial switchActive;
 
     // Nút theo template
     private Button btnSave, btnReset;
@@ -84,10 +85,10 @@ public class AdminProductEditorActivity extends AppCompatActivity {
             return;
         }
 
-        // Xác định mode & layout
+        // Xác định mode & layout - sử dụng layout chung cho cả add và edit
         productId = getIntent().getStringExtra(EXTRA_PRODUCT_ID);
         isEditMode = productId != null && !productId.trim().isEmpty();
-        setContentView(isEditMode ? R.layout.admin_activity_edit_product : R.layout.admin_activity_add_product);
+        setContentView(R.layout.admin_activity_add_product);
 
         // Bind
         bindViewsByTemplate();
@@ -137,19 +138,18 @@ public class AdminProductEditorActivity extends AppCompatActivity {
         actCategory   = findViewById(R.id.actCategory);
         etImageUrl    = findViewById(R.id.editTextProductImage);
         etDescription = findViewById(R.id.editTextProductDescription);
+        switchActive  = findViewById(R.id.switchActive);
         progress      = findViewById(R.id.progressBar);
         
-        // Chỉ bind các view này trong edit mode (chỉ có trong edit layout)
-        if (isEditMode) {
-            View btnPickDrawableView = findViewById(R.id.btnPickDrawable);
-            if (btnPickDrawableView instanceof MaterialButton) {
-                btnPickDrawable = (MaterialButton) btnPickDrawableView;
-            }
-            
-            View imagePreviewView = findViewById(R.id.imagePreview);
-            if (imagePreviewView instanceof ImageView) {
-                imagePreview = (ImageView) imagePreviewView;
-            }
+        // Bind các view này cho cả edit và add mode (có trong cả 2 layout)
+        View btnPickDrawableView = findViewById(R.id.btnPickDrawable);
+        if (btnPickDrawableView instanceof MaterialButton) {
+            btnPickDrawable = (MaterialButton) btnPickDrawableView;
+        }
+        
+        View imagePreviewView = findViewById(R.id.imagePreview);
+        if (imagePreviewView instanceof ImageView) {
+            imagePreview = (ImageView) imagePreviewView;
         }
 
         MaterialToolbar toolbar = findViewById(R.id.toolbar);
@@ -165,8 +165,24 @@ public class AdminProductEditorActivity extends AppCompatActivity {
             }
         }
 
+        // Setup buttons dựa trên mode
+        View layoutEditButtons = findViewById(R.id.layoutEditButtons);
+        if (layoutEditButtons != null) {
+            layoutEditButtons.setVisibility(isEditMode ? View.VISIBLE : View.GONE);
+        }
+        
+        View buttonAddProduct = findViewById(R.id.buttonAddProduct);
+        if (buttonAddProduct != null) {
+            buttonAddProduct.setVisibility(isEditMode ? View.GONE : View.VISIBLE);
+        }
+        
+        View buttonReset = findViewById(R.id.buttonReset);
+        if (buttonReset != null) {
+            buttonReset.setVisibility(isEditMode ? View.GONE : View.VISIBLE);
+        }
+
         btnSave  = isEditMode
-                ? firstNonNull(findViewById(R.id.buttonUpdateProduct), findViewById(R.id.buttonAddProduct))
+                ? firstNonNull(findViewById(R.id.buttonUpdateProduct), findViewById(R.id.buttonComplete))
                 : firstNonNull(findViewById(R.id.buttonAddProduct),   findViewById(R.id.buttonUpdateProduct));
 
         btnReset = findViewById(R.id.buttonReset);
@@ -220,11 +236,18 @@ public class AdminProductEditorActivity extends AppCompatActivity {
                 String imageUrl    = product.getImageUrl() != null ? product.getImageUrl() : "";
                 String description = product.getDescription() != null ? product.getDescription() : "";
                 String category    = product.getCategory() != null ? product.getCategory() : "";
+                String status      = product.getStatus() != null ? product.getStatus() : "";
 
                 etName.setText(name);
                 etPrice.setText(formatPrice(price));
                 etImageUrl.setText(imageUrl);
                 etDescription.setText(description);
+                
+                // Set status switch (active nếu status là "active", ngược lại inactive)
+                if (switchActive != null) {
+                    boolean isActive = "active".equalsIgnoreCase(status);
+                    switchActive.setChecked(isActive);
+                }
                 
                 // Preview ảnh
                 updateImagePreview(imageUrl);
@@ -281,12 +304,18 @@ public class AdminProductEditorActivity extends AppCompatActivity {
 
         setLoading(true);
 
+        // Lấy status từ switch
+        String status = (switchActive != null && switchActive.isChecked()) 
+                ? com.pro.milkteaapp.constants.FirestoreConstants.STATUS_ACTIVE 
+                : com.pro.milkteaapp.constants.FirestoreConstants.STATUS_INACTIVE;
+
         Map<String, Object> data = new HashMap<>();
         data.put("name", name);
         data.put("price", price);
         data.put("category", normalizedCat);
         data.put("imageUrl", image.isEmpty() ? null : image);
         data.put("description", description.isEmpty() ? null : description);
+        data.put("status", status);
         data.put("searchableName", name.toLowerCase(Locale.ROOT));
         data.put("updatedAt", FieldValue.serverTimestamp());
 

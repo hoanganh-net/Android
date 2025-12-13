@@ -121,9 +121,55 @@ public class CategoriesRepository {
     }
 
     /**
-     * Xóa category
+     * Xóa category và tất cả sản phẩm trong danh mục đó
+     * Đồng thời xóa category khỏi danh sách categories của các topping liên quan
      */
-    public void deleteCategory(@NonNull String categoryId, @NonNull OnCategoryUpdateListener listener) {
+    public void deleteCategory(@NonNull String categoryId, @NonNull String categoryName, @NonNull OnCategoryUpdateListener listener) {
+        // Lấy tất cả sản phẩm thuộc category này
+        db.collection(FirestoreConstants.COLLECTION_PRODUCTS)
+                .whereEqualTo(FirestoreConstants.FIELD_CATEGORY, categoryName)
+                .get()
+                .addOnSuccessListener(productSnapshot -> {
+                    // Lấy tất cả toppings có category này trong danh sách categories
+                    db.collection(FirestoreConstants.COLLECTION_TOPPINGS)
+                            .whereArrayContains("categories", categoryName)
+                            .get()
+                            .addOnSuccessListener(toppingSnapshot -> {
+                                // Tạo batch để xóa sản phẩm, cập nhật toppings và xóa category
+                                com.google.firebase.firestore.WriteBatch batch = db.batch();
+                                
+                                // Xóa tất cả sản phẩm
+                                for (DocumentSnapshot productDoc : productSnapshot.getDocuments()) {
+                                    batch.delete(productDoc.getReference());
+                                }
+                                
+                                // Cập nhật tất cả toppings: xóa category khỏi danh sách categories
+                                for (DocumentSnapshot toppingDoc : toppingSnapshot.getDocuments()) {
+                                    List<String> categories = (List<String>) toppingDoc.get("categories");
+                                    if (categories != null && categories.contains(categoryName)) {
+                                        List<String> updatedCategories = new ArrayList<>(categories);
+                                        updatedCategories.remove(categoryName);
+                                        batch.update(toppingDoc.getReference(), "categories", updatedCategories);
+                                    }
+                                }
+                                
+                                // Xóa category
+                                batch.delete(db.collection(FirestoreConstants.COLLECTION_CATEGORIES).document(categoryId));
+                                
+                                // Commit batch
+                                batch.commit()
+                                        .addOnSuccessListener(aVoid -> listener.onSuccess())
+                                        .addOnFailureListener(listener::onError);
+                            })
+                            .addOnFailureListener(listener::onError);
+                })
+                .addOnFailureListener(listener::onError);
+    }
+    
+    /**
+     * Xóa category (không xóa sản phẩm) - giữ lại để tương thích
+     */
+    public void deleteCategoryOnly(@NonNull String categoryId, @NonNull OnCategoryUpdateListener listener) {
         db.collection(FirestoreConstants.COLLECTION_CATEGORIES)
                 .document(categoryId)
                 .delete()

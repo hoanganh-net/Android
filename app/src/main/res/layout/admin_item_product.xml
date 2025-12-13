@@ -72,6 +72,20 @@
                         android:textColor="@color/primary"
                         android:textSize="14sp"
                         android:textStyle="bold" />
+
+                    <!-- Trạng thái sản phẩm -->
+                    <TextView
+                        android:id="@+id/productStatus"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Active"
+                        android:textSize="10sp"
+                        android:textStyle="bold"
+                        android:paddingHorizontal="6dp"
+                        android:paddingVertical="2dp"
+                        android:layout_marginStart="8dp"
+                        android:background="@drawable/bg_status_pill_active"
+                        android:textColor="@android:color/white" />
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>

@@ -23,7 +23,8 @@
             android:layout_height="match_parent"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:paddingEnd="52dp">
+            android:paddingEnd="52dp"
+            android:paddingStart="0dp">
 
             <TextView
                 android:id="@+id/toolbarTitle"
@@ -63,50 +64,104 @@
                 android:textColor="#333333"
                 android:layout_marginBottom="12dp" />
 
-            <!-- Tên sản phẩm -->
-            <com.google.android.material.textfield.TextInputLayout
+            <!-- Layout ngang: Tên/Danh mục/Giá bên trái, Preview + btn bên phải -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:baselineAligned="false"
+                android:orientation="horizontal"
                 android:layout_marginBottom="16dp">
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/editTextProductName"
-                    android:layout_width="match_parent"
+                <!-- Cột trái: Tên sản phẩm, Danh mục, Giá sản phẩm (chiếm 2/3) -->
+                <LinearLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:hint="Tên sản phẩm"
-                    android:inputType="textCapWords" />
-            </com.google.android.material.textfield.TextInputLayout>
+                    android:layout_weight="2"
+                    android:orientation="vertical"
+                    android:layout_marginEnd="12dp">
 
-            <!-- Giá sản phẩm -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp">
+                    <!-- Tên sản phẩm -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp">
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/editTextProductPrice"
-                    android:layout_width="match_parent"
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/editTextProductName"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Tên sản phẩm"
+                            android:inputType="textCapWords" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <!-- Danh mục (Exposed Dropdown) -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilCategory"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        android:hint="Danh mục">
+
+                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                            android:id="@+id/actCategory"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:imeOptions="actionDone"
+                            android:inputType="none" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <!-- Giá sản phẩm -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/editTextProductPrice"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Giá sản phẩm"
+                            android:inputType="number" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
+
+                <!-- Cột phải: Preview ảnh và Nút chọn từ Drawable (chiếm 1/3) -->
+                <LinearLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:hint="Giá sản phẩm"
-                    android:inputType="number" />
-            </com.google.android.material.textfield.TextInputLayout>
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center">
 
-            <!-- Danh mục (Exposed Dropdown) -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/tilCategory"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:hint="Danh mục">
+                    <!-- Preview ảnh -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="2dp"
+                        app:cardBackgroundColor="@color/gray_200">
 
-                <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                    android:id="@+id/actCategory"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:imeOptions="actionDone"
-                    android:inputType="none" />
-            </com.google.android.material.textfield.TextInputLayout>
+                        <ImageView
+                            android:id="@+id/imagePreview"
+                            android:layout_width="match_parent"
+                            android:layout_height="156dp"
+                            android:adjustViewBounds="true"
+                            android:scaleType="centerCrop"
+                            android:background="@color/gray_200"
+                            android:src="@drawable/ic_placeholder"
+                            android:contentDescription="Preview hình ảnh" />
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Button chọn từ Drawable -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnPickDrawable"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Chọn từ Drawable" />
+                </LinearLayout>
+            </LinearLayout>
 
             <!-- Hình ảnh -->
             <com.google.android.material.textfield.TextInputLayout
@@ -126,7 +181,7 @@
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp">
+                android:layout_marginBottom="16dp">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/editTextProductDescription"
@@ -138,7 +193,16 @@
                     android:minLines="3" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Nút Thêm (Filled theo primary) -->
+            <!-- Trạng thái kích hoạt -->
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/switchActive"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Kích hoạt sản phẩm"
+                android:checked="true"
+                android:layout_marginBottom="24dp" />
+
+            <!-- Nút Thêm (cho add mode) -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/buttonAddProduct"
                 style="@style/Widget.Material3.Button.IconButton.Filled"
@@ -147,9 +211,10 @@
                 android:text="Thêm Sản Phẩm"
                 android:textSize="18sp"
                 android:backgroundTint="@color/primary"
-                android:layout_marginBottom="12dp" />
+                android:layout_marginBottom="12dp"
+                android:visibility="gone" />
 
-            <!-- Nút Reset (Tonal/Outlined cho dịu màu) -->
+            <!-- Nút Reset (cho add mode) -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/buttonReset"
                 style="@style/Widget.Material3.Button.TonalButton"
@@ -158,7 +223,55 @@
                 android:textColor="@color/white"
                 android:textSize="18sp"
                 android:backgroundTint="@color/primary_dark"
-                android:text="Làm Mới Form" />
+                android:text="Làm Mới Form"
+                android:visibility="gone" />
+
+            <!-- Các nút Hủy Thay Đổi và Hoàn Thành (cho edit mode) -->
+            <LinearLayout
+                android:id="@+id/layoutEditButtons"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="16dp"
+                android:weightSum="2"
+                android:gravity="center"
+                android:visibility="gone">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/buttonCancel"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Hủy Thay Đổi"
+                    android:textSize="16sp"
+                    android:layout_marginEnd="8dp"
+                    app:strokeColor="@color/gray_500"
+                    android:textColor="@color/gray_500" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/buttonComplete"
+                    style="@style/Widget.Material3.Button"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Hoàn Thành"
+                    android:textSize="16sp"
+                    app:backgroundTint="@color/primary" />
+            </LinearLayout>
+
+            <!-- Nút cập nhật (giữ lại để tương thích, nhưng ẩn) -->
+            <Button
+                android:id="@+id/buttonUpdateProduct"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Cập nhật Sản phẩm"
+                android:textSize="18sp"
+                android:padding="16dp"
+                android:backgroundTint="@color/primary"
+                android:textColor="#FFFFFF"
+                android:layout_marginBottom="16dp"
+                android:visibility="gone" />
 
             <!-- Progress Bar -->
             <ProgressBar

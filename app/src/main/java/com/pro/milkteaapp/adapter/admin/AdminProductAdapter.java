@@ -74,7 +74,8 @@ public class AdminProductAdapter extends RecyclerView.Adapter<AdminProductAdapte
                 return Objects.equals(StringUtils.safeStr(o.getName()), StringUtils.safeStr(n.getName())) &&
                         Objects.equals(StringUtils.safeStr(o.getCategory()), StringUtils.safeStr(n.getCategory())) &&
                         Objects.equals(StringUtils.safeStr(o.getImageUrl()), StringUtils.safeStr(n.getImageUrl())) &&
-                        Objects.equals(o.getPrice(), n.getPrice());
+                        Objects.equals(o.getPrice(), n.getPrice()) &&
+                        Objects.equals(StringUtils.safeStr(o.getStatus()), StringUtils.safeStr(n.getStatus()));
             }
         });
 
@@ -110,7 +111,7 @@ public class AdminProductAdapter extends RecyclerView.Adapter<AdminProductAdapte
     }
 
     static class ProductViewHolder extends RecyclerView.ViewHolder {
-        private final TextView productName, productCategory, productPrice;
+        private final TextView productName, productCategory, productPrice, productStatus;
         private final ImageView productImage, iconFeatured;
         private final View btnDelete;
 
@@ -119,6 +120,7 @@ public class AdminProductAdapter extends RecyclerView.Adapter<AdminProductAdapte
             productName     = itemView.findViewById(R.id.productName);
             productCategory = itemView.findViewById(R.id.productCategory);
             productPrice    = itemView.findViewById(R.id.productPrice);
+            productStatus   = itemView.findViewById(R.id.productStatus);
             productImage    = itemView.findViewById(R.id.productImage);
             iconFeatured    = itemView.findViewById(R.id.iconFeatured);
             btnDelete       = itemView.findViewById(R.id.btnDelete);
@@ -128,6 +130,23 @@ public class AdminProductAdapter extends RecyclerView.Adapter<AdminProductAdapte
             productName.setText(StringUtils.safeStr(p.getName()));
             productCategory.setText(StringUtils.safeStr(p.getCategory()));
             productPrice.setText(formatPrice(p.getPrice(), currencyFormat));
+            
+            // Hiển thị trạng thái sản phẩm
+            String status = StringUtils.safeStr(p.getStatus());
+            boolean isActive = "active".equalsIgnoreCase(status);
+            if (productStatus != null) {
+                productStatus.setVisibility(View.VISIBLE);
+                productStatus.setText(isActive ? "Active" : "Inactive");
+                
+                // Set background và màu text dựa trên trạng thái
+                if (isActive) {
+                    productStatus.setBackgroundResource(R.drawable.bg_status_pill_active);
+                    productStatus.setTextColor(itemView.getContext().getResources().getColor(android.R.color.white));
+                } else {
+                    productStatus.setBackgroundResource(R.drawable.bg_status_pill_cancelled);
+                    productStatus.setTextColor(itemView.getContext().getResources().getColor(android.R.color.white));
+                }
+            }
 
             String img = StringUtils.safeStr(p.getImageUrl());
             if (isHttpUrl(img)) {
