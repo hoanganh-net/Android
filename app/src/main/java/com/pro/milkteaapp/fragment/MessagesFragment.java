@@ -7,10 +7,8 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.view.GravityCompat;
-import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
-import com.google.android.material.navigation.NavigationView;
 
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
@@ -20,8 +18,8 @@ import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 import com.pro.milkteaapp.R;
 import com.pro.milkteaapp.SessionManager;
+import com.pro.milkteaapp.activity.UserChatActivity;
 import com.pro.milkteaapp.constants.FirestoreConstants;
-import com.pro.milkteaapp.activity.MainActivity;
 import com.pro.milkteaapp.adapter.MessagesAdapter;
 import com.pro.milkteaapp.databinding.FragmentMessagesBinding;
 import com.pro.milkteaapp.fragment.bottomsheet.RateOrderBottomSheet;
@@ -52,7 +50,7 @@ public class MessagesFragment extends Fragment {
         
         // Setup nút chat với admin
         binding.btnChatWithAdmin.setOnClickListener(v -> {
-            android.content.Intent intent = new android.content.Intent(requireContext(), com.pro.milkteaapp.activity.user.UserChatActivity.class);
+            android.content.Intent intent = new android.content.Intent(requireContext(), UserChatActivity.class);
             startActivity(intent);
         });
         
@@ -109,7 +107,7 @@ public class MessagesFragment extends Fragment {
                     filterMessages();
                 } else if (itemId == R.id.menu_chat) {
                     // Mở màn hình chat với admin
-                    android.content.Intent intent = new android.content.Intent(requireContext(), com.pro.milkteaapp.activity.user.UserChatActivity.class);
+                    android.content.Intent intent = new android.content.Intent(requireContext(), UserChatActivity.class);
                     startActivity(intent);
                     // Không cập nhật checked state vì đây là action, không phải filter
                     // Reset về menu_all sau khi quay lại
@@ -211,7 +209,7 @@ public class MessagesFragment extends Fragment {
         // Xử lý theo loại message
         if ("chat".equals(m.getType())) {
             // Mở màn hình chat với admin
-            android.content.Intent intent = new android.content.Intent(requireContext(), com.pro.milkteaapp.activity.user.UserChatActivity.class);
+            android.content.Intent intent = new android.content.Intent(requireContext(), UserChatActivity.class);
             startActivity(intent);
         } else if ("order_done".equals(m.getType()) && m.getOrderId() != null) {
             // Mở dialog đánh giá đơn hàng

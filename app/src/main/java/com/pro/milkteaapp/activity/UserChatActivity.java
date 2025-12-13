@@ -1,4 +1,4 @@
-package com.pro.milkteaapp.activity.user;
+package com.pro.milkteaapp.activity;
 
 import android.os.Bundle;
 import android.text.TextUtils;

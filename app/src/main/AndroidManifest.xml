@@ -115,7 +115,7 @@
 
         <!-- User Chat -->
         <activity
-            android:name=".activity.user.UserChatActivity"
+            android:name=".activity.UserChatActivity"
             android:exported="false"
             android:theme="@style/Theme.MilkteaApp.NoActionBar" />
 
